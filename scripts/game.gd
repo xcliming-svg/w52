@@ -230,17 +230,39 @@ func _selected_ancestors() -> Array[String]:
     return result
 
 
-func _pan_limits() -> Rect2:
-    # The outermost node centres can reach the view centre, plus 64 px.
-    # This preserves exact node focus while preventing endless empty panning.
-    var min_point: Vector2 = NODES[0]["p"]
-    var max_point: Vector2 = NODES[0]["p"]
+func _tree_content_bounds() -> Rect2:
+    # Bounds include enlarged node icons and their labels, not only node centers.
+    # Links terminate within the icons, so this also bounds all branch segments.
+    var radius := 38.0 * 1.12
+    var first: Vector2 = NODES[0]["p"]
+    var min_point := first - Vector2.ONE * radius
+    var max_point := first + Vector2.ONE * radius
+    var label_descent := FONT.get_descent(22)
     for node in NODES:
-        var point: Vector2 = node["p"]
-        min_point = min_point.min(point)
-        max_point = max_point.max(point)
-    var low := TREE_CENTER_LOCAL - max_point - Vector2.ONE * TREE_PAN_PADDING
-    var high := TREE_CENTER_LOCAL - min_point + Vector2.ONE * TREE_PAN_PADDING
+        var p: Vector2 = node["p"]
+        var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
+        min_point.x = minf(min_point.x, minf(p.x - radius, p.x - 40.0))
+        min_point.y = minf(min_point.y, p.y - radius)
+        max_point.x = maxf(max_point.x, maxf(p.x + radius, p.x - 40.0 + label_width))
+        max_point.y = maxf(max_point.y, p.y + radius + 7.0 + 22.0 + label_descent)
+    return Rect2(min_point, max_point - min_point)
+
+
+func _pan_limits() -> Rect2:
+    # A 64 px INSET inside the tree pane, measured from the OUTER artwork
+    # bounds. Never let dragging or node focusing move any tree content across
+    # the inset boundary. When the tree fits, every icon/label stays visible.
+    var content := _tree_content_bounds()
+    var low := Vector2.ONE * TREE_PAN_PADDING - content.position
+    var high := TREE_RECT.size - Vector2.ONE * TREE_PAN_PADDING - content.end
+    # A future oversize tree cannot fit without zoom; pin that axis centered
+    # rather than returning an inverted clamp interval.
+    if low.x > high.x:
+        low.x = (low.x + high.x) * 0.5
+        high.x = low.x
+    if low.y > high.y:
+        low.y = (low.y + high.y) * 0.5
+        high.y = low.y
     return Rect2(low, high - low)
 
 
