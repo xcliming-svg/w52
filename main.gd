@@ -198,5 +198,5 @@ func _clear_game() -> void:
 
 
 func _quit_game() -> void:
-    if state == GameState.MAIN_MENU and not OS.has_feature("web"):
+    if state == GameState.MAIN_MENU and settings_overlay == null:
         get_tree().quit()
