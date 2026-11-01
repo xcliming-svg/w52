@@ -13,9 +13,8 @@ func _ready() -> void:
     _add_volume_row(column, "효과음 음량", "SFX", float(settings_store.get("sfx_volume")))
 
     var fullscreen_toggle := CheckButton.new()
-    fullscreen_toggle.text = "전체화면 (PC)"
+    fullscreen_toggle.text = "전체화면"
     fullscreen_toggle.button_pressed = bool(settings_store.get("fullscreen"))
-    fullscreen_toggle.disabled = OS.has_feature("web")
     fullscreen_toggle.add_theme_color_override("font_color", UI.TEXT)
     column.add_child(fullscreen_toggle)
     fullscreen_toggle.toggled.connect(func(enabled: bool) -> void: settings_store.call("set_fullscreen", enabled))

@@ -1,5 +1,6 @@
 extends Node2D
 
+const UI = preload("res://scripts/ui_style.gd")
 signal defeated
 
 const SPEED: float = 240.0
@@ -35,6 +36,6 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-    draw_rect(Rect2(Vector2.ZERO, get_viewport_rect().size), Color(0.07, 0.09, 0.14))
-    draw_circle(player_position, PLAYER_RADIUS, Color(0.23, 0.86, 0.66))
-    draw_arc(player_position, PLAYER_RADIUS + 2.0, 0.0, TAU, 48, Color(0.85, 1.0, 0.94), 2.0)
+    draw_rect(Rect2(Vector2.ZERO, get_viewport_rect().size), UI.GAME_BACKGROUND)
+    draw_circle(player_position, PLAYER_RADIUS, UI.PLAYER_FILL)
+    draw_arc(player_position, PLAYER_RADIUS + 2.0, 0.0, TAU, 48, UI.PLAYER_OUTLINE, 2.0)
