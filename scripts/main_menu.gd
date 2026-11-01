@@ -25,10 +25,9 @@ func _ready() -> void:
     column.add_child(settings_button)
     settings_button.pressed.connect(func() -> void: settings_requested.emit())
 
-    if not OS.has_feature("web"):
-        var quit_button: Button = UI.make_button("게임 종료")
-        column.add_child(quit_button)
-        quit_button.pressed.connect(func() -> void: quit_requested.emit())
+    var quit_button: Button = UI.make_button("게임 종료")
+    column.add_child(quit_button)
+    quit_button.pressed.connect(func() -> void: quit_requested.emit())
     new_button.grab_focus()
 
 
