@@ -86,7 +86,13 @@ jobs:
           if-no-files-found: error
 
   deploy:
+    # The github-pages environment is restricted to main.
+    # For devel pushes, the default-branch workflow_run publisher handles Pages.
+    if: github.ref == 'refs/heads/main'
     needs: build
+    concurrency:
+      group: w52-pages-publish
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
