@@ -76,10 +76,11 @@ static func make_label(value: String, font_size: int = 28, color: Color = TEXT) 
     return label
 
 
-static func make_button(value: String) -> Button:
+static func make_button(value: String, minimum_size: Vector2 = Vector2(500.0, 74.0)) -> Button:
     var button := Button.new()
     button.text = value
-    button.custom_minimum_size = Vector2(500.0, 74.0)
+    button.custom_minimum_size = minimum_size
+    button.size = minimum_size
     button.add_theme_font_size_override("font_size", 29)
     button.add_theme_stylebox_override("normal", _button_style(PRIMARY))
     button.add_theme_stylebox_override("hover", _button_style(PRIMARY_HOVER))

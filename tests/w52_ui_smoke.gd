@@ -47,6 +47,19 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         return false
     var popup: Rect2 = game.call("_popup_rect")
     var deploy: Button = game.get("deploy_button")
+    if deploy.size != Vector2(160, 62) or deploy.custom_minimum_size != Vector2(160, 62):
+        push_error("W52 smoke: deploy control inherited menu button dimensions")
+        return false
+    var speed_one: Button = game.get("speed_one")
+    var speed_two: Button = game.get("speed_two")
+    var prev: Button = game.get("prev_button")
+    var next_help: Button = game.get("next_button")
+    if speed_one.size != Vector2(103, 52) or speed_two.size != Vector2(103, 52):
+        push_error("W52 smoke: speed control size invalid")
+        return false
+    if prev.size != Vector2(72, 64) or next_help.size != Vector2(72, 64):
+        push_error("W52 smoke: help arrows size invalid")
+        return false
     if not popup.encloses(Rect2(deploy.position, deploy.size)):
         push_error("W52 smoke: deploy button outside popup during dialogue: panel=%s btn=%s size=%s" % [str(popup), str(deploy.position), str(deploy.size)])
         return false

@@ -133,18 +133,16 @@ func _create_controls() -> void:
     dialogue_surface.draw.connect(_draw_dialogue_overlay)
     add_child(dialogue_surface)
 
-    deploy_button = UI.make_button("배치")
+    deploy_button = UI.make_button("배치", Vector2(160, 62))
     deploy_button.position = Vector2(-500, -500)
-    deploy_button.custom_minimum_size = Vector2.ZERO
     deploy_button.size = Vector2(160, 62)
     deploy_button.add_theme_font_size_override("font_size", 26)
     deploy_button.pressed.connect(_deploy_selected)
     add_child(deploy_button)
 
-    prev_button = UI.make_button("〈")
-    next_button = UI.make_button("〉")
+    prev_button = UI.make_button("〈", Vector2(72, 64))
+    next_button = UI.make_button("〉", Vector2(72, 64))
     for b in [prev_button, next_button]:
-        b.custom_minimum_size = Vector2.ZERO
         b.size = Vector2(72, 64)
         b.add_theme_font_size_override("font_size", 32)
         add_child(b)
@@ -153,10 +151,9 @@ func _create_controls() -> void:
     prev_button.pressed.connect(func() -> void: _change_help(-1))
     next_button.pressed.connect(func() -> void: _change_help(1))
 
-    speed_one = UI.make_button("1×")
-    speed_two = UI.make_button("2×")
+    speed_one = UI.make_button("1×", Vector2(103, 52))
+    speed_two = UI.make_button("2×", Vector2(103, 52))
     for b in [speed_one, speed_two]:
-        b.custom_minimum_size = Vector2.ZERO
         b.size = Vector2(103, 52)
         b.add_theme_font_size_override("font_size", 26)
         add_child(b)
@@ -167,8 +164,7 @@ func _create_controls() -> void:
     speed_one.pressed.connect(func() -> void: _set_speed(1))
     speed_two.pressed.connect(func() -> void: _set_speed(2))
 
-    battle_button = UI.make_button("전투 시작")
-    battle_button.custom_minimum_size = Vector2.ZERO
+    battle_button = UI.make_button("전투 시작", Vector2(505, 74))
     battle_button.position = Vector2(1395, 991)
     battle_button.size = Vector2(505, 74)
     battle_button.add_theme_font_size_override("font_size", 32)
