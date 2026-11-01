@@ -2,22 +2,20 @@
 
 [ext_resource type="Script" path="res://main.gd" id="1_main"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_main")
 
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="MenuMusic" type="AudioStreamPlayer" parent="."]
+bus = &"Music"
 
-[node name="Title" type="Label" parent="HUD"]
-offset_left = 24.0
-offset_top = 18.0
-offset_right = 600.0
-offset_bottom = 56.0
-theme_override_font_sizes/font_size = 25
-text = "w52 - Godot project ready"
+[node name="GameMusic" type="AudioStreamPlayer" parent="."]
+bus = &"Music"
 
-[node name="Controls" type="Label" parent="HUD"]
-offset_left = 24.0
-offset_top = 60.0
-offset_right = 600.0
-offset_bottom = 90.0
-text = "Move: WASD / Arrow keys"
+[node name="UISound" type="AudioStreamPlayer" parent="."]
+bus = &"SFX"
