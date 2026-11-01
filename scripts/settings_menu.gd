@@ -27,7 +27,7 @@ func _ready() -> void:
 
 func _add_volume_row(column: VBoxContainer, label_text: String, bus_name: String, volume: float) -> void:
     var row := HBoxContainer.new()
-    row.add_theme_constant_override("separation", 10)
+    row.add_theme_constant_override("separation", 20)
     var name_label: Label = UI.make_label(label_text, 25)
     name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
     name_label.custom_minimum_size.x = 214.0
