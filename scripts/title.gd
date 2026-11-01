@@ -11,7 +11,7 @@ func _ready() -> void:
     var logo_art := get_node("LogoArt") as TextureRect
     logo_art.reparent(column)
     column.move_child(logo_art, 0)
-    column.add_child(UI.make_label("게임 준비 중", 16, UI.MUTED))
+    column.add_child(UI.make_label("게임 준비 중", 26, UI.MUTED))
     get_tree().create_timer(1.5).timeout.connect(_on_timer_timeout)
 
 

@@ -35,6 +35,7 @@ func _ready() -> void:
     KOREAN_UI_FONT.set_fallbacks(fallback_fonts)
     var ui_theme := Theme.new()
     ui_theme.default_font = KOREAN_UI_FONT
+    ui_theme.default_font_size = 26
     theme = ui_theme
     process_mode = Node.PROCESS_MODE_ALWAYS
     settings_store = SettingsStore.new()
