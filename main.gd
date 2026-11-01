@@ -48,7 +48,7 @@ func _input(event: InputEvent) -> void:
 func _show_title() -> void:
     _clear_screen()
     state = GameState.TITLE
-    current_screen = TITLE_SCENE.instantiate()
+    current_screen = TITLE_SCENE.instantiate() as Control
     add_child(current_screen)
     current_screen.connect("finished", Callable(self, "_show_main_menu"))
 
@@ -60,7 +60,7 @@ func _show_main_menu() -> void:
     _clear_game()
     get_tree().paused = false
     state = GameState.MAIN_MENU
-    current_screen = MAIN_MENU_SCENE.instantiate()
+    current_screen = MAIN_MENU_SCENE.instantiate() as Control
     current_screen.call("set_continue_available", save_store.has_save())
     add_child(current_screen)
     current_screen.connect("new_game_requested", Callable(self, "_start_new_game"))
@@ -96,7 +96,7 @@ func _start_game(initial_position: Vector2) -> void:
     _clear_result_overlay()
     _clear_screen()
     _clear_game()
-    game_scene = GAME_SCENE.instantiate()
+    game_scene = GAME_SCENE.instantiate() as Node2D
     game_scene.process_mode = Node.PROCESS_MODE_PAUSABLE
     add_child(game_scene)
     game_scene.call("restore_position", initial_position)
@@ -109,7 +109,7 @@ func _pause_game() -> void:
         return
     state = GameState.PAUSED
     get_tree().paused = true
-    result_overlay = PAUSE_MENU_SCENE.instantiate()
+    result_overlay = PAUSE_MENU_SCENE.instantiate() as Control
     add_child(result_overlay)
     result_overlay.connect("resume_requested", Callable(self, "_resume_game"))
     result_overlay.connect("restart_requested", Callable(self, "_start_new_game"))
@@ -142,7 +142,7 @@ func _on_defeated() -> void:
         push_warning("Defeated session save could not be removed.")
     state = GameState.DEFEAT
     get_tree().paused = true
-    result_overlay = DEFEAT_SCENE.instantiate()
+    result_overlay = DEFEAT_SCENE.instantiate() as Control
     add_child(result_overlay)
     result_overlay.connect("restart_requested", Callable(self, "_start_new_game"))
     result_overlay.connect("main_menu_requested", Callable(self, "_show_main_menu"))
@@ -153,7 +153,7 @@ func _open_settings() -> void:
         return
     if state != GameState.MAIN_MENU and state != GameState.PAUSED:
         return
-    settings_overlay = SETTINGS_SCENE.instantiate()
+    settings_overlay = SETTINGS_SCENE.instantiate() as Control
     settings_overlay.set("settings_store", settings_store)
     add_child(settings_overlay)
     settings_overlay.connect("close_requested", Callable(self, "_close_settings"))
