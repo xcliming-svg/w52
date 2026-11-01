@@ -9,6 +9,7 @@ const SETTINGS_SCENE = preload("res://scenes/settings_menu.tscn")
 const SaveStore = preload("res://scripts/save_manager.gd")
 const SettingsStore = preload("res://scripts/settings_manager.gd")
 const KOREAN_UI_FONT: Font = preload("res://assets/fonts/ui_ko_subset.woff2")
+const KOREAN_FONT_PARTS := [19, 96, 98, 101, 103, 105, 106, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119]
 
 enum GameState { TITLE, MAIN_MENU, PLAYING, PAUSED, DEFEAT }
 
@@ -23,7 +24,15 @@ var settings_overlay: Control
 
 func _ready() -> void:
     # Web builds do not reliably provide system CJK font fallbacks.
-    # Apply the bundled Korean UI font to all child controls, including CheckButton.
+    # Include only the licensed Nanum Gothic Unicode ranges used by the new UI.
+    var fallback_fonts: Array[Font] = []
+    for part in KOREAN_FONT_PARTS:
+        var font := load("res://assets/fonts/nanum-%d.woff2" % part) as Font
+        if font == null:
+            push_error("Missing bundled Korean glyph subset: %d" % part)
+        else:
+            fallback_fonts.append(font)
+    KOREAN_UI_FONT.set_fallbacks(fallback_fonts)
     var ui_theme := Theme.new()
     ui_theme.default_font = KOREAN_UI_FONT
     theme = ui_theme
