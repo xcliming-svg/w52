@@ -9,6 +9,13 @@ const MAX_WEEK := 52
 const DEMO_BATTLE_COST := 40
 const DEMO_WEEK_REWARD := 70
 const DIALOGUE_COUNT := 5
+const TREE_RECT := Rect2(0, 84, 1376, 892)
+const TREE_CENTER_LOCAL := Vector2(688, 446)
+const TREE_PAN_PADDING := 64.0
+const DRAG_THRESHOLD := 8.0
+const POPUP_SIZE := Vector2(390, 274)
+const POPUP_BUTTON_OFFSET := Vector2(205, 194)
+const DIALOGUE_RECT := Rect2(28, 778, 1320, 171)
 const NODES := [
     {"id":"root", "name":"지휘 본부", "kind":"root", "parent":"", "p":Vector2(670, 744), "week":1, "symbol":"◆", "detail":"전략의 시작 노드입니다."},
     {"id":"command", "name":"초기 전술", "kind":"branch", "parent":"root", "p":Vector2(670, 612), "week":1, "symbol":"◇", "detail":"기본 지휘 분기입니다."},
@@ -33,6 +40,11 @@ var speed: int = 1
 var battle_seconds: float = 0.0
 var camera_offset: Vector2 = Vector2.ZERO
 var camera_target: Vector2 = Vector2.ZERO
+var pan_armed: bool = false
+var pan_dragging: bool = false
+var pan_start_mouse: Vector2 = Vector2.ZERO
+var pan_start_camera: Vector2 = Vector2.ZERO
+var pan_press_node_id: String = ""
 
 var deploy_button: Button
 var battle_button: Button
@@ -42,6 +54,10 @@ var speed_one: Button
 var speed_two: Button
 var log_scroll: ScrollContainer
 var log_column: VBoxContainer
+var tree_surface: Control
+var tree_canvas: Control
+var popup_surface: Control
+var dialogue_surface: Control
 
 
 func _ready() -> void:
@@ -84,6 +100,39 @@ func snapshot() -> Dictionary:
 
 
 func _create_controls() -> void:
+    # Only the tree surface is clipped. Panels and interactive Controls remain
+    # separate layers so a dragged line can never enter the battlefield.
+    tree_surface = Control.new()
+    tree_surface.name = "TreeClip"
+    tree_surface.position = TREE_RECT.position
+    tree_surface.size = TREE_RECT.size
+    tree_surface.clip_contents = true
+    tree_surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    add_child(tree_surface)
+
+    # Draw on a child: the clipping parent masks the entire canvas,
+    # including lines partially outside its rectangle.
+    tree_canvas = Control.new()
+    tree_canvas.name = "TreeArt"
+    tree_canvas.size = TREE_RECT.size
+    tree_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    tree_canvas.draw.connect(_draw_tree)
+    tree_surface.add_child(tree_canvas)
+
+    popup_surface = Control.new()
+    popup_surface.name = "NodeInfoLayer"
+    popup_surface.size = Vector2(1920, 1080)
+    popup_surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    popup_surface.draw.connect(_draw_popup)
+    add_child(popup_surface)
+
+    dialogue_surface = Control.new()
+    dialogue_surface.name = "DialogueLayer"
+    dialogue_surface.size = Vector2(1920, 1080)
+    dialogue_surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    dialogue_surface.draw.connect(_draw_dialogue_overlay)
+    add_child(dialogue_surface)
+
     deploy_button = UI.make_button("배치")
     deploy_button.position = Vector2(-500, -500)
     deploy_button.custom_minimum_size = Vector2.ZERO
@@ -152,6 +201,8 @@ func _set_week_intro() -> void:
     hover_id = ""
     camera_target = Vector2.ZERO
     camera_offset = Vector2.ZERO
+    pan_armed = false
+    pan_dragging = false
     battle_seconds = 0.0
     log_items = ["%d주차 전투 준비 중입니다." % week]
 
@@ -163,8 +214,12 @@ func _find_node(id: String) -> Dictionary:
     return {}
 
 
+func _node_tree_local(node: Dictionary) -> Vector2:
+    return node["p"] + camera_offset
+
+
 func _node_screen(node: Dictionary) -> Vector2:
-    return Vector2(0, 84) + node["p"] + camera_offset
+    return TREE_RECT.position + _node_tree_local(node)
 
 
 func _selected_ancestors() -> Array[String]:
@@ -179,14 +234,46 @@ func _selected_ancestors() -> Array[String]:
     return result
 
 
+func _pan_limits() -> Rect2:
+    # The outermost node centres can reach the view centre, plus 64 px.
+    # This preserves exact node focus while preventing endless empty panning.
+    var min_point: Vector2 = NODES[0]["p"]
+    var max_point: Vector2 = NODES[0]["p"]
+    for node in NODES:
+        var point: Vector2 = node["p"]
+        min_point = min_point.min(point)
+        max_point = max_point.max(point)
+    var low := TREE_CENTER_LOCAL - max_point - Vector2.ONE * TREE_PAN_PADDING
+    var high := TREE_CENTER_LOCAL - min_point + Vector2.ONE * TREE_PAN_PADDING
+    return Rect2(low, high - low)
+
+
+func _clamp_pan(candidate: Vector2) -> Vector2:
+    var bounds := _pan_limits()
+    return candidate.clamp(bounds.position, bounds.end)
+
+
 func _select_node(id: String) -> void:
-    if _find_node(id).is_empty():
+    var node := _find_node(id)
+    if node.is_empty():
         return
     selected_id = id
-    var node := _find_node(id)
-    camera_target = Vector2(688, 446) - node["p"]
+    camera_target = _clamp_pan(TREE_CENTER_LOCAL - node["p"])
     _update_popup()
-    queue_redraw()
+    _queue_ui_redraw()
+
+
+func _popup_rect() -> Rect2:
+    if selected_id.is_empty():
+        return Rect2()
+    var node := _find_node(selected_id)
+    if node.is_empty():
+        return Rect2()
+    var p := _node_screen(node)
+    var panel_x: float = clampf(p.x + 100.0, 28.0, TREE_RECT.size.x - POPUP_SIZE.x - 28.0)
+    var bottom_limit: float = 480.0 if phase == "dialogue" else 670.0
+    var panel_y: float = clampf(p.y - 112.0, 104.0, bottom_limit)
+    return Rect2(Vector2(panel_x, panel_y), POPUP_SIZE)
 
 
 func _update_popup() -> void:
@@ -197,10 +284,8 @@ func _update_popup() -> void:
     if node.is_empty():
         deploy_button.visible = false
         return
-    var p := _node_screen(node)
-    var panel_x: float = clampf(p.x + 100, 28, 1376 - 390 - 28)
-    var panel_y: float = clampf(p.y - 112, 104, 480 if phase == "dialogue" else 670)
-    deploy_button.position = Vector2(panel_x + 205, panel_y + 194)
+    var panel := _popup_rect()
+    deploy_button.position = panel.position + POPUP_BUTTON_OFFSET
     deploy_button.visible = str(node["kind"]) == "unit"
     deploy_button.disabled = int(node["week"]) > week or phase == "battle" or phase == "result"
     deploy_button.text = "배치" if not deploy_button.disabled else "배치 불가"
@@ -210,7 +295,7 @@ func _process(delta: float) -> void:
     if camera_offset.distance_squared_to(camera_target) > 0.5:
         camera_offset = camera_offset.lerp(camera_target, minf(1.0, delta * 9.0))
         _update_popup()
-        queue_redraw()
+        _queue_ui_redraw()
     if phase == "battle":
         var previous_second := int(battle_seconds)
         battle_seconds += delta * speed
@@ -223,10 +308,73 @@ func _process(delta: float) -> void:
             _append_log("전투 종료 — 시연 결과 표시")
             _refresh_all()
         else:
-            queue_redraw()
+            _queue_ui_redraw()
+
+
+func _node_at(mouse: Vector2) -> String:
+    if not TREE_RECT.has_point(mouse):
+        return ""
+    if phase == "dialogue" and DIALOGUE_RECT.has_point(mouse):
+        return ""
+    if not selected_id.is_empty() and _popup_rect().has_point(mouse):
+        return ""
+    for node in NODES:
+        if _node_screen(node).distance_to(mouse) <= 49.0:
+            return str(node["id"])
+    return ""
+
+
+func _start_pan(mouse: Vector2) -> void:
+    pan_armed = true
+    pan_dragging = false
+    pan_start_mouse = mouse
+    # Stop any existing smooth focus animation before anchoring the mouse.
+    camera_target = camera_offset
+    pan_start_camera = camera_offset
+    pan_press_node_id = _node_at(mouse)
+
+
+func _update_pan(mouse: Vector2) -> void:
+    if not pan_armed:
+        return
+    var delta := mouse - pan_start_mouse
+    if not pan_dragging and delta.length() < DRAG_THRESHOLD:
+        return
+    pan_dragging = true
+    hover_id = ""
+    camera_offset = _clamp_pan(pan_start_camera + delta)
+    camera_target = camera_offset
+    _update_popup()
+    _queue_ui_redraw()
+
+
+func _finish_pan(mouse: Vector2) -> void:
+    if not pan_armed:
+        return
+    var was_dragging := pan_dragging
+    var clicked_id := pan_press_node_id
+    pan_armed = false
+    pan_dragging = false
+    pan_press_node_id = ""
+    if was_dragging:
+        # A drag release must never select a different node.
+        camera_target = camera_offset
+        return
+    if not clicked_id.is_empty() and _node_at(mouse) == clicked_id:
+        _select_node(clicked_id)
 
 
 func _input(event: InputEvent) -> void:
+    if event is InputEventMouseMotion and pan_armed:
+        _update_pan((event as InputEventMouseMotion).position)
+        get_viewport().set_input_as_handled()
+        return
+    if event is InputEventMouseButton and pan_armed:
+        var release := event as InputEventMouseButton
+        if release.button_index == MOUSE_BUTTON_LEFT and not release.pressed:
+            _finish_pan(release.position)
+            get_viewport().set_input_as_handled()
+            return
     if phase != "dialogue" or not (event is InputEventKey):
         return
     var key_event := event as InputEventKey
@@ -238,27 +386,21 @@ func _input(event: InputEvent) -> void:
 func _gui_input(event: InputEvent) -> void:
     if event is InputEventMouseMotion:
         var mouse := (event as InputEventMouseMotion).position
-        var found := ""
-        if mouse.x < 1376 and mouse.y >= 84 and mouse.y < 976:
-            for node in NODES:
-                if _node_screen(node).distance_to(mouse) <= 48.0:
-                    found = str(node["id"])
-                    break
+        var found := _node_at(mouse)
         if found != hover_id:
             hover_id = found
-            queue_redraw()
+            _queue_ui_redraw()
     elif event is InputEventMouseButton:
         var click := event as InputEventMouseButton
         if not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
             return
-        if phase == "dialogue" and Rect2(28, 778, 1320, 171).has_point(click.position):
+        if phase == "dialogue" and DIALOGUE_RECT.has_point(click.position):
             _advance_dialogue()
             return
-        if click.position.x < 1376 and click.position.y > 84 and click.position.y < 976:
-            for node in NODES:
-                if _node_screen(node).distance_to(click.position) <= 49.0:
-                    _select_node(str(node["id"]))
-                    return
+        if TREE_RECT.has_point(click.position):
+            if not selected_id.is_empty() and _popup_rect().has_point(click.position):
+                return
+            _start_pan(click.position)
         elif Rect2(1376, 84, 544, 652).has_point(click.position):
             _click_ally(click.position)
 
@@ -369,7 +511,7 @@ func _append_log(message: String) -> void:
     if log_items.size() > 100:
         log_items.pop_front()
     _refresh_log()
-    queue_redraw()
+    _queue_ui_redraw()
 
 
 func _refresh_log() -> void:
@@ -414,11 +556,30 @@ func _refresh_all() -> void:
         battle_button.text = "전투 시작"
     _update_popup()
     _refresh_log()
-    queue_redraw()
+    _queue_ui_redraw()
 
 
 func _text(value: String, p: Vector2, font_size: int, color: Color = UI.TEXT) -> void:
     draw_string(FONT, p + Vector2(0, font_size), value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+
+
+func _layer_text(surface: Control, value: String, p: Vector2, font_size: int, color: Color = UI.TEXT) -> void:
+    surface.draw_string(FONT, p + Vector2(0, font_size), value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+
+
+func _layer_box(surface: Control, rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
+    surface.draw_rect(rect, fill)
+    surface.draw_rect(rect, border, false, 2.0)
+
+
+func _queue_ui_redraw() -> void:
+    queue_redraw()
+    if is_instance_valid(tree_surface):
+        tree_canvas.queue_redraw()
+    if is_instance_valid(popup_surface):
+        popup_surface.queue_redraw()
+    if is_instance_valid(dialogue_surface):
+        dialogue_surface.queue_redraw()
 
 
 func _box(rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
@@ -427,32 +588,30 @@ func _box(rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
 
 
 func _draw() -> void:
-    # Fixed 1920×1080 logical canvas, shared with every menu screen.
+    # Tree is rendered first and the fixed HUD is painted over any panned
+    # geometry extending beyond the tree region (header/help/right sidebar).
     draw_rect(Rect2(0, 0, 1920, 1080), UI.BACKGROUND)
-    _box(Rect2(0, 0, 1376, 84), UI.HEADER)
-    _box(Rect2(1376, 0, 544, 84), UI.HEADER)
-    _box(Rect2(0, 84, 1376, 892), UI.GAME_BACKGROUND)
-    _box(Rect2(0, 976, 1376, 104), UI.PANEL)
-    _box(Rect2(1376, 84, 544, 652), UI.GAME_BACKGROUND)
-    _box(Rect2(1376, 736, 544, 240), UI.PANEL)
-    _box(Rect2(1376, 976, 544, 104), UI.PANEL)
+    _box(TREE_RECT, UI.GAME_BACKGROUND)
     for x in range(0, 1376, 56):
         draw_line(Vector2(x, 84), Vector2(x, 976), UI.GRID, 1.0)
     for y in range(84, 976, 56):
         draw_line(Vector2(0, y), Vector2(1376, y), UI.GRID, 1.0)
+    _box(Rect2(0, 0, 1376, 84), UI.HEADER)
+    _box(Rect2(1376, 0, 544, 84), UI.HEADER)
+    _box(Rect2(0, 976, 1376, 104), UI.PANEL)
+    _box(Rect2(1376, 84, 544, 652), UI.GAME_BACKGROUND)
+    _box(Rect2(1376, 736, 544, 240), UI.PANEL)
+    _box(Rect2(1376, 976, 544, 104), UI.PANEL)
     _text("%02d주차" % week, Vector2(44, 16), 38)
     draw_line(Vector2(233, 17), Vector2(233, 67), UI.BORDER, 2)
     _text("%s G" % _group_digits(g), Vector2(271, 17), 37, UI.GOLD)
     var secs := int(battle_seconds)
     _text("%02d:%02d" % [secs / 60, secs % 60], Vector2(1410, 16), 36)
-    _draw_tree()
     _draw_field()
     _text("전투 정보", Vector2(1400, 747), 28)
     draw_line(Vector2(1400, 790), Vector2(1896, 790), UI.BORDER, 2)
     _text("도움말", Vector2(115, 992), 23, UI.GOLD)
     _text(_help_text(), Vector2(240, 992), 25)
-    if phase == "dialogue":
-        _draw_dialogue()
 
 
 func _group_digits(value: int) -> String:
@@ -477,22 +636,23 @@ func _help_text() -> String:
 
 
 func _draw_tree() -> void:
+    # Local coordinates, rendered exclusively inside TreeClip.clip_contents.
     var path := _selected_ancestors()
     for node in NODES:
         var parent_id := str(node["parent"])
         if parent_id.is_empty():
             continue
         var parent := _find_node(parent_id)
-        var a := _node_screen(parent)
-        var b := _node_screen(node)
+        var a := _node_tree_local(parent)
+        var b := _node_tree_local(node)
         var middle_y := (a.y + b.y) * 0.5
         var highlight := str(node["id"]) in path and parent_id in path
         var tint := UI.TEAL if highlight else UI.TREE_LINE
-        draw_polyline(PackedVector2Array([a - Vector2(0, 35), Vector2(a.x, middle_y),
+        tree_canvas.draw_polyline(PackedVector2Array([a - Vector2(0, 35), Vector2(a.x, middle_y),
             Vector2(b.x, middle_y), b + Vector2(0, 35)]), tint, 5.0 if highlight else 3.5, true)
     for node in NODES:
-        var p := _node_screen(node)
-        if p.y < 84 or p.y > 976 or p.x < 0 or p.x > 1376:
+        var p := _node_tree_local(node)
+        if p.y < -100 or p.y > TREE_RECT.size.y + 100 or p.x < -100 or p.x > TREE_RECT.size.x + 100:
             continue
         var id := str(node["id"])
         var locked := int(node["week"]) > week
@@ -503,18 +663,17 @@ func _draw_tree() -> void:
         var fill := UI.LOCKED if locked else UI.NODE_FILL
         var border := UI.TREE_LINE if locked else (UI.GOLD if focused else UI.TEAL)
         if kind == "branch":
-            draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), fill)
-            draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), border, false, 3.0)
+            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), fill)
+            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), border, false, 3.0)
         elif kind == "root":
-            draw_colored_polygon(PackedVector2Array([p+Vector2(0,-radius),p+Vector2(radius,0),
+            tree_canvas.draw_colored_polygon(PackedVector2Array([p+Vector2(0,-radius),p+Vector2(radius,0),
                 p+Vector2(0,radius),p+Vector2(-radius,0)]), fill)
         else:
-            draw_circle(p, radius, fill)
-            draw_arc(p, radius, 0.0, TAU, 48, border, 4.0, true)
+            tree_canvas.draw_circle(p, radius, fill)
+            tree_canvas.draw_arc(p, radius, 0.0, TAU, 48, border, 4.0, true)
         var symbol: String = str(node["symbol"])
-        _text(symbol, p + Vector2(-13, -22), 31, border)
-        _text(str(node["name"]), p + Vector2(-40, radius + 7), 22, UI.MUTED if locked else UI.TEXT)
-    _draw_popup()
+        _layer_text(tree_canvas, symbol, p + Vector2(-13, -22), 31, border)
+        _layer_text(tree_canvas, str(node["name"]), p + Vector2(-40, radius + 7), 22, UI.MUTED if locked else UI.TEXT)
 
 
 func _draw_popup() -> void:
@@ -523,14 +682,12 @@ func _draw_popup() -> void:
     var node := _find_node(selected_id)
     if node.is_empty():
         return
-    var p := _node_screen(node)
-    var x: float = clampf(p.x + 100, 28, 1376 - 390 - 28)
-    var y: float = clampf(p.y - 112, 104, 706 if phase == "dialogue" else 670)
-    _box(Rect2(x, y, 390, 274), UI.PANEL, UI.TEAL)
-    _text(str(node["name"]), Vector2(x + 25, y + 20), 32)
+    var panel := _popup_rect()
+    _layer_box(popup_surface, panel, UI.PANEL, UI.TEAL)
+    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(25, 20), 32)
     var details := str(node["detail"]).split("|")
     for i in range(details.size()):
-        _text(str(details[i]), Vector2(x + 25, y + 75 + i * 37), 25, UI.MUTED)
+        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(25, 75 + i * 37), 25, UI.MUTED)
 
 
 func _draw_field() -> void:
@@ -556,13 +713,14 @@ func _draw_field() -> void:
         _text("■", ally_p + Vector2(3, -2), 25, UI.BACKGROUND)
 
 
-func _draw_dialogue() -> void:
-    var area := Rect2(28, 778, 1320, 171)
-    _box(area, UI.DIALOGUE_PANEL, UI.GOLD)
-    _box(Rect2(52, 800, 112, 125), UI.NODE_FILL, UI.GOLD)
+func _draw_dialogue_overlay() -> void:
+    if phase != "dialogue":
+        return
+    _layer_box(dialogue_surface, DIALOGUE_RECT, UI.DIALOGUE_PANEL, UI.GOLD)
+    _layer_box(dialogue_surface, Rect2(52, 800, 112, 125), UI.NODE_FILL, UI.GOLD)
     var speaker := "해설" if dialogue_index == 0 or dialogue_index == 2 or dialogue_index == 4 else "작전 참모"
-    _text("≡" if speaker == "해설" else "◆", Vector2(83, 815), 48, UI.GOLD)
-    _text(speaker, Vector2(196, 793), 26, UI.GOLD)
+    _layer_text(dialogue_surface, "≡" if speaker == "해설" else "◆", Vector2(83, 815), 48, UI.GOLD)
+    _layer_text(dialogue_surface, speaker, Vector2(196, 793), 26, UI.GOLD)
     var text_lines := _dialogue_content()
-    _text(text_lines[min(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(196, 845), 28)
-    _text("Space  다음 ›", Vector2(1137, 905), 21, UI.MUTED)
+    _layer_text(dialogue_surface, text_lines[min(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(196, 845), 28)
+    _layer_text(dialogue_surface, "Space  다음 ›", Vector2(1137, 905), 21, UI.MUTED)

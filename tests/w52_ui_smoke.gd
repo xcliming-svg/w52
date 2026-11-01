@@ -4,6 +4,131 @@ extends SceneTree
 func _initialize() -> void:
     call_deferred("_run")
 
+func _mouse_button(pressed: bool, at: Vector2) -> InputEventMouseButton:
+    var event := InputEventMouseButton.new()
+    event.position = at
+    event.button_index = MOUSE_BUTTON_LEFT
+    event.pressed = pressed
+    return event
+
+
+func _mouse_motion(at: Vector2) -> InputEventMouseMotion:
+    var event := InputEventMouseMotion.new()
+    event.position = at
+    return event
+
+
+func _check_tree_pan_and_popup(game: Control) -> bool:
+    # The tree must be a child canvas of a bounded clipping Control.
+    var clip := game.get_node_or_null("TreeClip") as Control
+    if clip == null or not clip.clip_contents:
+        push_error("W52 smoke: missing clipped tree viewport")
+        return false
+    if clip.position != Vector2(0, 84) or clip.size != Vector2(1376, 892):
+        push_error("W52 smoke: clipped tree bounds incorrect")
+        return false
+    var art := clip.get_node_or_null("TreeArt") as Control
+    if art == null or art.get_parent() != clip or art.size != clip.size:
+        push_error("W52 smoke: tree artwork must be a child of clip boundary")
+        return false
+    if art.mouse_filter != Control.MOUSE_FILTER_IGNORE or clip.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+        push_error("W52 smoke: clipped tree intercepts mouse input")
+        return false
+    # Dialogue and popup render independently above the clipped artwork.
+    if game.get_node_or_null("NodeInfoLayer") == null or game.get_node_or_null("DialogueLayer") == null:
+        push_error("W52 smoke: popup/dialogue overlay layer missing")
+        return false
+    # The same popup rectangle must position its painted panel and actual Button.
+    game.call("_select_node", "guard")
+    game.call("_process", 1.0)
+    var center: Vector2 = game.call("_node_screen", game.call("_find_node", "guard"))
+    if center.distance_to(Vector2(688, 530)) > 0.1:
+        push_error("W52 smoke: focused node not centered")
+        return false
+    var popup: Rect2 = game.call("_popup_rect")
+    var deploy: Button = game.get("deploy_button")
+    if not popup.encloses(Rect2(deploy.position, deploy.size)):
+        push_error("W52 smoke: deploy button outside popup during dialogue")
+        return false
+    if popup.end.y > 754.0:
+        push_error("W52 smoke: popup collides with dialogue")
+        return false
+    # The popup surface cannot arm the background pan.
+    game.call("_gui_input", _mouse_button(true, popup.position + Vector2(28, 28)))
+    if bool(game.get("pan_armed")):
+        push_error("W52 smoke: popup click started tree pan")
+        return false
+    game.call("_set_week_intro")
+    game.call("_refresh_all")
+    for i in range(5):
+        game.call("_advance_dialogue")
+    game.call("_select_node", "guard")
+    game.call("_process", 1.0)
+    popup = game.call("_popup_rect")
+    if not popup.encloses(Rect2(deploy.position, deploy.size)):
+        push_error("W52 smoke: deploy button outside popup after dialogue")
+        return false
+    # Drag from background; release must not change selection.
+    var start := Vector2(90, 190)
+    var before: Vector2 = game.get("camera_offset")
+    game.call("_gui_input", _mouse_button(true, start))
+    game.call("_input", _mouse_motion(start + Vector2(3, 2)))
+    var under_threshold: Vector2 = game.get("camera_offset")
+    if under_threshold.distance_to(before) > 0.1:
+        push_error("W52 smoke: under-threshold motion panned tree")
+        return false
+    game.call("_input", _mouse_motion(start + Vector2(96, 82)))
+    var moved: Vector2 = game.get("camera_offset")
+    if moved.distance_to(before) < 10:
+        push_error("W52 smoke: background drag did not pan tree")
+        return false
+    game.call("_input", _mouse_button(false, start + Vector2(96, 82)))
+    if bool(game.get("pan_armed")) or str(game.get("selected_id")) != "guard":
+        push_error("W52 smoke: releasing drag did not end pan cleanly")
+        return false
+    # Long drags saturate exactly at the limits.
+    var bounds: Rect2 = game.call("_pan_limits")
+    game.call("_gui_input", _mouse_button(true, start))
+    game.call("_input", _mouse_motion(Vector2(9000, 9000)))
+    var max_offset: Vector2 = game.get("camera_offset")
+    game.call("_input", _mouse_button(false, Vector2(9000, 9000)))
+    if max_offset.distance_to(bounds.end) > 0.1:
+        push_error("W52 smoke: positive drag exceeded padding bounds")
+        return false
+    game.call("_gui_input", _mouse_button(true, start))
+    game.call("_input", _mouse_motion(Vector2(-9000, -9000)))
+    var min_offset: Vector2 = game.get("camera_offset")
+    game.call("_input", _mouse_button(false, Vector2(-9000, -9000)))
+    if min_offset.distance_to(bounds.position) > 0.1:
+        push_error("W52 smoke: negative drag exceeded padding bounds")
+        return false
+    # A focused edge node still returns to the exact center after dragging.
+    game.call("_select_node", "mobility")
+    game.call("_process", 1.0)
+    center = game.call("_node_screen", game.call("_find_node", "mobility"))
+    if center.distance_to(Vector2(688, 530)) > 0.1:
+        push_error("W52 smoke: pan clamp blocks node focus")
+        return false
+    # A short click on a visible node still selects it; dragging that node does not.
+    var command_pos: Vector2 = game.call("_node_screen", game.call("_find_node", "command"))
+    game.call("_gui_input", _mouse_button(true, command_pos))
+    game.call("_input", _mouse_motion(command_pos + Vector2(3, 0)))
+    game.call("_input", _mouse_button(false, command_pos + Vector2(3, 0)))
+    if str(game.get("selected_id")) != "command":
+        push_error("W52 smoke: short node click failed after panning")
+        return false
+    var scout_pos: Vector2 = game.call("_node_screen", game.call("_find_node", "scout"))
+    game.call("_gui_input", _mouse_button(true, scout_pos))
+    game.call("_input", _mouse_motion(scout_pos + Vector2(-45, -22)))
+    game.call("_input", _mouse_button(false, scout_pos + Vector2(-45, -22)))
+    if str(game.get("selected_id")) != "command":
+        push_error("W52 smoke: dragging a node unexpectedly changed selection")
+        return false
+    game.call("_set_week_intro")
+    game.call("_refresh_all")
+    return true
+
+
 func _run() -> void:
     var game_scene: PackedScene = load("res://scenes/game.tscn")
     if game_scene == null:
@@ -20,6 +145,10 @@ func _run() -> void:
         return
     if int(ProjectSettings.get_setting("display/window/size/viewport_height")) != 1080:
         push_error("W52 smoke: wrong logical viewport height")
+        quit(1)
+        return
+
+    if not _check_tree_pan_and_popup(game):
         quit(1)
         return
 
