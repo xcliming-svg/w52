@@ -48,7 +48,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     var popup: Rect2 = game.call("_popup_rect")
     var deploy: Button = game.get("deploy_button")
     if not popup.encloses(Rect2(deploy.position, deploy.size)):
-        push_error("W52 smoke: deploy button outside popup during dialogue")
+        push_error("W52 smoke: deploy button outside popup during dialogue: panel=%s btn=%s size=%s" % [str(popup), str(deploy.position), str(deploy.size)])
         return false
     if popup.end.y > 754.0:
         push_error("W52 smoke: popup collides with dialogue")
@@ -66,7 +66,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     game.call("_process", 1.0)
     popup = game.call("_popup_rect")
     if not popup.encloses(Rect2(deploy.position, deploy.size)):
-        push_error("W52 smoke: deploy button outside popup after dialogue")
+        push_error("W52 smoke: deploy button outside popup after dialogue: panel=%s btn=%s size=%s" % [str(popup), str(deploy.position), str(deploy.size)])
         return false
     # Drag from background; release must not change selection.
     var start := Vector2(90, 190)
