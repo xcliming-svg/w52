@@ -18,6 +18,22 @@ func _mouse_motion(at: Vector2) -> InputEventMouseMotion:
     return event
 
 
+func _assert_tree_inset(game: Control) -> bool:
+    # The tree artwork (including labels) must remain inside the 64px inner
+    # margin at the start, after user drags, and after every focus request.
+    var content: Rect2 = game.call("_tree_content_bounds")
+    var offset: Vector2 = game.get("camera_offset")
+    var visible := Rect2(content.position + offset, content.size)
+    var safe := Rect2(Vector2(64, 64), Vector2(1376 - 128, 892 - 128))
+    if visible.position.x < safe.position.x - 0.2 or visible.position.y < safe.position.y - 0.2:
+        push_error("W52 smoke: tree crossed left/top 64px inset: artwork=%s safe=%s" % [str(visible), str(safe)])
+        return false
+    if visible.end.x > safe.end.x + 0.2 or visible.end.y > safe.end.y + 0.2:
+        push_error("W52 smoke: tree crossed right/bottom 64px inset: artwork=%s safe=%s" % [str(visible), str(safe)])
+        return false
+    return true
+
+
 func _check_tree_pan_and_popup(game: Control) -> bool:
     # The tree must be a child canvas of a bounded clipping Control.
     var clip := game.get_node_or_null("TreeClip") as Control
@@ -41,9 +57,14 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     # The same popup rectangle must position its painted panel and actual Button.
     game.call("_select_node", "guard")
     game.call("_process", 1.0)
-    var center: Vector2 = game.call("_node_screen", game.call("_find_node", "guard"))
-    if center.distance_to(Vector2(688, 530)) > 0.1:
-        push_error("W52 smoke: focused node not centered")
+    # Exact centering is secondary to keeping the ENTIRE tree in the pane.
+    var guard: Dictionary = game.call("_find_node", "guard")
+    var focus_offset: Vector2 = game.get("camera_offset")
+    var expected_focus: Vector2 = game.call("_clamp_pan", Vector2(688, 446) - guard["p"])
+    if focus_offset.distance_to(expected_focus) > 0.1:
+        push_error("W52 smoke: focused node not at nearest allowed inset-safe position")
+        return false
+    if not _assert_tree_inset(game):
         return false
     var popup: Rect2 = game.call("_popup_rect")
     var deploy: Button = game.get("deploy_button")
@@ -92,6 +113,8 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         return false
     game.call("_input", _mouse_motion(start + Vector2(96, 82)))
     var moved: Vector2 = game.get("camera_offset")
+    if not _assert_tree_inset(game):
+        return false
     if moved.distance_to(before) < 10:
         push_error("W52 smoke: background drag did not pan tree")
         return false
@@ -108,6 +131,8 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if max_offset.distance_to(bounds.end) > 0.1:
         push_error("W52 smoke: positive drag exceeded padding bounds")
         return false
+    if not _assert_tree_inset(game):
+        return false
     game.call("_gui_input", _mouse_button(true, start))
     game.call("_input", _mouse_motion(Vector2(-9000, -9000)))
     var min_offset: Vector2 = game.get("camera_offset")
@@ -115,12 +140,18 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if min_offset.distance_to(bounds.position) > 0.1:
         push_error("W52 smoke: negative drag exceeded padding bounds")
         return false
-    # A focused edge node still returns to the exact center after dragging.
+    if not _assert_tree_inset(game):
+        return false
+    # Edge nodes do NOT force the opposite edge of the tree out of view.
     game.call("_select_node", "mobility")
     game.call("_process", 1.0)
-    center = game.call("_node_screen", game.call("_find_node", "mobility"))
-    if center.distance_to(Vector2(688, 530)) > 0.1:
-        push_error("W52 smoke: pan clamp blocks node focus")
+    var mobility: Dictionary = game.call("_find_node", "mobility")
+    expected_focus = game.call("_clamp_pan", Vector2(688, 446) - mobility["p"])
+    focus_offset = game.get("camera_offset")
+    if focus_offset.distance_to(expected_focus) > 0.1:
+        push_error("W52 smoke: edge focus did not clamp to safe inset")
+        return false
+    if not _assert_tree_inset(game):
         return false
     # A short click on a visible node still selects it; dragging that node does not.
     var command_pos: Vector2 = game.call("_node_screen", game.call("_find_node", "command"))
@@ -161,7 +192,7 @@ func _run() -> void:
         quit(1)
         return
 
-    if not _check_tree_pan_and_popup(game):
+    if not _assert_tree_inset(game) or not _check_tree_pan_and_popup(game):
         quit(1)
         return
 
