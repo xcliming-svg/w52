@@ -1,22 +1,31 @@
-name: Godot Web CI and Pages
+name: Godot Web - Stable and Devel
 
 on:
   push:
-    branches: [main]
+    branches: [main, devel]
 
 permissions:
   contents: read
 
 concurrency:
-  group: godot-pages
+  group: w52-pages
   cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source
+      - name: Checkout stable main
         uses: actions/checkout@v4
+        with:
+          ref: main
+          path: stable
+
+      - name: Checkout development devel
+        uses: actions/checkout@v4
+        with:
+          ref: devel
+          path: preview
 
       - name: Install Godot and export templates
         uses: chickensoft-games/setup-godot@v2
@@ -32,7 +41,6 @@ jobs:
           template_dir="$HOME/.local/share/godot/export_templates/4.7.2.stable"
           mkdir -p "$template_dir"
           if [[ ! -s "$template_dir/web_nothreads_release.zip" ]]; then
-            echo "Missing single-threaded Web export template; downloading official template package."
             curl --fail --location --retry 3 --retry-delay 3 \
               --output /tmp/godot-templates.tpz \
               "https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz"
@@ -40,34 +48,40 @@ jobs:
               "templates/web_nothreads_release.zip" -d "$template_dir"
           fi
           test -s "$template_dir/web_nothreads_release.zip"
-          ls -lh "$template_dir/web_nothreads_release.zip"
 
       - name: Verify Godot installation
         run: godot --version
 
-      - name: Import resources
-        run: godot --headless --path . --import
-
-      - name: Run scene smoke test
-        run: godot --headless --path . --quit-after 2
-
-      - name: Export web build
+      - name: Import and smoke-test stable
         run: |
-          mkdir -p build
-          godot --headless --path . --export-release "Web" build/index.html
+          godot --headless --path stable --import
+          godot --headless --path stable --quit-after 2
 
-      - name: Verify generated web files
+      - name: Import and smoke-test development
         run: |
-          test -s build/index.html
-          test -s build/index.wasm
-          test -s build/index.pck
-          touch build/.nojekyll
+          godot --headless --path preview --import
+          godot --headless --path preview --quit-after 2
 
-      - name: Keep downloadable web build
+      - name: Export stable and development web builds
+        run: |
+          mkdir -p site/devel
+          godot --headless --path stable --export-release "Web" "$GITHUB_WORKSPACE/site/index.html"
+          godot --headless --path preview --export-release "Web" "$GITHUB_WORKSPACE/site/devel/index.html"
+
+      - name: Verify both web builds
+        run: |
+          for prefix in site/index site/devel/index; do
+            test -s "${prefix}.html"
+            test -s "${prefix}.wasm"
+            test -s "${prefix}.pck"
+          done
+          touch site/.nojekyll
+
+      - name: Upload tested web builds
         uses: actions/upload-artifact@v4
         with:
           name: w52-web
-          path: build/
+          path: site/
           include-hidden-files: true
           if-no-files-found: error
 
@@ -82,11 +96,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Download tested build
+      - name: Download tested builds
         uses: actions/download-artifact@v4
         with:
           name: w52-web
-          path: build/
+          path: site/
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -94,7 +108,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: build/
+          path: site/
 
       - name: Deploy Pages
         id: deployment
