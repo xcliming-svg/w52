@@ -1,0 +1,75 @@
+name: Godot Web CI and Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: godot-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Godot and export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: '4.7.2'
+          use-dotnet: false
+          include-templates: true
+
+      - name: Verify Godot installation
+        run: godot --version
+
+      - name: Import resources
+        run: godot --headless --path . --import
+
+      - name: Run scene smoke test
+        run: godot --headless --path . --quit-after 2
+
+      - name: Export web build
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-release "Web" build/index.html
+
+      - name: Verify generated web files
+        run: |
+          test -s build/index.html
+          test -s build/index.wasm
+          test -s build/index.pck
+          touch build/.nojekyll
+
+      - name: Keep downloadable web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: w52-web
+          path: build/
+          if-no-files-found: error
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
