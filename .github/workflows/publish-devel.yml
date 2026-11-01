@@ -1,0 +1,57 @@
+name: Publish Devel Web Preview
+
+on:
+  workflow_run:
+    workflows: ["Godot Web - Stable and Devel"]
+    types: [completed]
+    branches: [devel]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: w52-pages-publish
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download build from successful devel workflow
+        uses: actions/download-artifact@v4
+        with:
+          name: w52-web
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: site/
+
+      - name: Verify stable and development files
+        run: |
+          for prefix in site/index site/devel/index; do
+            test -s "${prefix}.html"
+            test -s "${prefix}.wasm"
+            test -s "${prefix}.pck"
+          done
+          touch site/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
