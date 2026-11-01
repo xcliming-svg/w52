@@ -561,7 +561,7 @@ func _draw_dialogue() -> void:
     _box(area, UI.DIALOGUE_PANEL, UI.GOLD)
     _box(Rect2(52, 800, 112, 125), UI.NODE_FILL, UI.GOLD)
     var speaker := "해설" if dialogue_index == 0 or dialogue_index == 2 or dialogue_index == 4 else "작전 참모"
-    _text("≋" if speaker == "해설" else "◆", Vector2(83, 815), 48, UI.GOLD)
+    _text("≡" if speaker == "해설" else "◆", Vector2(83, 815), 48, UI.GOLD)
     _text(speaker, Vector2(196, 793), 26, UI.GOLD)
     var text_lines := _dialogue_content()
     _text(text_lines[min(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(196, 845), 28)
