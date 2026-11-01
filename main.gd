@@ -8,6 +8,7 @@ const DEFEAT_SCENE = preload("res://scenes/defeat_screen.tscn")
 const SETTINGS_SCENE = preload("res://scenes/settings_menu.tscn")
 const SaveStore = preload("res://scripts/save_manager.gd")
 const SettingsStore = preload("res://scripts/settings_manager.gd")
+const KOREAN_UI_FONT: Font = preload("res://assets/fonts/ui_ko_subset.woff2")
 
 enum GameState { TITLE, MAIN_MENU, PLAYING, PAUSED, DEFEAT }
 
@@ -21,6 +22,11 @@ var settings_overlay: Control
 
 
 func _ready() -> void:
+    # Web builds do not reliably provide system CJK font fallbacks.
+    # Apply the bundled Korean UI font to all child controls, including CheckButton.
+    var ui_theme := Theme.new()
+    ui_theme.default_font = KOREAN_UI_FONT
+    theme = ui_theme
     process_mode = Node.PROCESS_MODE_ALWAYS
     settings_store = SettingsStore.new()
     settings_store.name = "SettingsStore"
