@@ -16,7 +16,7 @@ var state: GameState = GameState.TITLE
 var save_store = SaveStore.new()
 var settings_store: Node
 var current_screen: Control
-var game_scene: Node2D
+var game_scene: Control
 var result_overlay: Control
 var settings_overlay: Control
 
@@ -82,7 +82,7 @@ func _start_new_game() -> void:
         return
     if not save_store.clear_save():
         push_warning("Previous game save could not be removed.")
-    _start_game(Vector2(480.0, 270.0))
+    _start_game({})
 
 
 func _continue_game() -> void:
@@ -92,20 +92,19 @@ func _continue_game() -> void:
     if data.is_empty():
         current_screen.call("set_continue_available", false)
         return
-    var saved_position: Vector2 = data["position"]
-    _start_game(saved_position)
+    _start_game(data)
 
 
-func _start_game(initial_position: Vector2) -> void:
+func _start_game(initial_state: Dictionary) -> void:
     get_tree().paused = false
     _close_settings()
     _clear_result_overlay()
     _clear_screen()
     _clear_game()
-    game_scene = GAME_SCENE.instantiate() as Node2D
+    game_scene = GAME_SCENE.instantiate() as Control
     game_scene.process_mode = Node.PROCESS_MODE_PAUSABLE
     add_child(game_scene)
-    game_scene.call("restore_position", initial_position)
+    game_scene.call("restore_state", initial_state)
     game_scene.connect("defeated", Callable(self, "_on_defeated"))
     state = GameState.PLAYING
 
@@ -135,8 +134,8 @@ func _leave_game_to_menu() -> void:
     if state != GameState.PAUSED or settings_overlay != null:
         return
     if game_scene != null:
-        var position: Vector2 = game_scene.get("player_position")
-        if not save_store.save_game(position):
+        var progress: Dictionary = game_scene.call("snapshot")
+        if not save_store.save_game(progress):
             push_warning("Progress could not be saved before returning to the menu.")
     _show_main_menu()
 

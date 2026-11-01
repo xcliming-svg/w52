@@ -28,9 +28,9 @@ func _ready() -> void:
 func _add_volume_row(column: VBoxContainer, label_text: String, bus_name: String, volume: float) -> void:
     var row := HBoxContainer.new()
     row.add_theme_constant_override("separation", 10)
-    var name_label: Label = UI.make_label(label_text, 15)
+    var name_label: Label = UI.make_label(label_text, 25)
     name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-    name_label.custom_minimum_size.x = 112.0
+    name_label.custom_minimum_size.x = 214.0
     row.add_child(name_label)
 
     var slider := HSlider.new()
@@ -38,7 +38,7 @@ func _add_volume_row(column: VBoxContainer, label_text: String, bus_name: String
     slider.max_value = 100.0
     slider.step = 1.0
     slider.value = volume * 100.0
-    slider.custom_minimum_size = Vector2(180.0, 30.0)
+    slider.custom_minimum_size = Vector2(320.0, 48.0)
     slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     row.add_child(slider)
     column.add_child(row)
