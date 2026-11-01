@@ -6,8 +6,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: godot-pages
@@ -53,7 +51,25 @@ jobs:
         with:
           name: w52-web
           path: build/
+          include-hidden-files: true
           if-no-files-found: error
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download tested build
+        uses: actions/download-artifact@v4
+        with:
+          name: w52-web
+          path: build/
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -63,13 +79,6 @@ jobs:
         with:
           path: build/
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
