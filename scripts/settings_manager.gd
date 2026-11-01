@@ -14,7 +14,10 @@ func _ready() -> void:
     _apply_volume("Master", master_volume)
     _apply_volume("Music", music_volume)
     _apply_volume("SFX", sfx_volume)
-    if not OS.has_feature("web"):
+    if OS.has_feature("web"):
+        # Browser security forbids automatic fullscreen at startup.
+        fullscreen = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+    else:
         _apply_fullscreen()
 
 
@@ -34,8 +37,7 @@ func set_volume(bus_name: String, volume: float) -> void:
 
 
 func set_fullscreen(enabled: bool) -> void:
-    if OS.has_feature("web"):
-        return
+    # On the Web, this is invoked directly from the settings button event.
     fullscreen = enabled
     _apply_fullscreen()
     _save_settings()
