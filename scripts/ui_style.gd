@@ -8,6 +8,10 @@ const PRIMARY := Color("#24465a")
 const PRIMARY_HOVER := Color("#315d75")
 const TEXT := Color("#e3edf6")
 const MUTED := Color("#90a6b9")
+# Existing gameplay placeholder colors are centralized for a future palette change.
+const GAME_BACKGROUND := Color(0.07, 0.09, 0.14)
+const PLAYER_FILL := Color(0.23, 0.86, 0.66)
+const PLAYER_OUTLINE := Color(0.85, 1.0, 0.94)
 static var custom_font: Font = null
 
 
