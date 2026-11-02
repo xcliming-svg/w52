@@ -5,34 +5,6 @@ signal defeated
 
 const UI = preload("res://scripts/ui_style.gd")
 const FONT: Font = preload("res://assets/fonts/ui_ko_subset.woff2")
-# Pixel UI Fantasy Free: selectively used art, kept separate from the global UI theme.
-const PIXEL_PANEL: Texture2D = preload("res://assets/ui/pixel_fantasy/frame.png")
-const PIXEL_SLOT: Texture2D = preload("res://assets/ui/pixel_fantasy/slot.png")
-const PIXEL_SLOT_ACTIVE: Texture2D = preload("res://assets/ui/pixel_fantasy/slot_active.png")
-const ICON_GEM: Texture2D = preload("res://assets/ui/pixel_fantasy/gem.png")
-const ICON_SCROLL: Texture2D = preload("res://assets/ui/pixel_fantasy/scroll.png")
-const ICON_SHIELD: Texture2D = preload("res://assets/ui/pixel_fantasy/shield.png")
-const ICON_ARROW: Texture2D = preload("res://assets/ui/pixel_fantasy/arrow_right.png")
-const ICON_CHEST: Texture2D = preload("res://assets/ui/pixel_fantasy/chest.png")
-const ICON_SWORD: Texture2D = preload("res://assets/ui/pixel_fantasy/sword.png")
-const ICON_LOCK: Texture2D = preload("res://assets/ui/pixel_fantasy/lock.png")
-# Worn survival terminal trim; battlefield units remain deliberately untouched.
-const PIXEL_PORTRAIT: Texture2D = preload("res://assets/ui/pixel_fantasy/portrait.png")
-const PIXEL_NAMEPLATE: Texture2D = preload("res://assets/ui/pixel_fantasy/nameplate.png")
-const PIXEL_WINDOW: Texture2D = preload("res://assets/ui/pixel_fantasy/window.png")
-const PIXEL_TOOLTIP: Texture2D = preload("res://assets/ui/pixel_fantasy/tooltip.png")
-const PIXEL_INSET: Texture2D = preload("res://assets/ui/pixel_fantasy/panel_inset.png")
-const PIXEL_PARCHMENT: Texture2D = preload("res://assets/ui/pixel_fantasy/parchment.png")
-const PIXEL_DIVIDER: Texture2D = preload("res://assets/ui/pixel_fantasy/divider.png")
-const PIXEL_RIBBON: Texture2D = preload("res://assets/ui/pixel_fantasy/ribbon.png")
-const ICON_COIN: Texture2D = preload("res://assets/ui/pixel_fantasy/coin.png")
-const ICON_QUEST: Texture2D = preload("res://assets/ui/pixel_fantasy/quest.png")
-const PIXEL_PROGRESS_BG: Texture2D = preload("res://assets/ui/pixel_fantasy/progress_bg.png")
-const PIXEL_PROGRESS_FILL: Texture2D = preload("res://assets/ui/pixel_fantasy/progress_fill.png")
-const PIXEL_SCALE := 3.0
-const NODE_FRAME_SIZE := 75.0
-const NODE_FRAME_SELECTED_SIZE := 84.0 # Exactly 1.12x, both integer pixel sizes
-const NODE_ICON_SIZE := 48.0
 const MAX_WEEK := 52
 const DEMO_BATTLE_COST := 40
 const DEMO_WEEK_REWARD := 70
@@ -83,56 +55,12 @@ var log_scroll: ScrollContainer
 var log_column: VBoxContainer
 var tree_surface: Control
 var tree_canvas: Control
-var pixel_panel_border: StyleBoxTexture
-var pixel_slot_border: StyleBoxTexture
-var pixel_slot_border_active: StyleBoxTexture
-var pixel_window_border: StyleBoxTexture
-var pixel_portrait_border: StyleBoxTexture
-var pixel_nameplate_border: StyleBoxTexture
-var pixel_tooltip_border: StyleBoxTexture
-var pixel_inset_border: StyleBoxTexture
-var pixel_parchment_border: StyleBoxTexture
-var pixel_divider_border: StyleBoxTexture
-var pixel_ribbon_border: StyleBoxTexture
-var pixel_progress_bg: StyleBoxTexture
-var pixel_progress_fill: StyleBoxTexture
-var pixel_coin: Texture2D
-var pixel_quest: Texture2D
-var pixel_icons: Dictionary
 var popup_surface: Control
 var dialogue_surface: Control
 
 
 func _ready() -> void:
     mouse_filter = Control.MOUSE_FILTER_STOP
-    # 3x source pixels in the 1920x1080 layout are 2x at the 1280x720 default window.
-    # Do not change the game resolution, transforms, input geometry, or Korean font.
-    texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-    pixel_panel_border = _pixel_style_box(PIXEL_PANEL, 6, false)
-    pixel_slot_border = _pixel_style_box(PIXEL_SLOT, 3, true)
-    pixel_slot_border_active = _pixel_style_box(PIXEL_SLOT_ACTIVE, 3, true)
-    pixel_window_border = _pixel_slices(PIXEL_WINDOW, Vector4i(6, 19, 6, 6), false)
-    pixel_portrait_border = _pixel_style_box(PIXEL_PORTRAIT, 9, false)
-    pixel_nameplate_border = _pixel_slices(PIXEL_NAMEPLATE, Vector4i(5, 4, 5, 4))
-    pixel_tooltip_border = _pixel_style_box(PIXEL_TOOLTIP, 3, false)
-    pixel_inset_border = _pixel_style_box(PIXEL_INSET, 5, false)
-    pixel_parchment_border = _pixel_slices(PIXEL_PARCHMENT, Vector4i(6, 9, 6, 9))
-    pixel_divider_border = _pixel_slices(PIXEL_DIVIDER, Vector4i(8, 0, 8, 0))
-    pixel_ribbon_border = _pixel_slices(PIXEL_RIBBON, Vector4i(9, 3, 9, 5))
-    pixel_progress_bg = _pixel_slices(PIXEL_PROGRESS_BG, Vector4i(4, 3, 4, 3))
-    pixel_progress_fill = _pixel_slices(PIXEL_PROGRESS_FILL, Vector4i(5, 2, 5, 2))
-    pixel_coin = _pixel_texture(ICON_COIN)
-    pixel_quest = _pixel_texture(ICON_QUEST)
-    pixel_icons = {
-        "root": _pixel_texture(ICON_GEM),
-        "command": _pixel_texture(ICON_SCROLL),
-        "guard": _pixel_texture(ICON_SHIELD),
-        "scout": _pixel_texture(ICON_ARROW),
-        "mobility": _pixel_texture(ICON_ARROW),
-        "supply": _pixel_texture(ICON_CHEST),
-        "elite": _pixel_texture(ICON_SWORD),
-        "locked": _pixel_texture(ICON_LOCK),
-    }
     _create_controls()
     _set_week_intro()
     _refresh_all()
@@ -253,7 +181,6 @@ func _create_controls() -> void:
     log_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
     log_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
     add_child(log_scroll)
-    UI.decorate_log_scroll(log_scroll.get_v_scroll_bar())
     log_column = VBoxContainer.new()
     log_column.add_theme_constant_override("separation", 12)
     log_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -306,8 +233,7 @@ func _node_visual_rect(node: Dictionary) -> Rect2:
     # A recognizable unit of the tree is one entire node plus its name label.
     # Use its largest hover/selection icon size and the measured label width.
     var p: Vector2 = node["p"]
-    # Account for the nearest 3px snap when guaranteeing a complete visible node.
-    var radius := maxf(38.0 * 1.12, NODE_FRAME_SELECTED_SIZE * 0.5 + PIXEL_SCALE * 0.5)
+    var radius := 38.0 * 1.12
     var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
     var left := minf(p.x - radius, p.x - 40.0)
     var right := maxf(p.x + radius, p.x - 40.0 + label_width)
@@ -629,15 +555,11 @@ func _refresh_all() -> void:
     speed_one.button_pressed = speed == 1
     speed_two.button_pressed = speed == 2
     speed_one.add_theme_color_override("font_color", UI.BACKGROUND if speed == 1 else UI.TEXT)
-    speed_one.add_theme_color_override("font_hover_color", UI.BACKGROUND)
-    speed_one.add_theme_stylebox_override("normal", UI.style_speed_tab(speed == 1))
-    speed_one.add_theme_stylebox_override("hover", UI.style_speed_hover())
-    speed_one.add_theme_stylebox_override("pressed", UI.style_speed_tab(speed == 1))
+    speed_one.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD if speed == 1 else UI.PANEL))
+    speed_one.add_theme_stylebox_override("pressed", UI._button_style(UI.GOLD if speed == 1 else UI.PANEL))
     speed_two.add_theme_color_override("font_color", UI.BACKGROUND if speed == 2 else UI.TEXT)
-    speed_two.add_theme_color_override("font_hover_color", UI.BACKGROUND)
-    speed_two.add_theme_stylebox_override("normal", UI.style_speed_tab(speed == 2))
-    speed_two.add_theme_stylebox_override("hover", UI.style_speed_hover())
-    speed_two.add_theme_stylebox_override("pressed", UI.style_speed_tab(speed == 2))
+    speed_two.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
+    speed_two.add_theme_stylebox_override("pressed", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
     battle_button.disabled = phase == "battle" or (phase == "result" and week == MAX_WEEK)
     if phase == "battle":
         battle_button.text = "전투 진행 중"
@@ -662,7 +584,7 @@ func _layer_text(surface: Control, value: String, p: Vector2, font_size: int, co
 
 func _layer_box(surface: Control, rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
     surface.draw_rect(rect, fill)
-    surface.draw_style_box(pixel_panel_border, _pixel_rect(rect))
+    surface.draw_rect(rect, border, false, 2.0)
 
 
 func _queue_ui_redraw() -> void:
@@ -676,93 +598,35 @@ func _queue_ui_redraw() -> void:
 
 
 func _box(rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
-    # Battlefield cell borders remain thin and color-coded.
     draw_rect(rect, fill)
     draw_rect(rect, border, false, 2.0)
-
-
-func _pixel_texture(source: Texture2D) -> Texture2D:
-    # Copy imported source pixels before enlarging; never resize shared resources.
-    var image: Image = source.get_image().duplicate() as Image
-    image.resize(image.get_width() * 3, image.get_height() * 3, Image.INTERPOLATE_NEAREST)
-    return ImageTexture.create_from_image(image)
-
-
-func _pixel_style_box(source: Texture2D, source_margin: int, with_center: bool) -> StyleBoxTexture:
-    var style := StyleBoxTexture.new()
-    style.texture = _pixel_texture(source)
-    style.set_texture_margin_all(float(source_margin) * PIXEL_SCALE)
-    style.draw_center = with_center
-    style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
-    style.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
-    return style
-
-
-func _pixel_slices(source: Texture2D, margins: Vector4i, center: bool = true) -> StyleBoxTexture:
-    var style := StyleBoxTexture.new()
-    style.texture = _pixel_texture(source)
-    style.texture_margin_left = margins.x * PIXEL_SCALE
-    style.texture_margin_top = margins.y * PIXEL_SCALE
-    style.texture_margin_right = margins.z * PIXEL_SCALE
-    style.texture_margin_bottom = margins.w * PIXEL_SCALE
-    style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
-    style.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
-    style.draw_center = center
-    return style
-
-
-func _pixel_rect(rect: Rect2) -> Rect2:
-    # Keep border endpoints on exact 3px logical-pixel grid.
-    var start := (rect.position / PIXEL_SCALE).round() * PIXEL_SCALE
-    var finish := (rect.end / PIXEL_SCALE).round() * PIXEL_SCALE
-    return Rect2(start, finish - start)
-
-
-func _framed_box(rect: Rect2, fill: Color) -> void:
-    draw_rect(rect, fill)
-    draw_style_box(pixel_panel_border, _pixel_rect(rect))
 
 
 func _draw() -> void:
     # Fixed HUD background is drawn at the root; TreeArt renders in a clipped
     # child Control and can never paint into the battlefield or other panels.
     draw_rect(Rect2(0, 0, 1920, 1080), UI.BACKGROUND)
-    _framed_box(TREE_RECT, UI.GAME_BACKGROUND)
+    _box(TREE_RECT, UI.GAME_BACKGROUND)
     for x in range(0, 1376, 56):
         draw_line(Vector2(x, 84), Vector2(x, 976), UI.GRID, 1.0)
     for y in range(84, 976, 56):
         draw_line(Vector2(0, y), Vector2(1376, y), UI.GRID, 1.0)
-    _framed_box(Rect2(0, 0, 1376, 84), UI.HEADER)
-    _framed_box(Rect2(1376, 0, 544, 84), UI.HEADER)
-    _framed_box(Rect2(0, 976, 1376, 104), UI.PANEL)
-    _framed_box(Rect2(1376, 84, 544, 652), UI.GAME_BACKGROUND)
-    _framed_box(Rect2(1376, 736, 544, 240), UI.PANEL)
-    _framed_box(Rect2(1376, 976, 544, 104), UI.PANEL)
+    _box(Rect2(0, 0, 1376, 84), UI.HEADER)
+    _box(Rect2(1376, 0, 544, 84), UI.HEADER)
+    _box(Rect2(0, 976, 1376, 104), UI.PANEL)
+    _box(Rect2(1376, 84, 544, 652), UI.GAME_BACKGROUND)
+    _box(Rect2(1376, 736, 544, 240), UI.PANEL)
+    _box(Rect2(1376, 976, 544, 104), UI.PANEL)
     _text("%02d주차" % week, Vector2(44, 16), 38)
     draw_line(Vector2(233, 17), Vector2(233, 67), UI.BORDER, 2)
-    draw_texture(pixel_coin, Vector2(264, 18))
-    _text("%s G" % _group_digits(g), Vector2(320, 17), 37, UI.GOLD)
-    # Week 1 starts empty; finishing week 52 fills the survival timeline.
-    var survived := (week if phase == "result" else week - 1)
-    var progress := float(survived) / float(MAX_WEEK)
-    var progress_bg := Rect2(710, 27, 588, 30)
-    draw_style_box(pixel_progress_bg, _pixel_rect(progress_bg))
-    if survived > 0:
-        var fill_width := maxf(33.0, 588.0 * progress)
-        draw_style_box(pixel_progress_fill, _pixel_rect(Rect2(710, 27, fill_width, 30)))
+    _text("%s G" % _group_digits(g), Vector2(271, 17), 37, UI.GOLD)
     var secs := int(battle_seconds)
     _text("%02d:%02d" % [secs / 60, secs % 60], Vector2(1410, 16), 36)
     _draw_field()
-    # Recessed battle-report terminal; ScrollContainer remains the only scroll area.
-    draw_style_box(pixel_inset_border, _pixel_rect(Rect2(1393, 792, 504, 177)))
-    draw_texture(pixel_quest, Vector2(1401, 741))
-    _text("전투 정보", Vector2(1455, 747), 28)
-    draw_style_box(pixel_divider_border, _pixel_rect(Rect2(1401, 784, 492, 21)))
-    # Survival field manual. Dark text contrasts with the source parchment.
-    draw_style_box(pixel_parchment_border, _pixel_rect(Rect2(240, 984, 992, 81)))
-    draw_style_box(pixel_ribbon_border, _pixel_rect(Rect2(104, 987, 132, 63)))
-    _text("도움말", Vector2(121, 998), 23, UI.TEXT)
-    _text(_help_text(), Vector2(270, 1007), 25, Color("#33241c"))
+    _text("전투 정보", Vector2(1400, 747), 28)
+    draw_line(Vector2(1400, 790), Vector2(1896, 790), UI.BORDER, 2)
+    _text("도움말", Vector2(115, 992), 23, UI.GOLD)
+    _text(_help_text(), Vector2(240, 992), 25)
 
 
 func _group_digits(value: int) -> String:
@@ -810,21 +674,20 @@ func _draw_tree() -> void:
         var focused := id == selected_id
         var hovered := id == hover_id
         var radius := 38.0 * (1.12 if focused or hovered else 1.0)
-        # 75px normal / 84px selected makes the 1.12x effect pixel-exact.
-        var frame_size := NODE_FRAME_SELECTED_SIZE if focused or hovered else NODE_FRAME_SIZE
-        var frame_rect := _pixel_rect(Rect2(p - Vector2.ONE * (frame_size * 0.5),
-            Vector2.ONE * frame_size))
-        tree_canvas.draw_style_box(
-            pixel_slot_border_active if focused or hovered else pixel_slot_border, frame_rect)
-        # A locked node shows a lock. The drone has no matching icon in the free pack,
-        # so keep its existing placeholder symbol rather than mislabel its function.
-        var icon: Texture2D = pixel_icons.get("locked" if locked else id) as Texture2D
-        if icon != null:
-            var icon_pos := (frame_rect.position + Vector2.ONE * ((frame_size - NODE_ICON_SIZE) * 0.5))
-            icon_pos = (icon_pos / PIXEL_SCALE).round() * PIXEL_SCALE
-            tree_canvas.draw_texture(icon, icon_pos)
+        var kind := str(node["kind"])
+        var fill := UI.LOCKED if locked else UI.NODE_FILL
+        var border := UI.TREE_LINE if locked else (UI.GOLD if focused else UI.TEAL)
+        if kind == "branch":
+            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), fill)
+            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), border, false, 3.0)
+        elif kind == "root":
+            tree_canvas.draw_colored_polygon(PackedVector2Array([p+Vector2(0,-radius),p+Vector2(radius,0),
+                p+Vector2(0,radius),p+Vector2(-radius,0)]), fill)
         else:
-            _layer_text(tree_canvas, str(node["symbol"]), p + Vector2(-13, -22), 31, UI.GOLD)
+            tree_canvas.draw_circle(p, radius, fill)
+            tree_canvas.draw_arc(p, radius, 0.0, TAU, 48, border, 4.0, true)
+        var symbol: String = str(node["symbol"])
+        _layer_text(tree_canvas, symbol, p + Vector2(-13, -22), 31, border)
         _layer_text(tree_canvas, str(node["name"]), p + Vector2(-40, radius + 7), 22, UI.MUTED if locked else UI.TEXT)
 
 
@@ -835,15 +698,11 @@ func _draw_popup() -> void:
     if node.is_empty():
         return
     var panel := _popup_rect()
-    popup_surface.draw_rect(panel, UI.PANEL)
-    popup_surface.draw_style_box(pixel_window_border, _pixel_rect(panel))
-    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(25, 15), 32)
-    var details_rect := Rect2(panel.position + Vector2(15, 74), Vector2(360, 109))
-    popup_surface.draw_rect(details_rect, UI.PANEL.darkened(0.18))
-    popup_surface.draw_style_box(pixel_tooltip_border, _pixel_rect(details_rect))
+    _layer_box(popup_surface, panel, UI.PANEL, UI.TEAL)
+    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(25, 20), 32)
     var details := str(node["detail"]).split("|")
     for i in range(details.size()):
-        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(25, 92 + i * 37), 25, UI.MUTED)
+        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(25, 75 + i * 37), 25, UI.MUTED)
 
 
 func _draw_field() -> void:
@@ -873,14 +732,10 @@ func _draw_dialogue_overlay() -> void:
     if phase != "dialogue":
         return
     _layer_box(dialogue_surface, DIALOGUE_RECT, UI.DIALOGUE_PANEL, UI.GOLD)
-    var portrait_rect := Rect2(52, 800, 112, 125)
-    dialogue_surface.draw_rect(portrait_rect, UI.NODE_FILL)
-    dialogue_surface.draw_style_box(pixel_portrait_border, _pixel_rect(portrait_rect))
-    # A placeholder radio-operator glyph: never pretend it is a character portrait.
+    _layer_box(dialogue_surface, Rect2(52, 800, 112, 125), UI.NODE_FILL, UI.GOLD)
     var speaker := "해설" if dialogue_index == 0 or dialogue_index == 2 or dialogue_index == 4 else "작전 참모"
     _layer_text(dialogue_surface, "≡" if speaker == "해설" else "◆", Vector2(83, 815), 48, UI.GOLD)
-    dialogue_surface.draw_style_box(pixel_nameplate_border, _pixel_rect(Rect2(182, 789, 266, 54)))
-    _layer_text(dialogue_surface, speaker, Vector2(205, 799), 26, UI.TEXT)
+    _layer_text(dialogue_surface, speaker, Vector2(196, 793), 26, UI.GOLD)
     var text_lines := _dialogue_content()
     _layer_text(dialogue_surface, text_lines[min(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(196, 845), 28)
     _layer_text(dialogue_surface, "Space  다음 ›", Vector2(1137, 905), 21, UI.MUTED)

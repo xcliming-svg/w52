@@ -12,8 +12,7 @@ func _ready() -> void:
     _add_volume_row(column, "음악 음량", "Music", float(settings_store.get("music_volume")))
     _add_volume_row(column, "효과음 음량", "SFX", float(settings_store.get("sfx_volume")))
 
-    var fullscreen_toggle := CheckBox.new()
-    UI.decorate_checkbox(fullscreen_toggle)
+    var fullscreen_toggle := CheckButton.new()
     fullscreen_toggle.text = "전체화면"
     fullscreen_toggle.button_pressed = bool(settings_store.get("fullscreen"))
     fullscreen_toggle.add_theme_color_override("font_color", UI.TEXT)
@@ -40,7 +39,6 @@ func _add_volume_row(column: VBoxContainer, label_text: String, bus_name: String
     slider.step = 1.0
     slider.value = volume * 100.0
     slider.custom_minimum_size = Vector2(320.0, 48.0)
-    UI.decorate_slider(slider)
     slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     row.add_child(slider)
     column.add_child(row)
