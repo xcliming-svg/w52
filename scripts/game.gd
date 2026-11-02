@@ -309,7 +309,7 @@ func _update_popup() -> void:
 
 func _process(delta: float) -> void:
     if camera_offset.distance_squared_to(camera_target) > 0.5:
-        camera_offset = camera_offset.lerp(camera_target, minf(1.0, delta * 9.0))
+        camera_offset = _clamp_pan(camera_offset.lerp(camera_target, minf(1.0, delta * 9.0)))
         _update_popup()
         _queue_ui_redraw()
     if phase == "battle":
