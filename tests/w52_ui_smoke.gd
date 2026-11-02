@@ -262,6 +262,20 @@ func _check_pixel_survival_ui(game: Control) -> bool:
     if not (speed.get_theme_stylebox("normal") is StyleBoxTexture):
         push_error("W52 art smoke: speed selector not using pixel tabs")
         return false
+    # Repeated speed tab updates must use stable cached textures, not
+    # resize the imported source exponentially (an earlier silent CI error).
+    var tab_source_before: Vector2 = UI.TAB_ON.get_image().get_size()
+    for n in range(32):
+        game.call("_set_speed", 1 if n % 2 == 0 else 2)
+    game.call("_set_speed", 1)
+    var tab_source_after: Vector2 = UI.TAB_ON.get_image().get_size()
+    if tab_source_after != tab_source_before or tab_source_before != Vector2(12, 12):
+        push_error("W52 art smoke: source tab image changed during repeated redraws")
+        return false
+    var normal_tab := speed.get_theme_stylebox("normal") as StyleBoxTexture
+    if normal_tab == null or normal_tab.texture.get_size() != Vector2(36, 36):
+        push_error("W52 art smoke: speed tab scale is not stable 3x")
+        return false
     var slider := HSlider.new()
     UI.decorate_slider(slider)
     if not (slider.get_theme_stylebox("slider") is StyleBoxTexture):

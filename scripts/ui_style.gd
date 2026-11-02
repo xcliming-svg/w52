@@ -56,6 +56,8 @@ const TAB_ON: Texture2D = preload("res://assets/ui/pixel_fantasy/tab_selected.pn
 const TAB_OFF: Texture2D = preload("res://assets/ui/pixel_fantasy/tab_unselected.png")
 const TAB_HOVER: Texture2D = preload("res://assets/ui/pixel_fantasy/tab_hover.png")
 const PIXEL_FOCUS: Texture2D = preload("res://assets/ui/pixel_fantasy/focus.png")
+# Shared atlas cache prevents repeated 3x resizing during every UI refresh.
+static var _scaled_sprite_cache: Dictionary = {}
 
 
 static func create_layout(root: Control, heading: String, description: String = "", dim_background: bool = false) -> VBoxContainer:
@@ -123,14 +125,16 @@ static func _panel_style() -> StyleBoxTexture:
 
 
 static func _pixel_box(source: Texture2D, margin_px: int, content: Vector2, center_color: Color = Color.TRANSPARENT) -> StyleBoxTexture:
-    var image: Image = source.get_image()
+    var style := StyleBoxTexture.new()
     if center_color.a > 0.0:
+        var image: Image = source.get_image().duplicate() as Image
         var inset := margin_px
         image.fill_rect(Rect2i(inset, inset,
             image.get_width() - inset * 2, image.get_height() - inset * 2), center_color)
-    image.resize(image.get_width() * PIXEL_SCALE, image.get_height() * PIXEL_SCALE, Image.INTERPOLATE_NEAREST)
-    var style := StyleBoxTexture.new()
-    style.texture = ImageTexture.create_from_image(image)
+        image.resize(image.get_width() * PIXEL_SCALE, image.get_height() * PIXEL_SCALE, Image.INTERPOLATE_NEAREST)
+        style.texture = ImageTexture.create_from_image(image)
+    else:
+        style.texture = _pixel_icon(source)
     style.set_texture_margin_all(float(margin_px * PIXEL_SCALE))
     style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
     style.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
@@ -184,9 +188,13 @@ static func decorate_log_scroll(scroll: VScrollBar) -> void:
 
 
 static func _pixel_icon(source: Texture2D) -> Texture2D:
-    var image: Image = source.get_image()
+    if _scaled_sprite_cache.has(source):
+        return _scaled_sprite_cache[source] as Texture2D
+    var image: Image = source.get_image().duplicate() as Image
     image.resize(image.get_width() * PIXEL_SCALE, image.get_height() * PIXEL_SCALE, Image.INTERPOLATE_NEAREST)
-    return ImageTexture.create_from_image(image)
+    var result: Texture2D = ImageTexture.create_from_image(image)
+    _scaled_sprite_cache[source] = result
+    return result
 
 
 static func _sliced_box(source: Texture2D, margins: Vector4i) -> StyleBoxTexture:
