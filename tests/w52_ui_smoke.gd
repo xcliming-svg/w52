@@ -18,18 +18,24 @@ func _mouse_motion(at: Vector2) -> InputEventMouseMotion:
     return event
 
 
-func _assert_tree_inset(game: Control) -> bool:
-    # The tree artwork (including labels) must remain inside the 64px inner
-    # margin at the start, after user drags, and after every focus request.
+func _assert_tree_pan_bounds(game: Control) -> bool:
+    # At any valid camera offset, at least the far edge of the artwork
+    # remains 64 px INSIDE the viewport. The opposite side may be clipped.
     var content: Rect2 = game.call("_tree_content_bounds")
     var offset: Vector2 = game.get("camera_offset")
-    var visible := Rect2(content.position + offset, content.size)
-    var safe := Rect2(Vector2(64, 64), Vector2(1376 - 128, 892 - 128))
-    if visible.position.x < safe.position.x - 0.2 or visible.position.y < safe.position.y - 0.2:
-        push_error("W52 smoke: tree crossed left/top 64px inset: artwork=%s safe=%s" % [str(visible), str(safe)])
+    var bounds: Rect2 = game.call("_pan_limits")
+    if offset.x < bounds.position.x - 0.2 or offset.x > bounds.end.x + 0.2:
+        push_error("W52 smoke: tree camera exceeded horizontal drag bounds")
         return false
-    if visible.end.x > safe.end.x + 0.2 or visible.end.y > safe.end.y + 0.2:
-        push_error("W52 smoke: tree crossed right/bottom 64px inset: artwork=%s safe=%s" % [str(visible), str(safe)])
+    if offset.y < bounds.position.y - 0.2 or offset.y > bounds.end.y + 0.2:
+        push_error("W52 smoke: tree camera exceeded vertical drag bounds")
+        return false
+    var visible := Rect2(content.position + offset, content.size)
+    if visible.end.x < 64.0 - 0.2 or visible.position.x > 1312.0 + 0.2:
+        push_error("W52 smoke: horizontal end of tree disappeared beyond 64px margin")
+        return false
+    if visible.end.y < 64.0 - 0.2 or visible.position.y > 828.0 + 0.2:
+        push_error("W52 smoke: vertical end of tree disappeared beyond 64px margin")
         return false
     return true
 
@@ -64,7 +70,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if focus_offset.distance_to(expected_focus) > 0.1:
         push_error("W52 smoke: focused node not at nearest allowed inset-safe position")
         return false
-    if not _assert_tree_inset(game):
+    if not _assert_tree_pan_bounds(game):
         return false
     var popup: Rect2 = game.call("_popup_rect")
     var deploy: Button = game.get("deploy_button")
@@ -113,7 +119,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         return false
     game.call("_input", _mouse_motion(start + Vector2(96, 82)))
     var moved: Vector2 = game.get("camera_offset")
-    if not _assert_tree_inset(game):
+    if not _assert_tree_pan_bounds(game):
         return false
     if moved.distance_to(before) < 10:
         push_error("W52 smoke: background drag did not pan tree")
@@ -131,7 +137,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if max_offset.distance_to(bounds.end) > 0.1:
         push_error("W52 smoke: positive drag exceeded padding bounds")
         return false
-    if not _assert_tree_inset(game):
+    if not _assert_tree_pan_bounds(game):
         return false
     game.call("_gui_input", _mouse_button(true, start))
     game.call("_input", _mouse_motion(Vector2(-9000, -9000)))
@@ -140,18 +146,45 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if min_offset.distance_to(bounds.position) > 0.1:
         push_error("W52 smoke: negative drag exceeded padding bounds")
         return false
-    if not _assert_tree_inset(game):
+    if not _assert_tree_pan_bounds(game):
         return false
-    # Edge nodes do NOT force the opposite edge of the tree out of view.
+    # Check exact saturation: the far end stops 64px from each pane edge.
+    var tree_content: Rect2 = game.call("_tree_content_bounds")
+    if (tree_content.position + max_offset).distance_to(Vector2(1312, 828)) > 0.2:
+        push_error("W52 smoke: upper-right drag limit did not leave 64px margin")
+        return false
+    if (tree_content.end + min_offset).distance_to(Vector2(64, 64)) > 0.2:
+        push_error("W52 smoke: lower-left drag limit did not leave 64px margin")
+        return false
+    if tree_content.position.x + min_offset.x >= 0.0:
+        push_error("W52 smoke: tree cannot pan freely; distant branches should be clipped")
+        return false
+    # Edge node focus may clip distant branches, but keeps the selected node centered.
     game.call("_select_node", "mobility")
     game.call("_process", 1.0)
     var mobility: Dictionary = game.call("_find_node", "mobility")
     expected_focus = game.call("_clamp_pan", Vector2(688, 446) - mobility["p"])
     focus_offset = game.get("camera_offset")
     if focus_offset.distance_to(expected_focus) > 0.1:
-        push_error("W52 smoke: edge focus did not clamp to safe inset")
+        push_error("W52 smoke: edge focus did not honor camera range")
         return false
-    if not _assert_tree_inset(game):
+    if not _assert_tree_pan_bounds(game):
+        return false
+    # A focused center node must remain centered even when distant branches
+    # leave the viewport. The 64px padding is ONLY the pan end-stop.
+    game.call("_select_node", "root")
+    game.call("_process", 1.0)
+    var root_node: Dictionary = game.call("_find_node", "root")
+    var root_screen: Vector2 = game.call("_node_screen", root_node)
+    if root_screen.distance_to(Vector2(688, 530)) > 0.1:
+        push_error("W52 smoke: central focus blocked by edge-only padding rule")
+        return false
+    var root_art: Rect2 = game.call("_tree_content_bounds")
+    var root_camera: Vector2 = game.get("camera_offset")
+    if root_art.position.y + root_camera.y >= 0.0:
+        push_error("W52 smoke: central focus should allow distant tree nodes outside viewport")
+        return false
+    if not _assert_tree_pan_bounds(game):
         return false
     # A short click on a visible node still selects it; dragging that node does not.
     var command_pos: Vector2 = game.call("_node_screen", game.call("_find_node", "command"))
@@ -192,7 +225,7 @@ func _run() -> void:
         quit(1)
         return
 
-    if not _assert_tree_inset(game) or not _check_tree_pan_and_popup(game):
+    if not _assert_tree_pan_bounds(game) or not _check_tree_pan_and_popup(game):
         quit(1)
         return
 

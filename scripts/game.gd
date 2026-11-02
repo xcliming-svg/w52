@@ -249,20 +249,14 @@ func _tree_content_bounds() -> Rect2:
 
 
 func _pan_limits() -> Rect2:
-    # A 64 px INSET inside the tree pane, measured from the OUTER artwork
-    # bounds. Never let dragging or node focusing move any tree content across
-    # the inset boundary. When the tree fits, every icon/label stays visible.
+    # Allow the tree to scroll through the pane. At the far-left pan limit,
+    # the artwork's RIGHTMOST pixel remains 64 px inside the left edge.
+    # At the far-right pan limit, its LEFTMOST pixel remains 64 px inside
+    # the right edge. Apply the same rule to the upper/lower limits.
+    # Other nodes can pass outside the viewport; TreeClip masks them.
     var content := _tree_content_bounds()
-    var low := Vector2.ONE * TREE_PAN_PADDING - content.position
-    var high := TREE_RECT.size - Vector2.ONE * TREE_PAN_PADDING - content.end
-    # A future oversize tree cannot fit without zoom; pin that axis centered
-    # rather than returning an inverted clamp interval.
-    if low.x > high.x:
-        low.x = (low.x + high.x) * 0.5
-        high.x = low.x
-    if low.y > high.y:
-        low.y = (low.y + high.y) * 0.5
-        high.y = low.y
+    var low := Vector2.ONE * TREE_PAN_PADDING - content.end
+    var high := TREE_RECT.size - Vector2.ONE * TREE_PAN_PADDING - content.position
     return Rect2(low, high - low)
 
 
