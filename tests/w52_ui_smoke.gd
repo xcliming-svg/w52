@@ -167,6 +167,19 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if not _has_readable_node(game, far):
         push_error("W52 smoke: giant negative pan lost all recognizable content")
         return false
+    # Sample many arbitrary pan targets, not only screen corners.
+    # Reprojecting any valid position must not move the camera again.
+    for gx in range(-3, 4):
+        for gy in range(-3, 4):
+            var requested := Vector2(gx * 1400, gy * 1000)
+            var clamped: Vector2 = game.call("_clamp_pan", requested)
+            if not _has_readable_node(game, clamped):
+                push_error("W52 smoke: arbitrary pan obscured every complete node")
+                return false
+            var again: Vector2 = game.call("_clamp_pan", clamped)
+            if again.distance_to(clamped) > 0.1:
+                push_error("W52 smoke: readable camera region unstable under reprojection")
+                return false
     # Every skill node, including extremes of a large branching tree, can
     # focus to the center without losing all identifiable on-screen content.
     for node_id in TREE_NODE_IDS:
@@ -304,6 +317,19 @@ func _run() -> void:
         return
 
     var store = load("res://scripts/save_manager.gd").new()
+    # Removed movement-demo save format must not be loaded as W52 progress.
+    var legacy_save := ConfigFile.new()
+    legacy_save.set_value("session", "version", 1)
+    legacy_save.set_value("session", "x", 480.0)
+    legacy_save.set_value("session", "y", 270.0)
+    if legacy_save.save("user://game_save.cfg") != OK:
+        push_error("W52 smoke: could not create legacy-format fixture")
+        quit(1)
+        return
+    if not store.load_game().is_empty():
+        push_error("W52 smoke: legacy movement-demo save was incorrectly accepted")
+        quit(1)
+        return
     var saved: Dictionary = game.call("snapshot")
     if not store.save_game(saved):
         push_error("W52 smoke: save failed")

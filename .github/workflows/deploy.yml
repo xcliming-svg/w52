@@ -62,7 +62,13 @@ jobs:
           godot --headless --path preview --import
           godot --headless --path preview --quit-after 2
 
-      - name: Headless smoke-test W52 UI interactions
+      - name: Headless smoke-test stable W52 UI
+        run: |
+          if [[ -f stable/tests/w52_ui_smoke.gd ]]; then
+            godot --headless --path stable --script res://tests/w52_ui_smoke.gd
+          fi
+
+      - name: Headless smoke-test development W52 UI
         run: |
           if [[ -f preview/tests/w52_ui_smoke.gd ]]; then
             godot --headless --path preview --script res://tests/w52_ui_smoke.gd

@@ -14,16 +14,6 @@ func load_game() -> Dictionary:
     if config.load(SAVE_PATH) != OK:
         return {}
     var version: int = int(config.get_value("session", "version", -1))
-    if version == 1:
-        var x: Variant = config.get_value("session", "x", null)
-        var y: Variant = config.get_value("session", "y", null)
-        if not (x is int or x is float) or not (y is int or y is float):
-            return {}
-        if is_nan(float(x)) or is_nan(float(y)):
-            return {}
-        if float(x) < 0 or float(x) > 960 or float(y) < 0 or float(y) > 540:
-            return {}
-        return {"week":1, "g":160, "phase":"dialogue", "dialogue":0, "help":1, "placements":[]}
     if version != SAVE_VERSION:
         return {}
     var week: Variant = config.get_value("session", "week", null)
