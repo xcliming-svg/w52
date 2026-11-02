@@ -18,24 +18,26 @@ func _mouse_motion(at: Vector2) -> InputEventMouseMotion:
     return event
 
 
-func _assert_tree_pan_bounds(game: Control) -> bool:
-    # At any valid camera offset, at least the far edge of the artwork
-    # remains 64 px INSIDE the viewport. The opposite side may be clipped.
-    var content: Rect2 = game.call("_tree_content_bounds")
+const TREE_NODE_IDS := ["root", "command", "guard", "scout", "mobility", "supply", "drone", "elite"]
+
+
+func _has_readable_node(game: Control, camera: Vector2) -> bool:
+    # Independent validation: an entire icon+name footprint must fit inside
+    # the unobscured part of the tree panel; a line/sliver is insufficient.
+    var visible: Rect2 = game.call("_readable_tree_area")
+    for id in TREE_NODE_IDS:
+        var node: Dictionary = game.call("_find_node", id)
+        var bounds: Rect2 = game.call("_node_visual_rect", node)
+        var on_screen := Rect2(bounds.position + camera, bounds.size)
+        if visible.encloses(on_screen):
+            return true
+    return false
+
+
+func _assert_readable_tree(game: Control) -> bool:
     var offset: Vector2 = game.get("camera_offset")
-    var bounds: Rect2 = game.call("_pan_limits")
-    if offset.x < bounds.position.x - 0.2 or offset.x > bounds.end.x + 0.2:
-        push_error("W52 smoke: tree camera exceeded horizontal drag bounds")
-        return false
-    if offset.y < bounds.position.y - 0.2 or offset.y > bounds.end.y + 0.2:
-        push_error("W52 smoke: tree camera exceeded vertical drag bounds")
-        return false
-    var visible := Rect2(content.position + offset, content.size)
-    if visible.end.x < 64.0 - 0.2 or visible.position.x > 1312.0 + 0.2:
-        push_error("W52 smoke: horizontal end of tree disappeared beyond 64px margin")
-        return false
-    if visible.end.y < 64.0 - 0.2 or visible.position.y > 828.0 + 0.2:
-        push_error("W52 smoke: vertical end of tree disappeared beyond 64px margin")
+    if not _has_readable_node(game, offset):
+        push_error("W52 smoke: no complete node+label visible at camera %s" % str(offset))
         return false
     return true
 
@@ -63,15 +65,23 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     # The same popup rectangle must position its painted panel and actual Button.
     game.call("_select_node", "guard")
     game.call("_process", 1.0)
-    # Exact centering is secondary to keeping the ENTIRE tree in the pane.
+    # Selected unit remains centered; other branches can extend offscreen.
     var guard: Dictionary = game.call("_find_node", "guard")
     var focus_offset: Vector2 = game.get("camera_offset")
     var expected_focus: Vector2 = game.call("_clamp_pan", Vector2(688, 446) - guard["p"])
     if focus_offset.distance_to(expected_focus) > 0.1:
-        push_error("W52 smoke: focused node not at nearest allowed inset-safe position")
+        push_error("W52 smoke: guard focus not at readable camera target")
         return false
-    if not _assert_tree_pan_bounds(game):
+    if not _assert_readable_tree(game):
         return false
+    # The dialogue overlays the lower tree; it must not conceal the only
+    # remaining recognizable node when the camera is pushed to a corner.
+    for extreme in [Vector2(90000, 90000), Vector2(-90000, -90000),
+                    Vector2(90000, -90000), Vector2(-90000, 90000)]:
+        var camera_during_dialogue: Vector2 = game.call("_clamp_pan", extreme)
+        if not _has_readable_node(game, camera_during_dialogue):
+            push_error("W52 smoke: dialogue covered all identifiable nodes at drag limit")
+            return false
     var popup: Rect2 = game.call("_popup_rect")
     var deploy: Button = game.get("deploy_button")
     if deploy.size != Vector2(160, 62) or deploy.custom_minimum_size != Vector2(160, 62):
@@ -119,7 +129,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         return false
     game.call("_input", _mouse_motion(start + Vector2(96, 82)))
     var moved: Vector2 = game.get("camera_offset")
-    if not _assert_tree_pan_bounds(game):
+    if not _assert_readable_tree(game):
         return false
     if moved.distance_to(before) < 10:
         push_error("W52 smoke: background drag did not pan tree")
@@ -128,37 +138,47 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if bool(game.get("pan_armed")) or str(game.get("selected_id")) != "guard":
         push_error("W52 smoke: releasing drag did not end pan cleanly")
         return false
-    # Long drags saturate exactly at the limits.
-    var bounds: Rect2 = game.call("_pan_limits")
-    game.call("_gui_input", _mouse_button(true, start))
-    game.call("_input", _mouse_motion(Vector2(9000, 9000)))
-    var max_offset: Vector2 = game.get("camera_offset")
-    game.call("_input", _mouse_button(false, Vector2(9000, 9000)))
-    if max_offset.distance_to(bounds.end) > 0.1:
-        push_error("W52 smoke: positive drag exceeded padding bounds")
+    # Large drags in all four diagonal directions may clip most of the tree,
+    # but must leave at least one complete node+label, even across sparse gaps.
+    var extreme_positions := [
+        Vector2(9000, 9000), Vector2(-9000, -9000),
+        Vector2(9000, -9000), Vector2(-9000, 9000)
+    ]
+    for extreme in extreme_positions:
+        game.call("_gui_input", _mouse_button(true, start))
+        game.call("_input", _mouse_motion(extreme))
+        var camera_at_end: Vector2 = game.get("camera_offset")
+        game.call("_input", _mouse_button(false, extreme))
+        if not _assert_readable_tree(game):
+            return false
+        var projected: Vector2 = game.call("_clamp_pan", camera_at_end)
+        if camera_at_end.distance_to(projected) > 0.1:
+            push_error("W52 smoke: extreme pan escaped readable-node region")
+            return false
+        if bool(game.get("pan_armed")):
+            push_error("W52 smoke: extreme pan did not release")
+            return false
+    # No fixed-size padding: the extreme pan may place all but one node offscreen.
+    var huge: Vector2 = game.call("_clamp_pan", Vector2(90000, 90000))
+    if not _has_readable_node(game, huge):
+        push_error("W52 smoke: giant positive pan lost all recognizable content")
         return false
-    if not _assert_tree_pan_bounds(game):
+    var far: Vector2 = game.call("_clamp_pan", Vector2(-90000, -90000))
+    if not _has_readable_node(game, far):
+        push_error("W52 smoke: giant negative pan lost all recognizable content")
         return false
-    game.call("_gui_input", _mouse_button(true, start))
-    game.call("_input", _mouse_motion(Vector2(-9000, -9000)))
-    var min_offset: Vector2 = game.get("camera_offset")
-    game.call("_input", _mouse_button(false, Vector2(-9000, -9000)))
-    if min_offset.distance_to(bounds.position) > 0.1:
-        push_error("W52 smoke: negative drag exceeded padding bounds")
-        return false
-    if not _assert_tree_pan_bounds(game):
-        return false
-    # Check exact saturation: the far end stops 64px from each pane edge.
-    var tree_content: Rect2 = game.call("_tree_content_bounds")
-    if (tree_content.position + max_offset).distance_to(Vector2(1312, 828)) > 0.2:
-        push_error("W52 smoke: upper-right drag limit did not leave 64px margin")
-        return false
-    if (tree_content.end + min_offset).distance_to(Vector2(64, 64)) > 0.2:
-        push_error("W52 smoke: lower-left drag limit did not leave 64px margin")
-        return false
-    if tree_content.position.x + min_offset.x >= 0.0:
-        push_error("W52 smoke: tree cannot pan freely; distant branches should be clipped")
-        return false
+    # Every skill node, including extremes of a large branching tree, can
+    # focus to the center without losing all identifiable on-screen content.
+    for node_id in TREE_NODE_IDS:
+        game.call("_select_node", node_id)
+        game.call("_process", 1.0)
+        var chosen: Dictionary = game.call("_find_node", node_id)
+        var chosen_screen: Vector2 = game.call("_node_screen", chosen)
+        if chosen_screen.distance_to(Vector2(688, 530)) > 0.1:
+            push_error("W52 smoke: node %s did not focus exactly at tree center" % node_id)
+            return false
+        if not _assert_readable_tree(game):
+            return false
     # Edge node focus may clip distant branches, but keeps the selected node centered.
     game.call("_select_node", "mobility")
     game.call("_process", 1.0)
@@ -168,23 +188,17 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if focus_offset.distance_to(expected_focus) > 0.1:
         push_error("W52 smoke: edge focus did not honor camera range")
         return false
-    if not _assert_tree_pan_bounds(game):
+    if not _assert_readable_tree(game):
         return false
-    # A focused center node must remain centered even when distant branches
-    # leave the viewport. The 64px padding is ONLY the pan end-stop.
+    # A focused center node remains centered even when branches are clipped.
     game.call("_select_node", "root")
     game.call("_process", 1.0)
     var root_node: Dictionary = game.call("_find_node", "root")
     var root_screen: Vector2 = game.call("_node_screen", root_node)
     if root_screen.distance_to(Vector2(688, 530)) > 0.1:
-        push_error("W52 smoke: central focus blocked by edge-only padding rule")
+        push_error("W52 smoke: central focus not centered")
         return false
-    var root_art: Rect2 = game.call("_tree_content_bounds")
-    var root_camera: Vector2 = game.get("camera_offset")
-    if root_art.position.y + root_camera.y >= 0.0:
-        push_error("W52 smoke: central focus should allow distant tree nodes outside viewport")
-        return false
-    if not _assert_tree_pan_bounds(game):
+    if not _assert_readable_tree(game):
         return false
     # A short click on a visible node still selects it; dragging that node does not.
     var command_pos: Vector2 = game.call("_node_screen", game.call("_find_node", "command"))
@@ -225,7 +239,7 @@ func _run() -> void:
         quit(1)
         return
 
-    if not _assert_tree_pan_bounds(game) or not _check_tree_pan_and_popup(game):
+    if not _assert_readable_tree(game) or not _check_tree_pan_and_popup(game):
         quit(1)
         return
 
