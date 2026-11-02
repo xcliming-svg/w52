@@ -3,7 +3,7 @@
 - 대상: Godot 4.7.2, PC/Web 동일 게임 씬·GDScript·UI.
 - UI 상세 배치·트리 드래그·대화·전장·폰트는 [UI_LAYOUT_DESIGN.md](UI_LAYOUT_DESIGN.md)를 단일 기준으로 삼는다.
 - 상위 흐름은 타이틀 → 메인 메뉴 → W52 게임(주차/전투) → 일시정지·설정/메인 메뉴 복귀를 관리한다.
-- 이전 원형 플레이어 이동 및 좌표 저장 데모는 사용하지 않는다. 실제 전투 AI·패배 판정은 아직 구현되지 않았다.
+- 실제 전투 AI·패배 판정은 아직 구현되지 않았다.
 
 ## 1. 화면 상태와 진입
 
@@ -49,7 +49,7 @@
 | `scripts/save_manager.gd`, `scripts/settings_manager.gd` | 버전 2 진행 저장과 별도 환경설정 저장 |
 | `scripts/ui_style.gd`, `assets/fonts/` | 공통 팔레트/버튼/패널 규격 및 Nanum Gothic OFL 글꼴 fallback |
 
-타이틀/메인 메뉴의 `BackgroundArt`는 향후 텍스처 연결 슬롯이다. `main.tscn`의 `MenuMusic`·`GameMusic`·`UISound`는 비어 있는 AudioStreamPlayer로 정식 오디오를 포함하지 않는다. 게임 배경 및 노드는 현재 `Control` 캔버스에서 드로잉하며 구 `Sprite2D` 이동 데모 노드는 필요하지 않다.
+타이틀/메인 메뉴의 `BackgroundArt`는 향후 텍스처 연결 슬롯이다. `main.tscn`의 `MenuMusic`·`GameMusic`·`UISound`는 비어 있는 AudioStreamPlayer로 정식 오디오를 포함하지 않는다. 게임 배경 및 노드는 현재 `Control` 캔버스에서 그린다.
 
 ## 5. 검증·승격 계약
 
