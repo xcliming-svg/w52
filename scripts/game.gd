@@ -682,8 +682,8 @@ func _box(rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
 
 
 func _pixel_texture(source: Texture2D) -> Texture2D:
-    # Upscale *once* with nearest-neighbor. Avoid fractional UV scales at draw time.
-    var image: Image = source.get_image()
+    # Copy imported source pixels before enlarging; never resize shared resources.
+    var image: Image = source.get_image().duplicate() as Image
     image.resize(image.get_width() * 3, image.get_height() * 3, Image.INTERPOLATE_NEAREST)
     return ImageTexture.create_from_image(image)
 
