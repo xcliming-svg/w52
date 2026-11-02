@@ -11,7 +11,6 @@ const DEMO_WEEK_REWARD := 70
 const DIALOGUE_COUNT := 5
 const TREE_RECT := Rect2(0, 84, 1376, 892)
 const TREE_CENTER_LOCAL := Vector2(688, 446)
-const TREE_PAN_PADDING := 64.0
 const DRAG_THRESHOLD := 8.0
 const POPUP_SIZE := Vector2(390, 274)
 const POPUP_BUTTON_OFFSET := Vector2(205, 194)
@@ -230,39 +229,44 @@ func _selected_ancestors() -> Array[String]:
     return result
 
 
-func _tree_content_bounds() -> Rect2:
-    # Bounds include enlarged node icons and their labels, not only node centers.
-    # Links terminate within the icons, so this also bounds all branch segments.
+func _node_visual_rect(node: Dictionary) -> Rect2:
+    # A recognizable unit of the tree is one entire node plus its name label.
+    # Use its largest hover/selection icon size and the measured label width.
+    var p: Vector2 = node["p"]
     var radius := 38.0 * 1.12
-    var first: Vector2 = NODES[0]["p"]
-    var min_point := first - Vector2.ONE * radius
-    var max_point := first + Vector2.ONE * radius
-    var label_descent := FONT.get_descent(22)
-    for node in NODES:
-        var p: Vector2 = node["p"]
-        var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
-        min_point.x = minf(min_point.x, minf(p.x - radius, p.x - 40.0))
-        min_point.y = minf(min_point.y, p.y - radius)
-        max_point.x = maxf(max_point.x, maxf(p.x + radius, p.x - 40.0 + label_width))
-        max_point.y = maxf(max_point.y, p.y + radius + 7.0 + 22.0 + label_descent)
-    return Rect2(min_point, max_point - min_point)
+    var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
+    var left := minf(p.x - radius, p.x - 40.0)
+    var right := maxf(p.x + radius, p.x - 40.0 + label_width)
+    var top := p.y - radius
+    var bottom := p.y + radius + 7.0 + 22.0 + FONT.get_descent(22)
+    return Rect2(Vector2(left, top), Vector2(right - left, bottom - top))
 
 
-func _pan_limits() -> Rect2:
-    # Allow the tree to scroll through the pane. At the far-left pan limit,
-    # the artwork's RIGHTMOST pixel remains 64 px inside the left edge.
-    # At the far-right pan limit, its LEFTMOST pixel remains 64 px inside
-    # the right edge. Apply the same rule to the upper/lower limits.
-    # Other nodes can pass outside the viewport; TreeClip masks them.
-    var content := _tree_content_bounds()
-    var low := Vector2.ONE * TREE_PAN_PADDING - content.end
-    var high := TREE_RECT.size - Vector2.ONE * TREE_PAN_PADDING - content.position
-    return Rect2(low, high - low)
+func _readable_tree_area() -> Rect2:
+    # Avoid counting a node completely hidden by the dialogue overlay.
+    var visible_height: float = TREE_RECT.size.y
+    if phase == "dialogue":
+        visible_height = DIALOGUE_RECT.position.y - TREE_RECT.position.y
+    return Rect2(Vector2.ZERO, Vector2(TREE_RECT.size.x, visible_height))
 
 
 func _clamp_pan(candidate: Vector2) -> Vector2:
-    var bounds := _pan_limits()
-    return candidate.clamp(bounds.position, bounds.end)
+    # There is no numeric edge padding. Keep at least one whole node icon
+    # AND its name legible. The valid camera region is the union of the
+    # per-node visibility rectangles, not the tree's (mostly empty) AABB.
+    var visible := _readable_tree_area()
+    var nearest := candidate
+    var nearest_distance := INF
+    for node in NODES:
+        var artwork := _node_visual_rect(node)
+        var min_offset := visible.position - artwork.position
+        var max_offset := visible.end - artwork.end
+        var projected := candidate.clamp(min_offset, max_offset)
+        var distance := candidate.distance_squared_to(projected)
+        if distance < nearest_distance:
+            nearest_distance = distance
+            nearest = projected
+    return nearest
 
 
 func _select_node(id: String) -> void:
