@@ -1,57 +1,51 @@
-# W52 — Pixel UI Fantasy Free selected visual assets
+# W52 — Rust-red wasteland survival UI asset expansion
 
-Status: implementation on `feature/pixel-ui-fantasy-free-assets` and selectively published to `devel`; CI headless and Web Export passed for the initial game-only iteration, but rendered browser appearance is **not yet independently verified**.
+Feature branch: `feature/pixel-ui-fantasy-free-assets`. This revision is designed for a **Mars-like wasteland planet** survival game spanning 52 weeks, without changing the scripted scenario, rules or data model.
 
-## Scope
+## Applied UI art (only real free-pack PNGs)
 
-- Keep the approved 1920×1080 / 16:9 design and 1280×720 initial window.
-- Keep existing text sizes, bundled Korean font, battle flow, tree positions, dragging, focus, hit testing, save schema and battlefield grid cells.
-- Replace **HUD panel borders**, **node popup/dialogue borders**, and **skill-tree node drawings** with a limited selection of Pixel UI Fantasy Free PNGs.
-- Apply matching parchment button state images and pixel panel frame to the **title, main menu, settings, pause and defeat overlays** through `scripts/ui_style.gd`. Earlier revisions changed only in-game visuals and left the entry screen unchanged.
-- Do not apply the free pack's Theme globally; its 10px Quill font does not cover Korean and its content margins differ from W52's layout.
-- Keep `main` untouched; publish only this feature's changes to `devel` for browser preview. Do not run local gameplay QA without separate approval.
+All original PNGs are unmodified and stored under `assets/ui/pixel_fantasy/`. Full source ZIP stays outside the game. Attribution and CC BY 4.0: `assets/ui/pixel_fantasy/ATTRIBUTION.md`.
 
-## Art mappings
-
-Source: `pixel-ui-fantasy-free/addons/pixel_ui_fantasy/` in the user-provided ZIP.
-
-| New resource | Original source |
-|---|---|
-| `assets/ui/pixel_fantasy/frame.png` | `themes/parchment/panel.png` |
-| `slot.png` | `themes/parchment/skill_slot.png` |
-| `slot_active.png` | `themes/parchment/skill_slot_active.png` |
-| `button_normal.png`, `button_hover.png`, `button_pressed.png`, `button_disabled.png` | matching `themes/parchment/button_*.png` |
-| `gem.png`, `scroll.png`, `shield.png`, `arrow_right.png`, `chest.png`, `sword.png`, `lock.png` | matching `icons/*.png` |
-
-Drumming/air units have no honest equivalent icon in this free pack. Their legacy glyph remains until specific art is approved. Locked nodes show the lock icon. Author and CC BY 4.0 attribution are in `assets/ui/pixel_fantasy/ATTRIBUTION.md`.
-
-## Pixel geometry
-
-Original border image 24×24px, menu button state images 16×16px and skill frame images 20×20px; icons 16×16px.
-
-- Nearest-neighbor upscale **3× once at scene setup**, and use local `CanvasItem.TEXTURE_FILTER_NEAREST`; no project-wide image filter or resolution changes.
-- At 1920×1080, artwork source pixels occupy 3 logical px. At the default 1280×720 window, that corresponds to 2 output px. Other window sizes can introduce unequal physical pixel widths under aspect-preserving canvas scaling; that needs visual QA.
-- Draw 9-slice frame corners/edges with `StyleBoxTexture`; border margin **18 logical px** for the 6px source panel edge, **9 logical px** for the 3px skill-slot edge. Use `AXIS_STRETCH_MODE_TILE`, not stretched borders.
-- Round art rectangle endpoints and icon origins to the nearest **3 logical px**. This changes visuals only; interaction geometry is not snapped.
-- Skill slot outer size: **75×75** normal, **84×84** selected/hovered = exactly **1.12×**. Icons remain 48×48. Visibility bounds conservatively include the snap tolerance. Labels stay at their previous layout positions.
-- Keep HUD/popup/dialogue dark fills; only their borders are replaced. Battlefield 46×46 cell drawing and its color-coded strokes are left unchanged.
-- In the common `UI.create_layout()` menu panel, recolor only the 12×12 center tile of the source image to the existing navy PANEL color for legible Korean light text, retaining the original pixel border. Preserve 50px/40px content insets.
-- Use parchment button state sprites with dark ink text for contrast, without changing menu/button geometry. Special speed-toggle state overrides in `game.gd` still use existing flat style functions.
-
-## Static design audit
-
-| Requirement | Code evidence | Status |
+| Existing W52 UI | Original pack PNGs | Code |
 |---|---|---|
-| 1920×1080, 16:9 and default 1280×720 | `project.godot` is untouched | MATCH |
-| Tree selection and drag threshold | `_node_at`, `_start_pan`, `_finish_pan`, `_clamp_pan` unchanged | MATCH |
-| At least one full node + label while dragging | `_node_visual_rect` conservatively includes 3px snap | MATCH (static) |
-| Pixel art quality | nearest scaling, integer frame sizes, 9-slice tiled margins | MATCH (static) |
-| Popup/deploy alignment | `POPUP_SIZE`, `POPUP_BUTTON_OFFSET`, `_popup_rect` unchanged | MATCH |
-| Battlefield grid, save format and game phases | unaffected drawing/logic | MATCH |
-| Bundled Korean typeface | `main.gd` and `FONT` unchanged | MATCH |
-| PC/Web shared UI | changes in `scripts/game.gd` and shared `scripts/ui_style.gd` | MATCH (static) |
-| Title and menus visually updated | `UI.create_layout`, `UI.make_button` now use 9-slice PNG StyleBoxes | MATCH (static) |
-| 실제 Godot 화면, 1280×720 가독성 | browser screenshot/play QA unavailable | NOT VERIFIED |
-| Godot headless, Web Export and Pages | verify new `devel` workflow after publishing amended common styles | PENDING |
+| Window and menu buttons | `panel`, `button_*`, `focus` | `ui_style.gd` |
+| Audio sliders | `slider`, `slider_fill`, `grabber`, `grabber_hover`, `grabber_disabled` | `ui_style.gd`, `settings_menu.gd` |
+| Fullscreen checkbox | `checkbox_on`, `checkbox_off` | `settings_menu.gd` |
+| Battle report scrollbar | `scroll`, `scroll_grabber`, `scroll_grabber_hover`, `scroll_grabber_pressed` | `game.gd` |
+| Report/recess and divider | `panel_inset`, `divider`, `quest` | `game.gd` |
+| Week and supply HUD | `coin`, `progress_bg`, `progress_fill` | `game.gd` |
+| 1x/2x selectors | `tab_selected`, `tab_unselected`, `tab_hover` | `game.gd` |
+| Dialogue/radio briefing | `portrait`, `nameplate`, `panel` | `game.gd` |
+| Node information | `window`, `tooltip` | `game.gd` |
+| Survival field manual | `parchment`, `ribbon` | `game.gd` |
+| Skill-tree nodes | `skill_slot`, `skill_slot_active`, matching icons | `game.gd` |
 
-If a future visual QA finds edge clipping, color contrast, or font overlap, correct only the relevant frame geometry/art code and repeat the checks. Do not assume static review is equivalent to a successful game launch.
+Most of these were added after the initial 14 PNGs; selected stock graphics are *recontextualized* as worn terminal decorations. We do **not** portray fire spells, RPG inventory/rarity, health/mana or cooldown data as if those systems exist. Battlefield **units** and cell drawing code remain unchanged. Title branding is also unchanged.
+
+## Visual system and numerical constraints
+
+- Art direction: dark rust / oxidized iron / sandy beige, a small teal equipment glow, not pure medieval fantasy. Text contrast over dark panels stays light; parchment field manual uses dark brown text. No new gameplay strings/glyph ranges.
+- Logical canvas **1920×1080, 16:9**; initial 1280×720 physical window. All screen bounds, `TreeClip`, popup/deploy geometry, scrollbar bounds and button dimensions remain unchanged.
+- Image source pixels are enlarged **3× by nearest-neighbor**; at the initial physical window each source pixel is **2 display pixels**. 9-slice borders are tiled, not blurred or stretched. Display sizes and pixel endpoints snap to multiples of three logical pixels. Other physical window sizes can render fractional source pixel widths; real browser QA remains necessary.
+- The progress strip uses the existing `week` and `phase`. It counts **completed** weeks: `week - 1` before a week's result, `week` after the result. It reaches 52/52 only after the last result. No save changes.
+- The G amount remains G; the golden coin is only its icon, not a claim that the economic system uses physical gold.
+- Audio sliders and fullscreen state retain their same settings connection; `CheckButton` becomes a `CheckBox` with the same `button_pressed` and `toggled` behavior.
+- Headless `tests/w52_ui_smoke.gd` now asserts Godot loads art style boxes, scrollbar, tab, slider, checkbox and button textures while preserving existing 52-week and tree input regression tests.
+
+## Verification and promotion
+
+1. Commit only to the ongoing feature branch; selectively apply only its changes to devel for web preview.
+2. Run Godot 4.7.2 import, scene smoke, art style smoke, 52-week state smoke and PC/Web shared Web Export via GitHub Actions. Inspect failing steps and revise in the **same feature branch**, then republish devel.
+3. Verify the Pages publisher run completed successfully, then manually inspect at both 1280×720 and 1920×1080 when browser access is available.
+4. Never merge into `main` without explicit approval. The local `C:\GPT-Workspace\w52` working tree is separate and has not been synchronized.
+
+## Visual QA checklist (not completed by automated tests)
+
+- Intro/menu panel and button ink contrast; keyboard focus outline
+- Sound sliders at 0, 50 and 100 and fullscreen toggle
+- HUD progress at week 1 initial, week 1 result and week 52 result
+- Briefing names/portrait and Space input, text clipping at 1280×720
+- Tooltip against fixed 390×274 popup and its embedded 160×62 deploy button
+- Log thumb visible after many entries, scrolling remains functional
+- New tab skin does not break mutual-exclusion logic for 1×/2×
+- Skill-tree pan, drag threshold and minimum visible node+label invariant
