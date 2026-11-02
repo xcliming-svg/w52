@@ -31,10 +31,21 @@ const ENEMY := Color("#d9776a")
 const ENEMY_CELL := Color("#503035")
 const ALLY_CELL := Color("#153e3d")
 const DIALOGUE_PANEL := Color("#223347")
+# Pixel UI Fantasy Free: retain W52's dark content and Korean typography,
+# while using the pack's actual border and parchment button state sprites.
+const PIXEL_PANEL: Texture2D = preload("res://assets/ui/pixel_fantasy/frame.png")
+const PIXEL_BUTTON_NORMAL: Texture2D = preload("res://assets/ui/pixel_fantasy/button_normal.png")
+const PIXEL_BUTTON_HOVER: Texture2D = preload("res://assets/ui/pixel_fantasy/button_hover.png")
+const PIXEL_BUTTON_PRESSED: Texture2D = preload("res://assets/ui/pixel_fantasy/button_pressed.png")
+const PIXEL_BUTTON_DISABLED: Texture2D = preload("res://assets/ui/pixel_fantasy/button_disabled.png")
+const PIXEL_SCALE := 3
+const BUTTON_INK := Color("#291c14")
+const BUTTON_DISABLED_INK := Color("#30333b")
 
 
 static func create_layout(root: Control, heading: String, description: String = "", dim_background: bool = false) -> VBoxContainer:
     var background := ColorRect.new()
+    root.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
     background.name = "BackgroundColor"
     background.color = Color(0.0, 0.0, 0.0, 0.72) if dim_background else BACKGROUND
     background.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -76,28 +87,43 @@ static func make_button(value: String, minimum_size: Vector2 = Vector2(500.0, 74
     button.custom_minimum_size = minimum_size
     button.size = minimum_size
     button.add_theme_font_size_override("font_size", 29)
-    button.add_theme_stylebox_override("normal", _button_style(PRIMARY))
-    button.add_theme_stylebox_override("hover", _button_style(PRIMARY_HOVER))
-    button.add_theme_stylebox_override("pressed", _button_style(BORDER))
-    button.add_theme_stylebox_override("disabled", _button_style(PANEL))
+    button.add_theme_stylebox_override("normal", _pixel_box(PIXEL_BUTTON_NORMAL, 5, Vector2(20, 0)))
+    button.add_theme_stylebox_override("hover", _pixel_box(PIXEL_BUTTON_HOVER, 5, Vector2(20, 0)))
+    button.add_theme_stylebox_override("pressed", _pixel_box(PIXEL_BUTTON_PRESSED, 5, Vector2(20, 0)))
+    button.add_theme_stylebox_override("disabled", _pixel_box(PIXEL_BUTTON_DISABLED, 5, Vector2(20, 0)))
     button.add_theme_stylebox_override("focus", _button_focus())
-    button.add_theme_color_override("font_color", TEXT)
-    button.add_theme_color_override("font_hover_color", TEXT)
-    button.add_theme_color_override("font_pressed_color", TEXT)
-    button.add_theme_color_override("font_disabled_color", MUTED)
+    button.add_theme_color_override("font_color", BUTTON_INK)
+    button.add_theme_color_override("font_hover_color", BUTTON_INK)
+    button.add_theme_color_override("font_pressed_color", BUTTON_INK)
+    button.add_theme_color_override("font_hover_pressed_color", BUTTON_INK)
+    button.add_theme_color_override("font_disabled_color", BUTTON_DISABLED_INK)
     return button
 
 
-static func _panel_style() -> StyleBoxFlat:
-    var style := StyleBoxFlat.new()
-    style.bg_color = PANEL
-    style.border_color = BORDER
-    style.set_border_width_all(1)
-    style.set_corner_radius_all(14)
-    style.content_margin_left = 50.0
-    style.content_margin_right = 50.0
-    style.content_margin_top = 40.0
-    style.content_margin_bottom = 40.0
+static func _panel_style() -> StyleBoxTexture:
+    # Source panel has a tan center that would reduce contrast with W52's light text.
+    # Replace only the 12x12 center tile with W52 PANEL; preserve the 6px
+    # hand-drawn outline. Nearest 3x keeps all edges pixel-aligned.
+    return _pixel_box(PIXEL_PANEL, 6, Vector2(50, 40), PANEL)
+
+
+static func _pixel_box(source: Texture2D, margin_px: int, content: Vector2, center_color: Color = Color.TRANSPARENT) -> StyleBoxTexture:
+    var image: Image = source.get_image()
+    if center_color.a > 0.0:
+        var inset := margin_px
+        image.fill_rect(Rect2i(inset, inset,
+            image.get_width() - inset * 2, image.get_height() - inset * 2), center_color)
+    image.resize(image.get_width() * PIXEL_SCALE, image.get_height() * PIXEL_SCALE, Image.INTERPOLATE_NEAREST)
+    var style := StyleBoxTexture.new()
+    style.texture = ImageTexture.create_from_image(image)
+    style.set_texture_margin_all(float(margin_px * PIXEL_SCALE))
+    style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+    style.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+    style.draw_center = true
+    style.content_margin_left = content.x
+    style.content_margin_right = content.x
+    style.content_margin_top = content.y
+    style.content_margin_bottom = content.y
     return style
 
 
