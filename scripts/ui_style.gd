@@ -8,10 +8,7 @@ const PRIMARY := Color("#24465a")
 const PRIMARY_HOVER := Color("#315d75")
 const TEXT := Color("#e9eff5")
 const MUTED := Color("#9dafc1")
-# Existing gameplay placeholder colors are centralized for a future palette change.
 const GAME_BACKGROUND := Color("#101c29")
-const PLAYER_FILL := Color(0.23, 0.86, 0.66)
-const PLAYER_OUTLINE := Color(0.85, 1.0, 0.94)
 const DESIGN_SIZE := Vector2i(1920, 1080)
 const LEFT_WIDTH := 1376
 const RIGHT_WIDTH := 544
@@ -34,7 +31,6 @@ const ENEMY := Color("#d9776a")
 const ENEMY_CELL := Color("#503035")
 const ALLY_CELL := Color("#153e3d")
 const DIALOGUE_PANEL := Color("#223347")
-static var custom_font: Font = null
 
 
 static func create_layout(root: Control, heading: String, description: String = "", dim_background: bool = false) -> VBoxContainer:
@@ -71,8 +67,6 @@ static func make_label(value: String, font_size: int = 28, color: Color = TEXT) 
     label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     label.add_theme_color_override("font_color", color)
     label.add_theme_font_size_override("font_size", font_size)
-    if custom_font != null:
-        label.add_theme_font_override("font", custom_font)
     return label
 
 
@@ -91,8 +85,6 @@ static func make_button(value: String, minimum_size: Vector2 = Vector2(500.0, 74
     button.add_theme_color_override("font_hover_color", TEXT)
     button.add_theme_color_override("font_pressed_color", TEXT)
     button.add_theme_color_override("font_disabled_color", MUTED)
-    if custom_font != null:
-        button.add_theme_font_override("font", custom_font)
     return button
 
 

@@ -251,9 +251,8 @@ func _readable_tree_area() -> Rect2:
 
 
 func _clamp_pan(candidate: Vector2) -> Vector2:
-    # There is no numeric edge padding. Keep at least one whole node icon
-    # AND its name legible. The valid camera region is the union of the
-    # per-node visibility rectangles, not the tree's (mostly empty) AABB.
+    # Keep one complete node icon and name legible. Use the union of
+    # per-node visibility regions instead of a whole-tree bounding box.
     var visible := _readable_tree_area()
     var nearest := candidate
     var nearest_distance := INF
@@ -604,8 +603,8 @@ func _box(rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
 
 
 func _draw() -> void:
-    # Tree is rendered first and the fixed HUD is painted over any panned
-    # geometry extending beyond the tree region (header/help/right sidebar).
+    # Fixed HUD background is drawn at the root; TreeArt renders in a clipped
+    # child Control and can never paint into the battlefield or other panels.
     draw_rect(Rect2(0, 0, 1920, 1080), UI.BACKGROUND)
     _box(TREE_RECT, UI.GAME_BACKGROUND)
     for x in range(0, 1376, 56):
