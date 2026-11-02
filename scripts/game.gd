@@ -5,6 +5,21 @@ signal defeated
 
 const UI = preload("res://scripts/ui_style.gd")
 const FONT: Font = preload("res://assets/fonts/ui_ko_subset.woff2")
+# Pixel UI Fantasy Free: selectively used art, kept separate from the global UI theme.
+const PIXEL_PANEL: Texture2D = preload("res://assets/ui/pixel_fantasy/frame.png")
+const PIXEL_SLOT: Texture2D = preload("res://assets/ui/pixel_fantasy/slot.png")
+const PIXEL_SLOT_ACTIVE: Texture2D = preload("res://assets/ui/pixel_fantasy/slot_active.png")
+const ICON_GEM: Texture2D = preload("res://assets/ui/pixel_fantasy/gem.png")
+const ICON_SCROLL: Texture2D = preload("res://assets/ui/pixel_fantasy/scroll.png")
+const ICON_SHIELD: Texture2D = preload("res://assets/ui/pixel_fantasy/shield.png")
+const ICON_ARROW: Texture2D = preload("res://assets/ui/pixel_fantasy/arrow_right.png")
+const ICON_CHEST: Texture2D = preload("res://assets/ui/pixel_fantasy/chest.png")
+const ICON_SWORD: Texture2D = preload("res://assets/ui/pixel_fantasy/sword.png")
+const ICON_LOCK: Texture2D = preload("res://assets/ui/pixel_fantasy/lock.png")
+const PIXEL_SCALE := 3.0
+const NODE_FRAME_SIZE := 75.0
+const NODE_FRAME_SELECTED_SIZE := 84.0 # Exactly 1.12x, both integer pixel sizes
+const NODE_ICON_SIZE := 48.0
 const MAX_WEEK := 52
 const DEMO_BATTLE_COST := 40
 const DEMO_WEEK_REWARD := 70
@@ -55,12 +70,32 @@ var log_scroll: ScrollContainer
 var log_column: VBoxContainer
 var tree_surface: Control
 var tree_canvas: Control
+var pixel_panel_border: StyleBoxTexture
+var pixel_slot_border: StyleBoxTexture
+var pixel_slot_border_active: StyleBoxTexture
+var pixel_icons: Dictionary
 var popup_surface: Control
 var dialogue_surface: Control
 
 
 func _ready() -> void:
     mouse_filter = Control.MOUSE_FILTER_STOP
+    # 3x source pixels in the 1920x1080 layout are 2x at the 1280x720 default window.
+    # Do not change the game resolution, transforms, input geometry, or Korean font.
+    texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+    pixel_panel_border = _pixel_style_box(PIXEL_PANEL, 6, false)
+    pixel_slot_border = _pixel_style_box(PIXEL_SLOT, 3, true)
+    pixel_slot_border_active = _pixel_style_box(PIXEL_SLOT_ACTIVE, 3, true)
+    pixel_icons = {
+        "root": _pixel_texture(ICON_GEM),
+        "command": _pixel_texture(ICON_SCROLL),
+        "guard": _pixel_texture(ICON_SHIELD),
+        "scout": _pixel_texture(ICON_ARROW),
+        "mobility": _pixel_texture(ICON_ARROW),
+        "supply": _pixel_texture(ICON_CHEST),
+        "elite": _pixel_texture(ICON_SWORD),
+        "locked": _pixel_texture(ICON_LOCK),
+    }
     _create_controls()
     _set_week_intro()
     _refresh_all()
@@ -233,7 +268,8 @@ func _node_visual_rect(node: Dictionary) -> Rect2:
     # A recognizable unit of the tree is one entire node plus its name label.
     # Use its largest hover/selection icon size and the measured label width.
     var p: Vector2 = node["p"]
-    var radius := 38.0 * 1.12
+    # Account for the nearest 3px snap when guaranteeing a complete visible node.
+    var radius := maxf(38.0 * 1.12, NODE_FRAME_SELECTED_SIZE * 0.5 + PIXEL_SCALE * 0.5)
     var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
     var left := minf(p.x - radius, p.x - 40.0)
     var right := maxf(p.x + radius, p.x - 40.0 + label_width)
@@ -584,7 +620,7 @@ func _layer_text(surface: Control, value: String, p: Vector2, font_size: int, co
 
 func _layer_box(surface: Control, rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
     surface.draw_rect(rect, fill)
-    surface.draw_rect(rect, border, false, 2.0)
+    surface.draw_style_box(pixel_panel_border, _pixel_rect(rect))
 
 
 func _queue_ui_redraw() -> void:
@@ -598,25 +634,55 @@ func _queue_ui_redraw() -> void:
 
 
 func _box(rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
+    # Battlefield cell borders remain thin and color-coded.
     draw_rect(rect, fill)
     draw_rect(rect, border, false, 2.0)
+
+
+func _pixel_texture(source: Texture2D) -> Texture2D:
+    # Upscale *once* with nearest-neighbor. Avoid fractional UV scales at draw time.
+    var image: Image = source.get_image()
+    image.resize(image.get_width() * 3, image.get_height() * 3, Image.INTERPOLATE_NEAREST)
+    return ImageTexture.create_from_image(image)
+
+
+func _pixel_style_box(source: Texture2D, source_margin: int, with_center: bool) -> StyleBoxTexture:
+    var style := StyleBoxTexture.new()
+    style.texture = _pixel_texture(source)
+    style.set_texture_margin_all(float(source_margin) * PIXEL_SCALE)
+    style.draw_center = with_center
+    style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+    style.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+    return style
+
+
+func _pixel_rect(rect: Rect2) -> Rect2:
+    # Keep border endpoints on exact 3px logical-pixel grid.
+    var start := (rect.position / PIXEL_SCALE).round() * PIXEL_SCALE
+    var finish := (rect.end / PIXEL_SCALE).round() * PIXEL_SCALE
+    return Rect2(start, finish - start)
+
+
+func _framed_box(rect: Rect2, fill: Color) -> void:
+    draw_rect(rect, fill)
+    draw_style_box(pixel_panel_border, _pixel_rect(rect))
 
 
 func _draw() -> void:
     # Fixed HUD background is drawn at the root; TreeArt renders in a clipped
     # child Control and can never paint into the battlefield or other panels.
     draw_rect(Rect2(0, 0, 1920, 1080), UI.BACKGROUND)
-    _box(TREE_RECT, UI.GAME_BACKGROUND)
+    _framed_box(TREE_RECT, UI.GAME_BACKGROUND)
     for x in range(0, 1376, 56):
         draw_line(Vector2(x, 84), Vector2(x, 976), UI.GRID, 1.0)
     for y in range(84, 976, 56):
         draw_line(Vector2(0, y), Vector2(1376, y), UI.GRID, 1.0)
-    _box(Rect2(0, 0, 1376, 84), UI.HEADER)
-    _box(Rect2(1376, 0, 544, 84), UI.HEADER)
-    _box(Rect2(0, 976, 1376, 104), UI.PANEL)
-    _box(Rect2(1376, 84, 544, 652), UI.GAME_BACKGROUND)
-    _box(Rect2(1376, 736, 544, 240), UI.PANEL)
-    _box(Rect2(1376, 976, 544, 104), UI.PANEL)
+    _framed_box(Rect2(0, 0, 1376, 84), UI.HEADER)
+    _framed_box(Rect2(1376, 0, 544, 84), UI.HEADER)
+    _framed_box(Rect2(0, 976, 1376, 104), UI.PANEL)
+    _framed_box(Rect2(1376, 84, 544, 652), UI.GAME_BACKGROUND)
+    _framed_box(Rect2(1376, 736, 544, 240), UI.PANEL)
+    _framed_box(Rect2(1376, 976, 544, 104), UI.PANEL)
     _text("%02d주차" % week, Vector2(44, 16), 38)
     draw_line(Vector2(233, 17), Vector2(233, 67), UI.BORDER, 2)
     _text("%s G" % _group_digits(g), Vector2(271, 17), 37, UI.GOLD)
@@ -674,20 +740,21 @@ func _draw_tree() -> void:
         var focused := id == selected_id
         var hovered := id == hover_id
         var radius := 38.0 * (1.12 if focused or hovered else 1.0)
-        var kind := str(node["kind"])
-        var fill := UI.LOCKED if locked else UI.NODE_FILL
-        var border := UI.TREE_LINE if locked else (UI.GOLD if focused else UI.TEAL)
-        if kind == "branch":
-            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), fill)
-            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), border, false, 3.0)
-        elif kind == "root":
-            tree_canvas.draw_colored_polygon(PackedVector2Array([p+Vector2(0,-radius),p+Vector2(radius,0),
-                p+Vector2(0,radius),p+Vector2(-radius,0)]), fill)
+        # 75px normal / 84px selected makes the 1.12x effect pixel-exact.
+        var frame_size := NODE_FRAME_SELECTED_SIZE if focused or hovered else NODE_FRAME_SIZE
+        var frame_rect := _pixel_rect(Rect2(p - Vector2.ONE * (frame_size * 0.5),
+            Vector2.ONE * frame_size))
+        tree_canvas.draw_style_box(
+            pixel_slot_border_active if focused or hovered else pixel_slot_border, frame_rect)
+        # A locked node shows a lock. The drone has no matching icon in the free pack,
+        # so keep its existing placeholder symbol rather than mislabel its function.
+        var icon: Texture2D = pixel_icons.get("locked" if locked else id) as Texture2D
+        if icon != null:
+            var icon_pos := (frame_rect.position + Vector2.ONE * ((frame_size - NODE_ICON_SIZE) * 0.5))
+            icon_pos = (icon_pos / PIXEL_SCALE).round() * PIXEL_SCALE
+            tree_canvas.draw_texture(icon, icon_pos)
         else:
-            tree_canvas.draw_circle(p, radius, fill)
-            tree_canvas.draw_arc(p, radius, 0.0, TAU, 48, border, 4.0, true)
-        var symbol: String = str(node["symbol"])
-        _layer_text(tree_canvas, symbol, p + Vector2(-13, -22), 31, border)
+            _layer_text(tree_canvas, str(node["symbol"]), p + Vector2(-13, -22), 31, UI.GOLD)
         _layer_text(tree_canvas, str(node["name"]), p + Vector2(-40, radius + 7), 22, UI.MUTED if locked else UI.TEXT)
 
 
