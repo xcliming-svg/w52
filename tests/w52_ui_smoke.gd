@@ -171,6 +171,11 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     # focus to the center without losing all identifiable on-screen content.
     for node_id in TREE_NODE_IDS:
         game.call("_select_node", node_id)
+        for frame in range(12):
+            game.call("_process", 0.016)
+            if not _assert_readable_tree(game):
+                push_error("W52 smoke: focus animation crossed an empty tree view")
+                return false
         game.call("_process", 1.0)
         var chosen: Dictionary = game.call("_find_node", node_id)
         var chosen_screen: Vector2 = game.call("_node_screen", chosen)
