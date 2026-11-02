@@ -16,6 +16,19 @@ const ICON_ARROW: Texture2D = preload("res://assets/ui/pixel_fantasy/arrow_right
 const ICON_CHEST: Texture2D = preload("res://assets/ui/pixel_fantasy/chest.png")
 const ICON_SWORD: Texture2D = preload("res://assets/ui/pixel_fantasy/sword.png")
 const ICON_LOCK: Texture2D = preload("res://assets/ui/pixel_fantasy/lock.png")
+# Worn survival terminal trim; battlefield units remain deliberately untouched.
+const PIXEL_PORTRAIT: Texture2D = preload("res://assets/ui/pixel_fantasy/portrait.png")
+const PIXEL_NAMEPLATE: Texture2D = preload("res://assets/ui/pixel_fantasy/nameplate.png")
+const PIXEL_WINDOW: Texture2D = preload("res://assets/ui/pixel_fantasy/window.png")
+const PIXEL_TOOLTIP: Texture2D = preload("res://assets/ui/pixel_fantasy/tooltip.png")
+const PIXEL_INSET: Texture2D = preload("res://assets/ui/pixel_fantasy/panel_inset.png")
+const PIXEL_PARCHMENT: Texture2D = preload("res://assets/ui/pixel_fantasy/parchment.png")
+const PIXEL_DIVIDER: Texture2D = preload("res://assets/ui/pixel_fantasy/divider.png")
+const PIXEL_RIBBON: Texture2D = preload("res://assets/ui/pixel_fantasy/ribbon.png")
+const ICON_COIN: Texture2D = preload("res://assets/ui/pixel_fantasy/coin.png")
+const ICON_QUEST: Texture2D = preload("res://assets/ui/pixel_fantasy/quest.png")
+const PIXEL_PROGRESS_BG: Texture2D = preload("res://assets/ui/pixel_fantasy/progress_bg.png")
+const PIXEL_PROGRESS_FILL: Texture2D = preload("res://assets/ui/pixel_fantasy/progress_fill.png")
 const PIXEL_SCALE := 3.0
 const NODE_FRAME_SIZE := 75.0
 const NODE_FRAME_SELECTED_SIZE := 84.0 # Exactly 1.12x, both integer pixel sizes
@@ -73,6 +86,18 @@ var tree_canvas: Control
 var pixel_panel_border: StyleBoxTexture
 var pixel_slot_border: StyleBoxTexture
 var pixel_slot_border_active: StyleBoxTexture
+var pixel_window_border: StyleBoxTexture
+var pixel_portrait_border: StyleBoxTexture
+var pixel_nameplate_border: StyleBoxTexture
+var pixel_tooltip_border: StyleBoxTexture
+var pixel_inset_border: StyleBoxTexture
+var pixel_parchment_border: StyleBoxTexture
+var pixel_divider_border: StyleBoxTexture
+var pixel_ribbon_border: StyleBoxTexture
+var pixel_progress_bg: StyleBoxTexture
+var pixel_progress_fill: StyleBoxTexture
+var pixel_coin: Texture2D
+var pixel_quest: Texture2D
 var pixel_icons: Dictionary
 var popup_surface: Control
 var dialogue_surface: Control
@@ -86,6 +111,18 @@ func _ready() -> void:
     pixel_panel_border = _pixel_style_box(PIXEL_PANEL, 6, false)
     pixel_slot_border = _pixel_style_box(PIXEL_SLOT, 3, true)
     pixel_slot_border_active = _pixel_style_box(PIXEL_SLOT_ACTIVE, 3, true)
+    pixel_window_border = _pixel_slices(PIXEL_WINDOW, Vector4i(6, 19, 6, 6), false)
+    pixel_portrait_border = _pixel_style_box(PIXEL_PORTRAIT, 9, false)
+    pixel_nameplate_border = _pixel_slices(PIXEL_NAMEPLATE, Vector4i(5, 4, 5, 4))
+    pixel_tooltip_border = _pixel_style_box(PIXEL_TOOLTIP, 3, false)
+    pixel_inset_border = _pixel_style_box(PIXEL_INSET, 5, false)
+    pixel_parchment_border = _pixel_slices(PIXEL_PARCHMENT, Vector4i(6, 9, 6, 9))
+    pixel_divider_border = _pixel_slices(PIXEL_DIVIDER, Vector4i(8, 0, 8, 0))
+    pixel_ribbon_border = _pixel_slices(PIXEL_RIBBON, Vector4i(9, 3, 9, 5))
+    pixel_progress_bg = _pixel_slices(PIXEL_PROGRESS_BG, Vector4i(4, 3, 4, 3))
+    pixel_progress_fill = _pixel_slices(PIXEL_PROGRESS_FILL, Vector4i(5, 2, 5, 2))
+    pixel_coin = _pixel_texture(ICON_COIN)
+    pixel_quest = _pixel_texture(ICON_QUEST)
     pixel_icons = {
         "root": _pixel_texture(ICON_GEM),
         "command": _pixel_texture(ICON_SCROLL),
@@ -216,6 +253,7 @@ func _create_controls() -> void:
     log_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
     log_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
     add_child(log_scroll)
+    UI.decorate_log_scroll(log_scroll.get_v_scroll_bar())
     log_column = VBoxContainer.new()
     log_column.add_theme_constant_override("separation", 12)
     log_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -591,11 +629,15 @@ func _refresh_all() -> void:
     speed_one.button_pressed = speed == 1
     speed_two.button_pressed = speed == 2
     speed_one.add_theme_color_override("font_color", UI.BACKGROUND if speed == 1 else UI.TEXT)
-    speed_one.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD if speed == 1 else UI.PANEL))
-    speed_one.add_theme_stylebox_override("pressed", UI._button_style(UI.GOLD if speed == 1 else UI.PANEL))
+    speed_one.add_theme_color_override("font_hover_color", UI.BACKGROUND)
+    speed_one.add_theme_stylebox_override("normal", UI.style_speed_tab(speed == 1))
+    speed_one.add_theme_stylebox_override("hover", UI.style_speed_hover())
+    speed_one.add_theme_stylebox_override("pressed", UI.style_speed_tab(speed == 1))
     speed_two.add_theme_color_override("font_color", UI.BACKGROUND if speed == 2 else UI.TEXT)
-    speed_two.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
-    speed_two.add_theme_stylebox_override("pressed", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
+    speed_two.add_theme_color_override("font_hover_color", UI.BACKGROUND)
+    speed_two.add_theme_stylebox_override("normal", UI.style_speed_tab(speed == 2))
+    speed_two.add_theme_stylebox_override("hover", UI.style_speed_hover())
+    speed_two.add_theme_stylebox_override("pressed", UI.style_speed_tab(speed == 2))
     battle_button.disabled = phase == "battle" or (phase == "result" and week == MAX_WEEK)
     if phase == "battle":
         battle_button.text = "전투 진행 중"
@@ -656,6 +698,19 @@ func _pixel_style_box(source: Texture2D, source_margin: int, with_center: bool) 
     return style
 
 
+func _pixel_slices(source: Texture2D, margins: Vector4i, center: bool = true) -> StyleBoxTexture:
+    var style := StyleBoxTexture.new()
+    style.texture = _pixel_texture(source)
+    style.texture_margin_left = margins.x * PIXEL_SCALE
+    style.texture_margin_top = margins.y * PIXEL_SCALE
+    style.texture_margin_right = margins.z * PIXEL_SCALE
+    style.texture_margin_bottom = margins.w * PIXEL_SCALE
+    style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+    style.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+    style.draw_center = center
+    return style
+
+
 func _pixel_rect(rect: Rect2) -> Rect2:
     # Keep border endpoints on exact 3px logical-pixel grid.
     var start := (rect.position / PIXEL_SCALE).round() * PIXEL_SCALE
@@ -685,14 +740,29 @@ func _draw() -> void:
     _framed_box(Rect2(1376, 976, 544, 104), UI.PANEL)
     _text("%02d주차" % week, Vector2(44, 16), 38)
     draw_line(Vector2(233, 17), Vector2(233, 67), UI.BORDER, 2)
-    _text("%s G" % _group_digits(g), Vector2(271, 17), 37, UI.GOLD)
+    draw_texture(pixel_coin, Vector2(264, 18))
+    _text("%s G" % _group_digits(g), Vector2(320, 17), 37, UI.GOLD)
+    # Week 1 starts empty; finishing week 52 fills the survival timeline.
+    var survived := (week if phase == "result" else week - 1)
+    var progress := float(survived) / float(MAX_WEEK)
+    var progress_bg := Rect2(710, 27, 588, 30)
+    draw_style_box(pixel_progress_bg, _pixel_rect(progress_bg))
+    if survived > 0:
+        var fill_width := maxf(33.0, 588.0 * progress)
+        draw_style_box(pixel_progress_fill, _pixel_rect(Rect2(710, 27, fill_width, 30)))
     var secs := int(battle_seconds)
     _text("%02d:%02d" % [secs / 60, secs % 60], Vector2(1410, 16), 36)
     _draw_field()
-    _text("전투 정보", Vector2(1400, 747), 28)
-    draw_line(Vector2(1400, 790), Vector2(1896, 790), UI.BORDER, 2)
-    _text("도움말", Vector2(115, 992), 23, UI.GOLD)
-    _text(_help_text(), Vector2(240, 992), 25)
+    # Recessed battle-report terminal; ScrollContainer remains the only scroll area.
+    draw_style_box(pixel_inset_border, _pixel_rect(Rect2(1393, 792, 504, 177)))
+    draw_texture(pixel_quest, Vector2(1401, 741))
+    _text("전투 정보", Vector2(1455, 747), 28)
+    draw_style_box(pixel_divider_border, _pixel_rect(Rect2(1401, 784, 492, 21)))
+    # Survival field manual. Dark text contrasts with the source parchment.
+    draw_style_box(pixel_parchment_border, _pixel_rect(Rect2(240, 984, 992, 81)))
+    draw_style_box(pixel_ribbon_border, _pixel_rect(Rect2(104, 987, 132, 63)))
+    _text("도움말", Vector2(121, 998), 23, UI.TEXT)
+    _text(_help_text(), Vector2(270, 1007), 25, Color("#33241c"))
 
 
 func _group_digits(value: int) -> String:
@@ -765,11 +835,15 @@ func _draw_popup() -> void:
     if node.is_empty():
         return
     var panel := _popup_rect()
-    _layer_box(popup_surface, panel, UI.PANEL, UI.TEAL)
-    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(25, 20), 32)
+    popup_surface.draw_rect(panel, UI.PANEL)
+    popup_surface.draw_style_box(pixel_window_border, _pixel_rect(panel))
+    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(25, 15), 32)
+    var details_rect := Rect2(panel.position + Vector2(15, 74), Vector2(360, 109))
+    popup_surface.draw_rect(details_rect, UI.PANEL.darkened(0.18))
+    popup_surface.draw_style_box(pixel_tooltip_border, _pixel_rect(details_rect))
     var details := str(node["detail"]).split("|")
     for i in range(details.size()):
-        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(25, 75 + i * 37), 25, UI.MUTED)
+        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(25, 92 + i * 37), 25, UI.MUTED)
 
 
 func _draw_field() -> void:
@@ -799,10 +873,14 @@ func _draw_dialogue_overlay() -> void:
     if phase != "dialogue":
         return
     _layer_box(dialogue_surface, DIALOGUE_RECT, UI.DIALOGUE_PANEL, UI.GOLD)
-    _layer_box(dialogue_surface, Rect2(52, 800, 112, 125), UI.NODE_FILL, UI.GOLD)
+    var portrait_rect := Rect2(52, 800, 112, 125)
+    dialogue_surface.draw_rect(portrait_rect, UI.NODE_FILL)
+    dialogue_surface.draw_style_box(pixel_portrait_border, _pixel_rect(portrait_rect))
+    # A placeholder radio-operator glyph: never pretend it is a character portrait.
     var speaker := "해설" if dialogue_index == 0 or dialogue_index == 2 or dialogue_index == 4 else "작전 참모"
     _layer_text(dialogue_surface, "≡" if speaker == "해설" else "◆", Vector2(83, 815), 48, UI.GOLD)
-    _layer_text(dialogue_surface, speaker, Vector2(196, 793), 26, UI.GOLD)
+    dialogue_surface.draw_style_box(pixel_nameplate_border, _pixel_rect(Rect2(182, 789, 266, 54)))
+    _layer_text(dialogue_surface, speaker, Vector2(205, 799), 26, UI.TEXT)
     var text_lines := _dialogue_content()
     _layer_text(dialogue_surface, text_lines[min(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(196, 845), 28)
     _layer_text(dialogue_surface, "Space  다음 ›", Vector2(1137, 905), 21, UI.MUTED)
