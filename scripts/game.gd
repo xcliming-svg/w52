@@ -620,10 +620,8 @@ func _draw_frame(panel_id: String) -> void:
     _frame_layer(f, 2, UI.METAL_MID, UI.METAL_MID, UI.METAL_DARK)
     _frame_layer(f, 6, UI.EDGE_DARK, UI.EDGE_DARK, UI.EDGE_DARK)
     _frame_layer(f, 7, UI.PANEL, UI.PANEL, UI.PANEL)
-    _draw_screw(f.position + Vector2i(5, 5))
-    _draw_screw(Vector2i(f.end.x - 8, f.position.y + 5))
-    _draw_screw(Vector2i(f.position.x + 5, f.end.y - 8))
-    _draw_screw(f.end - Vector2i(8, 8))
+    for origin in UI.screw_origins(panel_id):
+        _draw_screw(origin)
 
 
 func _draw_action_background() -> void:
@@ -642,7 +640,7 @@ func _draw_action_background() -> void:
 func _draw() -> void:
     # y=0..35 remains fully black: no title, frame, or decoration.
     draw_rect(Rect2(Vector2.ZERO, Vector2(UI.DESIGN_SIZE)), UI.BACKGROUND)
-    for panel_id in ["L1", "L2", "L3", "R1", "R2", "R3", "R4"]:
+    for panel_id in UI.PANEL_IDS:
         _draw_frame(panel_id)
     # The tree grid and art both remain inside the frame's content rectangle.
     for x in range(int(TREE_RECT.position.x), int(TREE_RECT.end.x), 23):
