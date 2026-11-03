@@ -160,10 +160,19 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if deploy.size != Vector2(61, 31) or deploy.custom_minimum_size != Vector2(61, 31):
         push_error("W52 smoke: deploy dimensions actual=%s min=%s expected=(61, 31)" % [str(deploy.size), str(deploy.custom_minimum_size)])
         return false
-    var prev: Button = game.get("prev_button")
-    var next_help: Button = game.get("next_button")
+    var prev: TextureButton = game.get("prev_button")
+    var next_help: TextureButton = game.get("next_button")
     if prev.size != Vector2(25, 26) or next_help.size != Vector2(25, 26):
         push_error("W52 smoke: help arrows size invalid: prev=%s next=%s" % [str(prev.size), str(next_help.size)])
+        return false
+    var help_inner := Rect2(UI.content_rect("L3"))
+    if not help_inner.encloses(Rect2(prev.position, prev.size)) or not help_inner.encloses(Rect2(next_help.position, next_help.size)):
+        push_error("W52 smoke: help hit targets exceed their frame interior")
+        return false
+    var battle: TextureButton = game.get("battle_button")
+    var battle_inner := Rect2(UI.content_rect("R4"))
+    if not battle_inner.encloses(Rect2(battle.position, battle.size)):
+        push_error("W52 smoke: action hit target exceeds R4 interior")
         return false
     if not popup.encloses(Rect2(deploy.position, deploy.size)):
         push_error("W52 smoke: deploy button outside popup during dialogue: panel=%s btn=%s size=%s" % [str(popup), str(deploy.position), str(deploy.size)])
