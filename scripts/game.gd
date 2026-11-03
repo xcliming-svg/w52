@@ -680,8 +680,36 @@ func _help_text() -> String:
     return "%d주차: 빌드와 전장 배치를 점검하세요." % help_index
 
 
+func _stroke_pixel_line(canvas: Control, from: Vector2, to: Vector2, tint: Color) -> void:
+    var a := Vector2i(from.round())
+    var b := Vector2i(to.round())
+    if a.x == b.x:
+        canvas.draw_rect(Rect2(a.x, mini(a.y, b.y), 1, absi(a.y - b.y) + 1), tint)
+    elif a.y == b.y:
+        canvas.draw_rect(Rect2(mini(a.x, b.x), a.y, absi(a.x - b.x) + 1, 1), tint)
+
+
+func _draw_pixel_circle(canvas: Control, center: Vector2i, radius: int, fill: Color, rim: Color) -> void:
+    for y in range(-radius, radius + 1):
+        var outer := int(floor(sqrt(float(radius * radius - y * y))))
+        canvas.draw_rect(Rect2(center.x - outer, center.y + y, outer * 2 + 1, 1), rim)
+        var inner_radius := radius - 3
+        if absi(y) <= inner_radius:
+            var inner := int(floor(sqrt(float(inner_radius * inner_radius - y * y))))
+            canvas.draw_rect(Rect2(center.x - inner, center.y + y, inner * 2 + 1, 1), fill)
+
+
+func _draw_pixel_diamond(canvas: Control, center: Vector2i, radius: int, fill: Color, rim: Color) -> void:
+    for y in range(-radius, radius + 1):
+        var outer := radius - absi(y)
+        canvas.draw_rect(Rect2(center.x - outer, center.y + y, outer * 2 + 1, 1), rim)
+        var inner := radius - 3 - absi(y)
+        if inner >= 0:
+            canvas.draw_rect(Rect2(center.x - inner, center.y + y, inner * 2 + 1, 1), fill)
+
+
 func _draw_tree() -> void:
-    # Local coordinates, rendered exclusively inside TreeClip.clip_contents.
+    # Drawn only by TreeArt within TreeClip; no antialiased diagonals/lines.
     var path := _selected_ancestors()
     for node in NODES:
         var parent_id := str(node["parent"])
@@ -690,36 +718,37 @@ func _draw_tree() -> void:
         var parent := _find_node(parent_id)
         var a := _node_tree_local(parent)
         var b := _node_tree_local(node)
-        var middle_y := (a.y + b.y) * 0.5
+        var middle_y := float(roundi((a.y + b.y) / 2.0))
         var highlight := str(node["id"]) in path and parent_id in path
         var tint := UI.TEAL if highlight else UI.TREE_LINE
-        tree_canvas.draw_polyline(PackedVector2Array([a - Vector2(0, 35), Vector2(a.x, middle_y),
-            Vector2(b.x, middle_y), b + Vector2(0, 35)]), tint, 5.0 if highlight else 3.5, true)
+        var first := a - Vector2(0, 9)
+        var last := b + Vector2(0, 9)
+        _stroke_pixel_line(tree_canvas, first, Vector2(first.x, middle_y), tint)
+        _stroke_pixel_line(tree_canvas, Vector2(first.x, middle_y), Vector2(last.x, middle_y), tint)
+        _stroke_pixel_line(tree_canvas, Vector2(last.x, middle_y), last, tint)
     for node in NODES:
         var p := _node_tree_local(node)
-        if p.y < -100 or p.y > TREE_RECT.size.y + 100 or p.x < -100 or p.x > TREE_RECT.size.x + 100:
+        if p.y < -40 or p.y > TREE_RECT.size.y + 40 or p.x < -70 or p.x > TREE_RECT.size.x + 70:
             continue
         var id := str(node["id"])
         var locked := int(node["week"]) > week
         var focused := id == selected_id
         var hovered := id == hover_id
-        var radius := 38.0 * (1.12 if focused or hovered else 1.0)
+        var radius := 10 if focused or hovered else 9
         var kind := str(node["kind"])
         var fill := UI.LOCKED if locked else UI.NODE_FILL
         var border := UI.TREE_LINE if locked else (UI.GOLD if focused else UI.TEAL)
+        var center := Vector2i(p)
         if kind == "branch":
-            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), fill)
-            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), border, false, 3.0)
+            var side := int(radius * 1.5)
+            tree_canvas.draw_rect(Rect2(center.x - side / 2, center.y - side / 2, side, side), border)
+            tree_canvas.draw_rect(Rect2(center.x - side / 2 + 3, center.y - side / 2 + 3, side - 6, side - 6), fill)
         elif kind == "root":
-            tree_canvas.draw_colored_polygon(PackedVector2Array([p+Vector2(0,-radius),p+Vector2(radius,0),
-                p+Vector2(0,radius),p+Vector2(-radius,0)]), fill)
+            _draw_pixel_diamond(tree_canvas, center, radius, fill, border)
         else:
-            tree_canvas.draw_circle(p, radius, fill)
-            tree_canvas.draw_arc(p, radius, 0.0, TAU, 48, border, 4.0, true)
-        var symbol: String = str(node["symbol"])
-        _layer_text(tree_canvas, symbol, p + Vector2(-13, -22), 31, border)
-        _layer_text(tree_canvas, str(node["name"]), p + Vector2(-40, radius + 7), 22, UI.MUTED if locked else UI.TEXT)
-
+            _draw_pixel_circle(tree_canvas, center, radius, fill, border)
+        _layer_text(tree_canvas, str(node["symbol"]), p + Vector2(-5, -7), 11, border)
+        _layer_text(tree_canvas, str(node["name"]), p + Vector2(-13, radius + 2), 10, UI.MUTED if locked else UI.TEXT)
 
 func _draw_popup() -> void:
     if selected_id.is_empty():
@@ -729,43 +758,46 @@ func _draw_popup() -> void:
         return
     var panel := _popup_rect()
     _layer_box(popup_surface, panel, UI.PANEL, UI.TEAL)
-    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(25, 20), 32)
+    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(7, 5), 13)
     var details := str(node["detail"]).split("|")
     for i in range(details.size()):
-        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(25, 75 + i * 37), 25, UI.MUTED)
-
+        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(7, 29 + i * 13), 10, UI.MUTED)
 
 func _draw_field() -> void:
-    var sz := _grid_size()
-    var cols: int = sz.x
-    var rows: int = sz.y
-    var start := Vector2(1376 + (544 - cols * 46) * 0.5, 84 + (652 - rows * 46) * 0.5)
+    var grid := _grid_geometry()
+    var cols: int = grid["cols"]
+    var rows: int = grid["rows"]
+    var cell: int = grid["cell"]
+    var start: Vector2i = grid["start"]
     for r in range(rows):
         for c in range(cols):
-            var pos := start + Vector2(c * 46, r * 46)
-            _box(Rect2(pos, Vector2(46, 46)), UI.ENEMY_CELL if r < rows / 2 else UI.ALLY_CELL, UI.GRID_BORDER)
-    var mid_y: float = start.y + float(rows / 2) * 46.0
-    draw_line(Vector2(start.x, mid_y), Vector2(start.x + cols * 46, mid_y), UI.TEXT, 2.0)
+            var pos := start + Vector2i(c * cell, r * cell)
+            _box(Rect2(Vector2(pos), Vector2(cell, cell)),
+                UI.ENEMY_CELL if r < rows / 2 else UI.ALLY_CELL, UI.GRID_BORDER)
+    var mid_y := start.y + int(rows / 2) * cell
+    draw_rect(Rect2(start.x, mid_y, cols * cell, 1), UI.TEXT)
+    var mark := maxi(3, cell - 5)
     for i in range(3):
-        var enemy_p := start + Vector2((1 + i * 2) * 46 + 8, (0 if i < 2 else 1) * 46 + 8)
-        draw_rect(Rect2(enemy_p, Vector2(30, 30)), UI.ENEMY)
-        _text("×", enemy_p + Vector2(6, -4), 28)
+        var enemy_p := start + Vector2i((1 + i * 2) * cell + 2, (0 if i < 2 else 1) * cell + 2)
+        draw_rect(Rect2(Vector2(enemy_p), Vector2(mark, mark)), UI.ENEMY)
+        _text("×", Vector2(enemy_p), 9)
     for i in range(placements.size()):
         var col: int = 1 + i % (cols - 2)
         var row: int = rows - 1 - int(i / (cols - 2))
-        var ally_p := start + Vector2(col * 46 + 8, row * 46 + 8)
-        draw_rect(Rect2(ally_p, Vector2(30, 30)), UI.TEAL)
-        _text("■", ally_p + Vector2(3, -2), 25, UI.BACKGROUND)
-
+        var ally_p := start + Vector2i(col * cell + 2, row * cell + 2)
+        draw_rect(Rect2(Vector2(ally_p), Vector2(mark, mark)), UI.TEAL)
+        _text("■", Vector2(ally_p), 9, UI.GAME_BACKGROUND)
 
 func _draw_dialogue_overlay() -> void:
     if phase != "dialogue":
         return
     _layer_box(dialogue_surface, DIALOGUE_RECT, UI.DIALOGUE_PANEL, UI.GOLD)
-    _layer_box(dialogue_surface, Rect2(52, 800, 112, 125), UI.NODE_FILL, UI.GOLD)
+    var portrait := Rect2(10, 257, 28, 29)
+    _layer_box(dialogue_surface, portrait, UI.NODE_FILL, UI.GOLD)
     var speaker := "해설" if dialogue_index == 0 or dialogue_index == 2 or dialogue_index == 4 else "작전 참모"
-    _layer_text(dialogue_surface, "≡" if speaker == "해설" else "◆", Vector2(83, 815), 48, UI.GOLD)
-    _layer_text(dialogue_surface, speaker, Vector2(196, 793), 26, UI.GOLD)
-    var text_lines := _dialogue_content()
-    _layer_text(dialogue_surface, text_lines[min(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(196, 845), 28)
-    _layer_text(dialogue_surface, "Space  다음 ›", Vector2(1137, 905), 21, UI.MUTED)
+    _layer_text(dialogue_surface, "≡" if speaker == "해설" else "◆", Vector2(18, 261), 17, UI.GOLD)
+    _layer_text(dialogue_surface, speaker, Vector2(46, 255), 10, UI.GOLD)
+    var lines := _dialogue_content()
+    _layer_text(dialogue_surface, lines[mini(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(46, 269), 10)
+    _layer_text(dialogue_surface, "Space  다음 ›", Vector2(336, 255), 8, UI.MUTED)
+
