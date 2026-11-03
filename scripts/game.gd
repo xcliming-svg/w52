@@ -206,8 +206,7 @@ func _find_node(id: String) -> Dictionary:
 
 
 func _node_tree_local(node: Dictionary) -> Vector2:
-    return node["p"] + camera_offset
-
+    return (Vector2(node["p"]) * WORLD_SCALE + camera_offset).round()
 
 func _node_screen(node: Dictionary) -> Vector2:
     return TREE_RECT.position + _node_tree_local(node)
@@ -226,17 +225,15 @@ func _selected_ancestors() -> Array[String]:
 
 
 func _node_visual_rect(node: Dictionary) -> Rect2:
-    # A recognizable unit of the tree is one entire node plus its name label.
-    # Use its largest hover/selection icon size and the measured label width.
-    var p: Vector2 = node["p"]
-    var radius := 38.0 * 1.12
-    var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
-    var left := minf(p.x - radius, p.x - 40.0)
-    var right := maxf(p.x + radius, p.x - 40.0 + label_width)
+    # Entire node + name bounding box, including selection enlargement.
+    var p := (Vector2(node["p"]) * WORLD_SCALE).round()
+    var radius := 11.0
+    var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+    var left := minf(p.x - radius, p.x - 13.0)
+    var right := maxf(p.x + radius, p.x - 13.0 + label_width)
     var top := p.y - radius
-    var bottom := p.y + radius + 7.0 + 22.0 + FONT.get_descent(22)
+    var bottom := p.y + radius + 2.0 + 10.0 + FONT.get_descent(10)
     return Rect2(Vector2(left, top), Vector2(right - left, bottom - top))
-
 
 func _readable_tree_area() -> Rect2:
     # Avoid counting a node completely hidden by the dialogue overlay.
@@ -247,8 +244,6 @@ func _readable_tree_area() -> Rect2:
 
 
 func _clamp_pan(candidate: Vector2) -> Vector2:
-    # Keep one complete node icon and name legible. Use the union of
-    # per-node visibility regions instead of a whole-tree bounding box.
     var visible := _readable_tree_area()
     var nearest := candidate
     var nearest_distance := INF
@@ -261,8 +256,7 @@ func _clamp_pan(candidate: Vector2) -> Vector2:
         if distance < nearest_distance:
             nearest_distance = distance
             nearest = projected
-    return nearest
-
+    return nearest.round()
 
 func _select_node(id: String) -> void:
     var node := _find_node(id)
@@ -281,11 +275,15 @@ func _popup_rect() -> Rect2:
     if node.is_empty():
         return Rect2()
     var p := _node_screen(node)
-    var panel_x: float = clampf(p.x + 100.0, 28.0, TREE_RECT.size.x - POPUP_SIZE.x - 28.0)
-    var bottom_limit: float = 480.0 if phase == "dialogue" else 670.0
-    var panel_y: float = clampf(p.y - 112.0, 104.0, bottom_limit)
-    return Rect2(Vector2(panel_x, panel_y), POPUP_SIZE)
-
+    var min_x := int(TREE_RECT.position.x)
+    var min_y := int(TREE_RECT.position.y)
+    var max_x := int(TREE_RECT.end.x - POPUP_SIZE.x)
+    var max_y := int(TREE_RECT.end.y - POPUP_SIZE.y)
+    if phase == "dialogue":
+        max_y = mini(max_y, int(DIALOGUE_RECT.position.y - POPUP_SIZE.y))
+    var px := clampi(roundi(p.x + 13.0), min_x, max_x)
+    var py := clampi(roundi(p.y - 36.0), min_y, max_y)
+    return Rect2(Vector2(px, py), POPUP_SIZE)
 
 func _update_popup() -> void:
     if selected_id.is_empty():
@@ -309,7 +307,7 @@ func _process(delta: float) -> void:
         _queue_ui_redraw()
     if phase == "battle":
         var previous_second := int(battle_seconds)
-        battle_seconds += delta * speed
+        battle_seconds += delta
         if int(battle_seconds) != previous_second and int(battle_seconds) in [3, 7, 11, 15]:
             _append_log("전선에서 교전이 진행 중입니다. (시연)")
         if battle_seconds >= 18.0:
@@ -330,10 +328,9 @@ func _node_at(mouse: Vector2) -> String:
     if not selected_id.is_empty() and _popup_rect().has_point(mouse):
         return ""
     for node in NODES:
-        if _node_screen(node).distance_to(mouse) <= 49.0:
+        if _node_screen(node).distance_to(mouse) <= 12.0:
             return str(node["id"])
     return ""
-
 
 func _start_pan(mouse: Vector2) -> void:
     pan_armed = true
@@ -412,9 +409,8 @@ func _gui_input(event: InputEvent) -> void:
             if not selected_id.is_empty() and _popup_rect().has_point(click.position):
                 return
             _start_pan(click.position)
-        elif Rect2(1376, 84, 544, 652).has_point(click.position):
+        elif Rect2(UI.content_rect("R2")).has_point(click.position):
             _click_ally(click.position)
-
 
 func _advance_dialogue() -> void:
     if phase != "dialogue":
@@ -447,11 +443,6 @@ func _dialogue_content() -> Array[String]:
 
 func _change_help(step: int) -> void:
     help_index = clampi(help_index + step, 1, week)
-    _refresh_all()
-
-
-func _set_speed(next_speed: int) -> void:
-    speed = next_speed
     _refresh_all()
 
 
@@ -490,22 +481,32 @@ func _battle_action() -> void:
     _refresh_all()
 
 
+func _grid_geometry() -> Dictionary:
+    var dimensions := _grid_size()
+    var field := UI.content_rect("R2")
+    var cell := mini(int(field.size.x / dimensions.x), int(field.size.y / dimensions.y))
+    var grid_px := dimensions * cell
+    var start := field.position + Vector2i(
+        int((field.size.x - grid_px.x) / 2), int((field.size.y - grid_px.y) / 2))
+    return {"start": start, "cell": cell, "cols": dimensions.x, "rows": dimensions.y}
+
+
 func _click_ally(mouse: Vector2) -> void:
-    var size := _grid_size()
-    var cols: int = size.x
-    var rows: int = size.y
-    var grid_pos := Vector2(1376 + (544 - cols * 46) * 0.5, 84 + (652 - rows * 46) * 0.5)
-    var cell := ((mouse - grid_pos) / 46.0).floor()
+    var grid := _grid_geometry()
+    var cols: int = grid["cols"]
+    var rows: int = grid["rows"]
+    var cell_size: int = grid["cell"]
+    var start: Vector2i = grid["start"]
+    var cell := ((mouse - Vector2(start)) / float(cell_size)).floor()
     if cell.x < 0 or cell.y < 0 or cell.x >= cols or cell.y >= rows:
         return
     if cell.y < rows / 2:
         return
     for i in range(placements.size()):
-        var pos := Vector2i(1 + (i % (cols - 2)), rows - 1 - (i / (cols - 2)))
+        var pos := Vector2i(1 + (i % (cols - 2)), rows - 1 - int(i / (cols - 2)))
         if pos == Vector2i(cell):
             _select_node(placements[i])
             return
-
 
 func _grid_size() -> Vector2i:
     if week <= 13:
@@ -526,19 +527,18 @@ func _append_log(message: String) -> void:
 
 
 func _refresh_log() -> void:
-    var stick_bottom := log_scroll.scroll_vertical >= log_scroll.get_v_scroll_bar().max_value - log_scroll.size.y - 20
+    var stick_bottom := log_scroll.scroll_vertical >= log_scroll.get_v_scroll_bar().max_value - log_scroll.size.y - 3
     for child in log_column.get_children():
         log_column.remove_child(child)
         child.queue_free()
     for entry in log_items:
-        var label := UI.make_label("◆  " + entry, 22, UI.TEXT)
+        var label := UI.make_label("◆ " + entry, 9, UI.TEXT)
         label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
         label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-        label.custom_minimum_size.x = 480
+        label.custom_minimum_size.x = UI.content_rect("R3").size.x - 15
         log_column.add_child(label)
     if stick_bottom:
         call_deferred("_scroll_log_to_end")
-
 
 func _scroll_log_to_end() -> void:
     if is_instance_valid(log_scroll):
@@ -548,14 +548,6 @@ func _scroll_log_to_end() -> void:
 func _refresh_all() -> void:
     prev_button.disabled = help_index <= 1
     next_button.disabled = help_index >= week
-    speed_one.button_pressed = speed == 1
-    speed_two.button_pressed = speed == 2
-    speed_one.add_theme_color_override("font_color", UI.BACKGROUND if speed == 1 else UI.TEXT)
-    speed_one.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD if speed == 1 else UI.PANEL))
-    speed_one.add_theme_stylebox_override("pressed", UI._button_style(UI.GOLD if speed == 1 else UI.PANEL))
-    speed_two.add_theme_color_override("font_color", UI.BACKGROUND if speed == 2 else UI.TEXT)
-    speed_two.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
-    speed_two.add_theme_stylebox_override("pressed", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
     battle_button.disabled = phase == "battle" or (phase == "result" and week == MAX_WEEK)
     if phase == "battle":
         battle_button.text = "전투 진행 중"
@@ -568,7 +560,6 @@ func _refresh_all() -> void:
     _update_popup()
     _refresh_log()
     _queue_ui_redraw()
-
 
 func _text(value: String, p: Vector2, font_size: int, color: Color = UI.TEXT) -> void:
     draw_string(FONT, p + Vector2(0, font_size), value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
@@ -640,7 +631,7 @@ func _help_text() -> String:
     if help_index == 18:
         return "아군을 클릭하면 연결된 트리 노드로 포커스됩니다."
     if help_index == 35:
-        return "전투 속도는 1× 또는 2×로 변경할 수 있습니다."
+        return "전투 중에는 전투 정보를 확인할 수 있습니다."
     if help_index == 52:
         return "지난 도움말은 왼쪽 화살표로 다시 볼 수 있습니다."
     return "%d주차: 빌드와 전장 배치를 점검하세요." % help_index
