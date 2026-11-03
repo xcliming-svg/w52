@@ -46,9 +46,10 @@ var pan_start_camera: Vector2 = Vector2.ZERO
 var pan_press_node_id: String = ""
 
 var deploy_button: Button
-var battle_button: Button
-var prev_button: Button
-var next_button: Button
+var battle_button: TextureButton
+var prev_button: TextureButton
+var next_button: TextureButton
+var battle_label: String = "전투 시작"
 var log_scroll: ScrollContainer
 var log_column: VBoxContainer
 var tree_surface: Control
@@ -137,25 +138,17 @@ func _create_controls() -> void:
     var help := UI.content_rect("L3")
     # Construct compact arrows directly: menu button's initial font minimum
     # height is 31px and cannot fit the 28px content interior.
-    prev_button = Button.new()
-    next_button = Button.new()
-    prev_button.text = "〈"
-    next_button.text = "〉"
+    prev_button = TextureButton.new()
+    next_button = TextureButton.new()
     for b in [prev_button, next_button]:
+        # TextureButton supplies only a fixed-size rectangular input surface.
+        # Its DB32 box/glyph are drawn below; no texture is loaded or introduced.
         b.custom_minimum_size = Vector2(25, 26)
-        b.add_theme_font_size_override("font_size", 8)
-        for visual in ["normal", "hover", "pressed", "disabled"]:
-            var style := UI._button_style(UI.PRIMARY if visual == "normal" else UI.PRIMARY_HOVER)
-            style.set_border_width_all(1)
-            style.content_margin_left = 0
-            style.content_margin_right = 0
-            style.content_margin_top = 0
-            style.content_margin_bottom = 0
-            b.add_theme_stylebox_override(visual, style)
-        b.add_theme_color_override("font_color", UI.GAME_BACKGROUND)
-        b.add_theme_color_override("font_hover_color", UI.GAME_BACKGROUND)
-        b.add_theme_color_override("font_disabled_color", UI.MUTED)
         b.size = Vector2(25, 26)
+        b.mouse_entered.connect(queue_redraw)
+        b.mouse_exited.connect(queue_redraw)
+        b.button_down.connect(queue_redraw)
+        b.button_up.connect(queue_redraw)
         add_child(b)
     prev_button.position = Vector2(help.position + Vector2i(2, 1))
     next_button.position = Vector2(help.end - Vector2i(27, 27))
@@ -163,18 +156,10 @@ func _create_controls() -> void:
     next_button.pressed.connect(func() -> void: _change_help(1))
 
     var action := UI.content_rect("R4")
-    battle_button = Button.new()
-    battle_button.text = "전투 시작"
+    battle_button = TextureButton.new()
     battle_button.custom_minimum_size = Vector2(action.size)
     battle_button.position = Vector2(action.position)
-    battle_button.add_theme_font_size_override("font_size", 10)
     battle_button.size = Vector2(action.size)
-    for state in ["normal", "hover", "pressed", "disabled"]:
-        battle_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-    battle_button.add_theme_color_override("font_color", UI.GAME_BACKGROUND)
-    battle_button.add_theme_color_override("font_hover_color", UI.GAME_BACKGROUND)
-    battle_button.add_theme_color_override("font_pressed_color", UI.TEXT)
-    battle_button.add_theme_color_override("font_disabled_color", UI.MUTED)
     battle_button.mouse_entered.connect(queue_redraw)
     battle_button.mouse_exited.connect(queue_redraw)
     battle_button.button_down.connect(queue_redraw)
@@ -568,13 +553,13 @@ func _refresh_all() -> void:
     next_button.disabled = help_index >= week
     battle_button.disabled = phase == "battle" or (phase == "result" and week == MAX_WEEK)
     if phase == "battle":
-        battle_button.text = "전투 진행 중"
+        battle_label = "전투 진행 중"
     elif phase == "result" and week == MAX_WEEK:
-        battle_button.text = "52주 완료"
+        battle_label = "52주 완료"
     elif phase == "result":
-        battle_button.text = "다음 주"
+        battle_label = "다음 주"
     else:
-        battle_button.text = "전투 시작"
+        battle_label = "전투 시작"
     _update_popup()
     _refresh_log()
     _queue_ui_redraw()
@@ -642,6 +627,14 @@ func _draw_frame(panel_id: String) -> void:
         _draw_screw(origin)
 
 
+func _draw_help_arrow(button: TextureButton, glyph: String) -> void:
+    var background := UI.PANEL if button.disabled else (UI.PRIMARY_HOVER if button.is_hovered() else UI.PRIMARY)
+    var rect := Rect2(button.position, button.size)
+    _box(rect, background, UI.BUTTON_SHADE)
+    var color := UI.MUTED if button.disabled else UI.GAME_BACKGROUND
+    _text(glyph, button.position + Vector2(7, 3), 9, color)
+
+
 func _draw_action_background() -> void:
     var rect := UI.content_rect("R4")
     var disabled := battle_button.disabled
@@ -653,6 +646,10 @@ func _draw_action_background() -> void:
     draw_rect(Rect2(rect.position.x, rect.end.y - 3, rect.size.x, 3), UI.BUTTON_SHADE)
     draw_rect(Rect2(rect.end.x - 2, rect.position.y, 2, rect.size.y), UI.BUTTON_EDGE)
     draw_rect(Rect2(rect.end.x - 1, rect.end.y - 2, 1, 2), UI.BUTTON_DARK)
+    var font_px := 12
+    var label_width := FONT.get_string_size(battle_label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_px).x
+    var label_pos := Vector2(rect.position.x + roundi((rect.size.x - label_width) / 2.0), rect.position.y + 3)
+    _text(battle_label, label_pos, font_px, UI.MUTED if disabled else UI.GAME_BACKGROUND)
 
 
 func _draw() -> void:
@@ -673,6 +670,8 @@ func _draw() -> void:
     var help := UI.content_rect("L3")
     _text("도움말", Vector2(help.position + Vector2i(35, 7)), 10, UI.GOLD)
     _text(_help_text(), Vector2(help.position + Vector2i(78, 7)), 9)
+    _draw_help_arrow(prev_button, "〈")
+    _draw_help_arrow(next_button, "〉")
     _draw_action_background()
 
 func _group_digits(value: int) -> String:
