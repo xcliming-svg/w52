@@ -157,12 +157,12 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
             return false
     var popup: Rect2 = game.call("_popup_rect")
     var deploy: Button = game.get("deploy_button")
-    if deploy.size != Vector2(61, 20) or deploy.custom_minimum_size != Vector2(61, 20):
-        push_error("W52 smoke: deploy dimensions actual=%s min=%s expected=(61, 20)" % [str(deploy.size), str(deploy.custom_minimum_size)])
+    if deploy.size != Vector2(61, 28) or deploy.custom_minimum_size != Vector2(61, 28):
+        push_error("W52 smoke: deploy dimensions actual=%s min=%s expected=(61, 28)" % [str(deploy.size), str(deploy.custom_minimum_size)])
         return false
     var prev: Button = game.get("prev_button")
     var next_help: Button = game.get("next_button")
-    if prev.size != Vector2(23, 22) or next_help.size != Vector2(23, 22):
+    if prev.size != Vector2(25, 26) or next_help.size != Vector2(25, 26):
         push_error("W52 smoke: help arrows size invalid")
         return false
     if not popup.encloses(Rect2(deploy.position, deploy.size)):
