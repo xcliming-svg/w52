@@ -25,6 +25,8 @@ var settings_overlay: Control
 func _ready() -> void:
     # Rasterize glyphs in solid pixels on PC and Web, including CJK fallbacks.
     KOREAN_UI_FONT.set("antialiasing", TextServer.FONT_ANTIALIASING_NONE)
+    KOREAN_UI_FONT.set("hinting", TextServer.HINTING_NORMAL)
+    KOREAN_UI_FONT.set("subpixel_positioning", TextServer.SUBPIXEL_POSITIONING_DISABLED)
     # Web builds do not reliably provide system CJK font fallbacks.
     # Include only the licensed Nanum Gothic Unicode ranges used by the new UI.
     var fallback_fonts: Array[Font] = []
@@ -34,6 +36,8 @@ func _ready() -> void:
             push_error("Missing bundled Korean glyph subset: %d" % part)
         else:
             font.set("antialiasing", TextServer.FONT_ANTIALIASING_NONE)
+            font.set("hinting", TextServer.HINTING_NORMAL)
+            font.set("subpixel_positioning", TextServer.SUBPIXEL_POSITIONING_DISABLED)
             fallback_fonts.append(font)
     KOREAN_UI_FONT.set_fallbacks(fallback_fonts)
     var ui_theme := Theme.new()
