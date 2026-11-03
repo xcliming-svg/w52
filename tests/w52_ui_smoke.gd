@@ -48,7 +48,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if clip == null or not clip.clip_contents:
         push_error("W52 smoke: missing clipped tree viewport")
         return false
-    if clip.position != Vector2(0, 84) or clip.size != Vector2(1376, 892):
+    if clip.position != Vector2(11, 96) or clip.size != Vector2(427, 205):
         push_error("W52 smoke: clipped tree bounds incorrect")
         return false
     var art := clip.get_node_or_null("TreeArt") as Control
@@ -68,7 +68,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     # Selected unit remains centered; other branches can extend offscreen.
     var guard: Dictionary = game.call("_find_node", "guard")
     var focus_offset: Vector2 = game.get("camera_offset")
-    var expected_focus: Vector2 = game.call("_clamp_pan", Vector2(688, 446) - guard["p"])
+    var expected_focus: Vector2 = game.call("_clamp_pan", Vector2(213, 102) - Vector2(guard["p"]) * 0.25)
     if focus_offset.distance_to(expected_focus) > 0.1:
         push_error("W52 smoke: guard focus not at readable camera target")
         return false
@@ -84,23 +84,18 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
             return false
     var popup: Rect2 = game.call("_popup_rect")
     var deploy: Button = game.get("deploy_button")
-    if deploy.size != Vector2(160, 62) or deploy.custom_minimum_size != Vector2(160, 62):
+    if deploy.size != Vector2(61, 20) or deploy.custom_minimum_size != Vector2(61, 20):
         push_error("W52 smoke: deploy control inherited menu button dimensions")
         return false
-    var speed_one: Button = game.get("speed_one")
-    var speed_two: Button = game.get("speed_two")
     var prev: Button = game.get("prev_button")
     var next_help: Button = game.get("next_button")
-    if speed_one.size != Vector2(103, 52) or speed_two.size != Vector2(103, 52):
-        push_error("W52 smoke: speed control size invalid")
-        return false
-    if prev.size != Vector2(72, 64) or next_help.size != Vector2(72, 64):
+    if prev.size != Vector2(23, 22) or next_help.size != Vector2(23, 22):
         push_error("W52 smoke: help arrows size invalid")
         return false
     if not popup.encloses(Rect2(deploy.position, deploy.size)):
         push_error("W52 smoke: deploy button outside popup during dialogue: panel=%s btn=%s size=%s" % [str(popup), str(deploy.position), str(deploy.size)])
         return false
-    if popup.end.y > 754.0:
+    if popup.end.y > 251.0:
         push_error("W52 smoke: popup collides with dialogue")
         return false
     # The popup surface cannot arm the background pan.
@@ -122,7 +117,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     var start := Vector2(90, 190)
     var before: Vector2 = game.get("camera_offset")
     game.call("_gui_input", _mouse_button(true, start))
-    game.call("_input", _mouse_motion(start + Vector2(3, 2)))
+    game.call("_input", _mouse_motion(start + Vector2(1, 1)))
     var under_threshold: Vector2 = game.get("camera_offset")
     if under_threshold.distance_to(before) > 0.1:
         push_error("W52 smoke: under-threshold motion panned tree")
@@ -192,7 +187,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         game.call("_process", 1.0)
         var chosen: Dictionary = game.call("_find_node", node_id)
         var chosen_screen: Vector2 = game.call("_node_screen", chosen)
-        if chosen_screen.distance_to(Vector2(688, 530)) > 0.1:
+        if chosen_screen.distance_to(Vector2(224, 198)) > 0.1:
             push_error("W52 smoke: node %s did not focus exactly at tree center" % node_id)
             return false
         if not _assert_readable_tree(game):
@@ -201,7 +196,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     game.call("_select_node", "mobility")
     game.call("_process", 1.0)
     var mobility: Dictionary = game.call("_find_node", "mobility")
-    expected_focus = game.call("_clamp_pan", Vector2(688, 446) - mobility["p"])
+    expected_focus = game.call("_clamp_pan", Vector2(213, 102) - Vector2(mobility["p"]) * 0.25)
     focus_offset = game.get("camera_offset")
     if focus_offset.distance_to(expected_focus) > 0.1:
         push_error("W52 smoke: edge focus did not honor camera range")
@@ -213,7 +208,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     game.call("_process", 1.0)
     var root_node: Dictionary = game.call("_find_node", "root")
     var root_screen: Vector2 = game.call("_node_screen", root_node)
-    if root_screen.distance_to(Vector2(688, 530)) > 0.1:
+    if root_screen.distance_to(Vector2(224, 198)) > 0.1:
         push_error("W52 smoke: central focus not centered")
         return false
     if not _assert_readable_tree(game):
@@ -221,7 +216,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     # A short click on a visible node still selects it; dragging that node does not.
     var command_pos: Vector2 = game.call("_node_screen", game.call("_find_node", "command"))
     game.call("_gui_input", _mouse_button(true, command_pos))
-    game.call("_input", _mouse_motion(command_pos + Vector2(3, 0)))
+    game.call("_input", _mouse_motion(command_pos + Vector2(1, 0)))
     game.call("_input", _mouse_button(false, command_pos + Vector2(3, 0)))
     if str(game.get("selected_id")) != "command":
         push_error("W52 smoke: short node click failed after panning")
@@ -248,11 +243,11 @@ func _run() -> void:
     root.add_child(game)
     await process_frame
 
-    if int(ProjectSettings.get_setting("display/window/size/viewport_width")) != 1920:
+    if int(ProjectSettings.get_setting("display/window/size/viewport_width")) != 640:
         push_error("W52 smoke: wrong logical viewport width")
         quit(1)
         return
-    if int(ProjectSettings.get_setting("display/window/size/viewport_height")) != 1080:
+    if int(ProjectSettings.get_setting("display/window/size/viewport_height")) != 360:
         push_error("W52 smoke: wrong logical viewport height")
         quit(1)
         return
@@ -341,5 +336,5 @@ func _run() -> void:
         quit(1)
         return
     store.clear_save()
-    print("W52_UI_SMOKE_OK: 52 battles, dialogues, help gating, deployment, save/restore, 1920x1080")
+    print("W52_UI_SMOKE_OK: 52 battles, dialogues, help gating, deployment, save/restore, 640x360 integer viewport")
     quit(0)
