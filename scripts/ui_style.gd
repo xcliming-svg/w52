@@ -35,6 +35,9 @@ const RIGHT_WIDTH := 192
 const TOP_BLANK := 36
 const FRAME_THICKNESS := 7
 const SCREW_DIAMETER := 3
+# v8 CSS reference: border-box cut=8; middle inset=2/cut=7;
+# dark inner rim inset=6/cut=5; panel core inset=7/cut=4.
+# The progressively deeper diagonal cuts keep the 3px screw centered on metal.
 const PANEL_IDS := ["L1", "L2", "L3", "R1", "R2", "R3", "R4"]
 const DIALOGUE_RECT := Rect2i(4, 251, 426, 43)
 
@@ -73,6 +76,20 @@ static func content_rect(panel_id: String) -> Rect2i:
     var inset := FRAME_THICKNESS
     return Rect2i(frame.position + Vector2i(inset, inset),
         frame.size - Vector2i(inset * 2, inset * 2))
+
+
+static func metal_corner_cut(inset: int) -> int:
+    match inset:
+        0:
+            return 8
+        2:
+            return 7
+        6:
+            return 5
+        7:
+            return 4
+    push_error("Invalid metal layer inset: %d" % inset)
+    return 0
 
 
 static func screw_origins(panel_id: String) -> Array[Vector2i]:
