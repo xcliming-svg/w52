@@ -34,6 +34,8 @@ const LEFT_WIDTH := 448
 const RIGHT_WIDTH := 192
 const TOP_BLANK := 36
 const FRAME_THICKNESS := 7
+const SCREW_DIAMETER := 3
+const PANEL_IDS := ["L1", "L2", "L3", "R1", "R2", "R3", "R4"]
 const DIALOGUE_RECT := Rect2i(4, 251, 426, 43)
 
 # Round one shared set of 20-row boundaries; do not recompute fractional margins.
@@ -71,6 +73,16 @@ static func content_rect(panel_id: String) -> Rect2i:
     var inset := FRAME_THICKNESS
     return Rect2i(frame.position + Vector2i(inset, inset),
         frame.size - Vector2i(inset * 2, inset * 2))
+
+
+static func screw_origins(panel_id: String) -> Array[Vector2i]:
+    var frame := frame_rect(panel_id)
+    return [
+        frame.position + Vector2i(5, 5),
+        Vector2i(frame.end.x - 8, frame.position.y + 5),
+        Vector2i(frame.position.x + 5, frame.end.y - 8),
+        frame.end - Vector2i(8, 8)
+    ]
 
 
 static func create_layout(root: Control, heading: String, description: String = "", dim_background: bool = false) -> VBoxContainer:
