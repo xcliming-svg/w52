@@ -588,11 +588,13 @@ func _box(rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
     draw_rect(rect, border)
     draw_rect(rect.grow(-1.0), fill)
 
-# Each beveled layer is a run of integer pixels. No subpixel edges or antialiasing.
-func _frame_layer(frame: Rect2i, inset: int, fill: Color, lit: Color, shade: Color) -> void:
+# Match the reference HTML v8 nested 2px outer / 4px middle / 1px inner
+# bevel. Each successive clipped octagon cuts deeper into the corners.
+# Row fills are integer pixel spans; no antialiased diagonal drawing.
+func _frame_layer(frame: Rect2i, inset: int, edge_width: int, fill: Color, lit: Color, shade: Color) -> void:
     var a := frame.position + Vector2i(inset, inset)
     var e := frame.end - Vector2i(inset, inset)
-    var cut := maxi(0, 8 - inset)
+    var cut := UI.metal_corner_cut(inset)
     for y in range(a.y, e.y):
         var from_corner := mini(y - a.y, e.y - 1 - y)
         var clip_left := maxi(0, cut - from_corner)
@@ -601,31 +603,33 @@ func _frame_layer(frame: Rect2i, inset: int, fill: Color, lit: Color, shade: Col
         if x1 <= x0:
             continue
         draw_rect(Rect2(x0, y, x1 - x0, 1), fill)
-        if y - a.y < 2:
+        if edge_width <= 0:
+            continue
+        if y - a.y < edge_width:
             draw_rect(Rect2(x0, y, x1 - x0, 1), lit)
-        elif e.y - 1 - y < 2:
+        elif e.y - 1 - y < edge_width:
             draw_rect(Rect2(x0, y, x1 - x0, 1), shade)
         else:
-            draw_rect(Rect2(x0, y, mini(2, x1 - x0), 1), lit)
-            draw_rect(Rect2(x1 - mini(2, x1 - x0), y, mini(2, x1 - x0), 1), shade)
+            var side := mini(edge_width, x1 - x0)
+            draw_rect(Rect2(x0, y, side, 1), lit)
+            draw_rect(Rect2(x1 - side, y, side, 1), shade)
 
 
 func _draw_screw(top_left: Vector2i) -> void:
-    # Five opaque pixels keep the 3px screw centered on the diagonal metal band.
-    # The four footprint corners remain uncovered, protecting the 1px inner rim.
-    draw_rect(Rect2(Vector2(top_left + Vector2i(1, 0)), Vector2.ONE), UI.METAL_LIGHT)
-    draw_rect(Rect2(Vector2(top_left + Vector2i(0, 1)), Vector2.ONE), UI.METAL_LIGHT)
-    draw_rect(Rect2(Vector2(top_left + Vector2i(1, 1)), Vector2.ONE), UI.METAL_MID)
-    draw_rect(Rect2(Vector2(top_left + Vector2i(2, 1)), Vector2.ONE), UI.METAL_DARK)
-    draw_rect(Rect2(Vector2(top_left + Vector2i(1, 2)), Vector2.ONE), UI.METAL_DARK)
+    # v8 reference: 3px diameter, dark #323c39 circular rim and one
+    # #847e87 central reflection. A 5-pixel cross is the 3x3 raster circle.
+    # Leave the four footprint corners untouched (no black 3x3 patch).
+    for offset in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(2, 1), Vector2i(1, 2)]:
+        draw_rect(Rect2(Vector2(top_left + offset), Vector2.ONE), UI.METAL_DARK)
+    draw_rect(Rect2(Vector2(top_left + Vector2i.ONE), Vector2.ONE), UI.TREE_LINE)
 
 
 func _draw_frame(panel_id: String) -> void:
     var f := UI.frame_rect(panel_id)
-    _frame_layer(f, 0, UI.METAL_MID, UI.METAL_LIGHT, UI.METAL_DARK)
-    _frame_layer(f, 2, UI.METAL_MID, UI.METAL_MID, UI.METAL_DARK)
-    _frame_layer(f, 6, UI.EDGE_DARK, UI.EDGE_DARK, UI.EDGE_DARK)
-    _frame_layer(f, 7, UI.PANEL, UI.PANEL, UI.PANEL)
+    _frame_layer(f, 0, 2, UI.METAL_MID, UI.METAL_LIGHT, UI.METAL_DARK)
+    _frame_layer(f, 2, 1, UI.METAL_DARK, UI.METAL_MID, UI.METAL_DARK)
+    _frame_layer(f, 6, 0, UI.EDGE_DARK, UI.EDGE_DARK, UI.EDGE_DARK)
+    _frame_layer(f, 7, 0, UI.PANEL, UI.PANEL, UI.PANEL)
     for origin in UI.screw_origins(panel_id):
         _draw_screw(origin)
 
