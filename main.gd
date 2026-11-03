@@ -23,8 +23,9 @@ var settings_overlay: Control
 
 
 func _ready() -> void:
-    # Rasterize glyphs in solid pixels on PC and Web, including CJK fallbacks.
-    KOREAN_UI_FONT.set("antialiasing", TextServer.FONT_ANTIALIASING_NONE)
+    # Grayscale coverage repairs small Korean outline strokes at 640x360.
+    # Bevels and viewport scaling remain pixel-aligned and unfiltered.
+    KOREAN_UI_FONT.set("antialiasing", TextServer.FONT_ANTIALIASING_GRAY)
     KOREAN_UI_FONT.set("hinting", TextServer.HINTING_NORMAL)
     KOREAN_UI_FONT.set("subpixel_positioning", TextServer.SUBPIXEL_POSITIONING_DISABLED)
     # Web builds do not reliably provide system CJK font fallbacks.
@@ -35,7 +36,7 @@ func _ready() -> void:
         if font == null:
             push_error("Missing bundled Korean glyph subset: %d" % part)
         else:
-            font.set("antialiasing", TextServer.FONT_ANTIALIASING_NONE)
+            font.set("antialiasing", TextServer.FONT_ANTIALIASING_GRAY)
             font.set("hinting", TextServer.HINTING_NORMAL)
             font.set("subpixel_positioning", TextServer.SUBPIXEL_POSITIONING_DISABLED)
             fallback_fonts.append(font)
