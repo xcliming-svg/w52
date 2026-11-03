@@ -13,7 +13,7 @@ const WORLD_SCALE := 0.25
 const TREE_CENTER_LOCAL := Vector2(213, 102)
 const DRAG_THRESHOLD := 3.0
 const POPUP_SIZE := Vector2(160, 98)
-const POPUP_BUTTON_OFFSET := Vector2(91, 64)
+const POPUP_BUTTON_OFFSET := Vector2(91, 60)
 var TREE_RECT := Rect2(UI.content_rect("L2"))
 var DIALOGUE_RECT := Rect2(UI.DIALOGUE_RECT)
 const NODES := [
@@ -127,10 +127,10 @@ func _create_controls() -> void:
     dialogue_surface.draw.connect(_draw_dialogue_overlay)
     add_child(dialogue_surface)
 
-    deploy_button = UI.make_button("배치", Vector2(61, 28))
+    deploy_button = UI.make_button("배치", Vector2(61, 31))
     deploy_button.position = Vector2(-500, -500)
     deploy_button.add_theme_font_size_override("font_size", 8)
-    deploy_button.size = Vector2(61, 28)
+    deploy_button.size = Vector2(61, 31)
     deploy_button.pressed.connect(_deploy_selected)
     add_child(deploy_button)
 
@@ -139,6 +139,8 @@ func _create_controls() -> void:
     next_button = UI.make_button("〉", Vector2(25, 26))
     for b in [prev_button, next_button]:
         b.add_theme_font_size_override("font_size", 8)
+        for visual in ["normal", "hover", "pressed", "disabled"]:
+            b.add_theme_stylebox_override(visual, StyleBoxEmpty.new())
         b.size = Vector2(25, 26)
         add_child(b)
     prev_button.position = Vector2(help.position + Vector2i(2, 1))
