@@ -9,12 +9,13 @@ const MAX_WEEK := 52
 const DEMO_BATTLE_COST := 40
 const DEMO_WEEK_REWARD := 70
 const DIALOGUE_COUNT := 5
-const TREE_RECT := Rect2(0, 84, 1376, 892)
-const TREE_CENTER_LOCAL := Vector2(688, 446)
-const DRAG_THRESHOLD := 8.0
-const POPUP_SIZE := Vector2(390, 274)
-const POPUP_BUTTON_OFFSET := Vector2(205, 194)
-const DIALOGUE_RECT := Rect2(28, 778, 1320, 171)
+const WORLD_SCALE := 0.25
+const TREE_CENTER_LOCAL := Vector2(213, 102)
+const DRAG_THRESHOLD := 3.0
+const POPUP_SIZE := Vector2(160, 98)
+const POPUP_BUTTON_OFFSET := Vector2(91, 60)
+var TREE_RECT := Rect2(UI.content_rect("L2"))
+var DIALOGUE_RECT := Rect2(UI.DIALOGUE_RECT)
 const NODES := [
     {"id":"root", "name":"지휘 본부", "kind":"root", "parent":"", "p":Vector2(670, 744), "week":1, "symbol":"◆", "detail":"전략의 시작 노드입니다."},
     {"id":"command", "name":"초기 전술", "kind":"branch", "parent":"root", "p":Vector2(670, 612), "week":1, "symbol":"◇", "detail":"기본 지휘 분기입니다."},
@@ -35,7 +36,6 @@ var selected_id: String = ""
 var hover_id: String = ""
 var placements: Array[String] = []
 var log_items: Array[String] = []
-var speed: int = 1
 var battle_seconds: float = 0.0
 var camera_offset: Vector2 = Vector2.ZERO
 var camera_target: Vector2 = Vector2.ZERO
@@ -46,11 +46,10 @@ var pan_start_camera: Vector2 = Vector2.ZERO
 var pan_press_node_id: String = ""
 
 var deploy_button: Button
-var battle_button: Button
-var prev_button: Button
-var next_button: Button
-var speed_one: Button
-var speed_two: Button
+var battle_button: TextureButton
+var prev_button: TextureButton
+var next_button: TextureButton
+var battle_label: String = "전투 시작"
 var log_scroll: ScrollContainer
 var log_column: VBoxContainer
 var tree_surface: Control
@@ -99,8 +98,7 @@ func snapshot() -> Dictionary:
 
 
 func _create_controls() -> void:
-    # Only the tree surface is clipped. Panels and interactive Controls remain
-    # separate layers so a dragged line can never enter the battlefield.
+    # The same logical rects control painting, clipping, and hit testing.
     tree_surface = Control.new()
     tree_surface.name = "TreeClip"
     tree_surface.position = TREE_RECT.position
@@ -109,8 +107,6 @@ func _create_controls() -> void:
     tree_surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
     add_child(tree_surface)
 
-    # Draw on a child: the clipping parent masks the entire canvas,
-    # including lines partially outside its rectangle.
     tree_canvas = Control.new()
     tree_canvas.name = "TreeArt"
     tree_canvas.size = TREE_RECT.size
@@ -120,71 +116,74 @@ func _create_controls() -> void:
 
     popup_surface = Control.new()
     popup_surface.name = "NodeInfoLayer"
-    popup_surface.size = Vector2(1920, 1080)
+    popup_surface.size = Vector2(UI.DESIGN_SIZE)
     popup_surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
     popup_surface.draw.connect(_draw_popup)
     add_child(popup_surface)
 
     dialogue_surface = Control.new()
     dialogue_surface.name = "DialogueLayer"
-    dialogue_surface.size = Vector2(1920, 1080)
+    dialogue_surface.size = Vector2(UI.DESIGN_SIZE)
     dialogue_surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
     dialogue_surface.draw.connect(_draw_dialogue_overlay)
     add_child(dialogue_surface)
 
-    deploy_button = UI.make_button("배치", Vector2(160, 62))
+    deploy_button = UI.make_button("배치", Vector2(61, 31))
     deploy_button.position = Vector2(-500, -500)
-    deploy_button.size = Vector2(160, 62)
-    deploy_button.add_theme_font_size_override("font_size", 26)
+    deploy_button.add_theme_font_size_override("font_size", 8)
+    deploy_button.size = Vector2(61, 31)
     deploy_button.pressed.connect(_deploy_selected)
     add_child(deploy_button)
 
-    prev_button = UI.make_button("〈", Vector2(72, 64))
-    next_button = UI.make_button("〉", Vector2(72, 64))
+    var help := UI.content_rect("L3")
+    # Construct compact arrows directly: menu button's initial font minimum
+    # height is 31px and cannot fit the 28px content interior.
+    prev_button = TextureButton.new()
+    next_button = TextureButton.new()
     for b in [prev_button, next_button]:
-        b.size = Vector2(72, 64)
-        b.add_theme_font_size_override("font_size", 32)
+        # TextureButton supplies only a fixed-size rectangular input surface.
+        # Its DB32 box/glyph are drawn below; no texture is loaded or introduced.
+        b.custom_minimum_size = Vector2(25, 26)
+        b.size = Vector2(25, 26)
+        b.mouse_entered.connect(queue_redraw)
+        b.mouse_exited.connect(queue_redraw)
+        b.button_down.connect(queue_redraw)
+        b.button_up.connect(queue_redraw)
         add_child(b)
-    prev_button.position = Vector2(26, 995)
-    next_button.position = Vector2(1278, 995)
+    prev_button.position = Vector2(help.position + Vector2i(2, 1))
+    next_button.position = Vector2(help.end - Vector2i(27, 27))
     prev_button.pressed.connect(func() -> void: _change_help(-1))
     next_button.pressed.connect(func() -> void: _change_help(1))
 
-    speed_one = UI.make_button("1×", Vector2(103, 52))
-    speed_two = UI.make_button("2×", Vector2(103, 52))
-    for b in [speed_one, speed_two]:
-        b.size = Vector2(103, 52)
-        b.add_theme_font_size_override("font_size", 26)
-        add_child(b)
-    speed_one.position = Vector2(1688, 16)
-    speed_two.position = Vector2(1791, 16)
-    speed_one.toggle_mode = true
-    speed_two.toggle_mode = true
-    speed_one.pressed.connect(func() -> void: _set_speed(1))
-    speed_two.pressed.connect(func() -> void: _set_speed(2))
-
-    battle_button = UI.make_button("전투 시작", Vector2(505, 74))
-    battle_button.position = Vector2(1395, 991)
-    battle_button.size = Vector2(505, 74)
-    battle_button.add_theme_font_size_override("font_size", 32)
-    battle_button.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD))
-    battle_button.add_theme_stylebox_override("hover", UI._button_style(UI.GOLD.lightened(0.12)))
-    battle_button.add_theme_color_override("font_color", UI.BACKGROUND)
-    battle_button.add_theme_color_override("font_hover_color", UI.BACKGROUND)
+    var action := UI.content_rect("R4")
+    battle_button = TextureButton.new()
+    battle_button.custom_minimum_size = Vector2(action.size)
+    battle_button.position = Vector2(action.position)
+    battle_button.size = Vector2(action.size)
+    battle_button.mouse_entered.connect(queue_redraw)
+    battle_button.mouse_exited.connect(queue_redraw)
+    battle_button.button_down.connect(queue_redraw)
+    battle_button.button_up.connect(queue_redraw)
     battle_button.pressed.connect(_battle_action)
     add_child(battle_button)
 
+    var log := UI.content_rect("R3")
     log_scroll = ScrollContainer.new()
-    log_scroll.position = Vector2(1396, 792)
-    log_scroll.size = Vector2(502, 173)
+    log_scroll.position = Vector2(log.position + Vector2i(3, 2))
+    log_scroll.size = Vector2(log.size - Vector2i(6, 4))
     log_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     log_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
     log_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
     add_child(log_scroll)
     log_column = VBoxContainer.new()
-    log_column.add_theme_constant_override("separation", 12)
+    log_column.add_theme_constant_override("separation", 2)
     log_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     log_scroll.add_child(log_column)
+    var scrollbar := log_scroll.get_v_scroll_bar()
+    scrollbar.add_theme_stylebox_override("scroll", UI._button_style(UI.GAME_BACKGROUND))
+    scrollbar.add_theme_stylebox_override("grabber", UI._button_style(UI.METAL_MID))
+    scrollbar.add_theme_stylebox_override("grabber_highlight", UI._button_style(UI.METAL_LIGHT))
+    scrollbar.add_theme_stylebox_override("grabber_pressed", UI._button_style(UI.GOLD))
 
 
 func _set_week_intro() -> void:
@@ -210,8 +209,7 @@ func _find_node(id: String) -> Dictionary:
 
 
 func _node_tree_local(node: Dictionary) -> Vector2:
-    return node["p"] + camera_offset
-
+    return (Vector2(node["p"]) * WORLD_SCALE).round() + camera_offset
 
 func _node_screen(node: Dictionary) -> Vector2:
     return TREE_RECT.position + _node_tree_local(node)
@@ -230,17 +228,15 @@ func _selected_ancestors() -> Array[String]:
 
 
 func _node_visual_rect(node: Dictionary) -> Rect2:
-    # A recognizable unit of the tree is one entire node plus its name label.
-    # Use its largest hover/selection icon size and the measured label width.
-    var p: Vector2 = node["p"]
-    var radius := 38.0 * 1.12
-    var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
-    var left := minf(p.x - radius, p.x - 40.0)
-    var right := maxf(p.x + radius, p.x - 40.0 + label_width)
+    # Entire node + name bounding box, including selection enlargement.
+    var p := (Vector2(node["p"]) * WORLD_SCALE).round()
+    var radius := 11.0
+    var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+    var left := minf(p.x - radius, p.x - 13.0)
+    var right := maxf(p.x + radius, p.x - 13.0 + label_width)
     var top := p.y - radius
-    var bottom := p.y + radius + 7.0 + 22.0 + FONT.get_descent(22)
+    var bottom := p.y + radius + 2.0 + 10.0 + FONT.get_descent(10)
     return Rect2(Vector2(left, top), Vector2(right - left, bottom - top))
-
 
 func _readable_tree_area() -> Rect2:
     # Avoid counting a node completely hidden by the dialogue overlay.
@@ -251,8 +247,6 @@ func _readable_tree_area() -> Rect2:
 
 
 func _clamp_pan(candidate: Vector2) -> Vector2:
-    # Keep one complete node icon and name legible. Use the union of
-    # per-node visibility regions instead of a whole-tree bounding box.
     var visible := _readable_tree_area()
     var nearest := candidate
     var nearest_distance := INF
@@ -265,15 +259,14 @@ func _clamp_pan(candidate: Vector2) -> Vector2:
         if distance < nearest_distance:
             nearest_distance = distance
             nearest = projected
-    return nearest
-
+    return nearest.round()
 
 func _select_node(id: String) -> void:
     var node := _find_node(id)
     if node.is_empty():
         return
     selected_id = id
-    camera_target = _clamp_pan(TREE_CENTER_LOCAL - node["p"])
+    camera_target = _clamp_pan(TREE_CENTER_LOCAL - (Vector2(node["p"]) * WORLD_SCALE).round())
     _update_popup()
     _queue_ui_redraw()
 
@@ -285,11 +278,15 @@ func _popup_rect() -> Rect2:
     if node.is_empty():
         return Rect2()
     var p := _node_screen(node)
-    var panel_x: float = clampf(p.x + 100.0, 28.0, TREE_RECT.size.x - POPUP_SIZE.x - 28.0)
-    var bottom_limit: float = 480.0 if phase == "dialogue" else 670.0
-    var panel_y: float = clampf(p.y - 112.0, 104.0, bottom_limit)
-    return Rect2(Vector2(panel_x, panel_y), POPUP_SIZE)
-
+    var min_x := int(TREE_RECT.position.x)
+    var min_y := int(TREE_RECT.position.y)
+    var max_x := int(TREE_RECT.end.x - POPUP_SIZE.x)
+    var max_y := int(TREE_RECT.end.y - POPUP_SIZE.y)
+    if phase == "dialogue":
+        max_y = mini(max_y, int(DIALOGUE_RECT.position.y - POPUP_SIZE.y))
+    var px := clampi(roundi(p.x + 13.0), min_x, max_x)
+    var py := clampi(roundi(p.y - 36.0), min_y, max_y)
+    return Rect2(Vector2(px, py), POPUP_SIZE)
 
 func _update_popup() -> void:
     if selected_id.is_empty():
@@ -313,7 +310,7 @@ func _process(delta: float) -> void:
         _queue_ui_redraw()
     if phase == "battle":
         var previous_second := int(battle_seconds)
-        battle_seconds += delta * speed
+        battle_seconds += delta
         if int(battle_seconds) != previous_second and int(battle_seconds) in [3, 7, 11, 15]:
             _append_log("전선에서 교전이 진행 중입니다. (시연)")
         if battle_seconds >= 18.0:
@@ -334,10 +331,9 @@ func _node_at(mouse: Vector2) -> String:
     if not selected_id.is_empty() and _popup_rect().has_point(mouse):
         return ""
     for node in NODES:
-        if _node_screen(node).distance_to(mouse) <= 49.0:
+        if _node_screen(node).distance_to(mouse) <= 12.0:
             return str(node["id"])
     return ""
-
 
 func _start_pan(mouse: Vector2) -> void:
     pan_armed = true
@@ -416,9 +412,8 @@ func _gui_input(event: InputEvent) -> void:
             if not selected_id.is_empty() and _popup_rect().has_point(click.position):
                 return
             _start_pan(click.position)
-        elif Rect2(1376, 84, 544, 652).has_point(click.position):
+        elif Rect2(UI.content_rect("R2")).has_point(click.position):
             _click_ally(click.position)
-
 
 func _advance_dialogue() -> void:
     if phase != "dialogue":
@@ -451,11 +446,6 @@ func _dialogue_content() -> Array[String]:
 
 func _change_help(step: int) -> void:
     help_index = clampi(help_index + step, 1, week)
-    _refresh_all()
-
-
-func _set_speed(next_speed: int) -> void:
-    speed = next_speed
     _refresh_all()
 
 
@@ -494,22 +484,32 @@ func _battle_action() -> void:
     _refresh_all()
 
 
+func _grid_geometry() -> Dictionary:
+    var dimensions := _grid_size()
+    var field := UI.content_rect("R2")
+    var cell := mini(int(field.size.x / dimensions.x), int(field.size.y / dimensions.y))
+    var grid_px := dimensions * cell
+    var start := field.position + Vector2i(
+        int((field.size.x - grid_px.x) / 2), int((field.size.y - grid_px.y) / 2))
+    return {"start": start, "cell": cell, "cols": dimensions.x, "rows": dimensions.y}
+
+
 func _click_ally(mouse: Vector2) -> void:
-    var size := _grid_size()
-    var cols: int = size.x
-    var rows: int = size.y
-    var grid_pos := Vector2(1376 + (544 - cols * 46) * 0.5, 84 + (652 - rows * 46) * 0.5)
-    var cell := ((mouse - grid_pos) / 46.0).floor()
+    var grid := _grid_geometry()
+    var cols: int = grid["cols"]
+    var rows: int = grid["rows"]
+    var cell_size: int = grid["cell"]
+    var start: Vector2i = grid["start"]
+    var cell := ((mouse - Vector2(start)) / float(cell_size)).floor()
     if cell.x < 0 or cell.y < 0 or cell.x >= cols or cell.y >= rows:
         return
     if cell.y < rows / 2:
         return
     for i in range(placements.size()):
-        var pos := Vector2i(1 + (i % (cols - 2)), rows - 1 - (i / (cols - 2)))
+        var pos := Vector2i(1 + (i % (cols - 2)), rows - 1 - int(i / (cols - 2)))
         if pos == Vector2i(cell):
             _select_node(placements[i])
             return
-
 
 func _grid_size() -> Vector2i:
     if week <= 13:
@@ -530,19 +530,18 @@ func _append_log(message: String) -> void:
 
 
 func _refresh_log() -> void:
-    var stick_bottom := log_scroll.scroll_vertical >= log_scroll.get_v_scroll_bar().max_value - log_scroll.size.y - 20
+    var stick_bottom := log_scroll.scroll_vertical >= log_scroll.get_v_scroll_bar().max_value - log_scroll.size.y - 3
     for child in log_column.get_children():
         log_column.remove_child(child)
         child.queue_free()
     for entry in log_items:
-        var label := UI.make_label("◆  " + entry, 22, UI.TEXT)
+        var label := UI.make_label("◆ " + entry, 9, UI.TEXT)
         label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
         label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-        label.custom_minimum_size.x = 480
+        label.custom_minimum_size.x = UI.content_rect("R3").size.x - 15
         log_column.add_child(label)
     if stick_bottom:
         call_deferred("_scroll_log_to_end")
-
 
 func _scroll_log_to_end() -> void:
     if is_instance_valid(log_scroll):
@@ -552,40 +551,28 @@ func _scroll_log_to_end() -> void:
 func _refresh_all() -> void:
     prev_button.disabled = help_index <= 1
     next_button.disabled = help_index >= week
-    speed_one.button_pressed = speed == 1
-    speed_two.button_pressed = speed == 2
-    speed_one.add_theme_color_override("font_color", UI.BACKGROUND if speed == 1 else UI.TEXT)
-    speed_one.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD if speed == 1 else UI.PANEL))
-    speed_one.add_theme_stylebox_override("pressed", UI._button_style(UI.GOLD if speed == 1 else UI.PANEL))
-    speed_two.add_theme_color_override("font_color", UI.BACKGROUND if speed == 2 else UI.TEXT)
-    speed_two.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
-    speed_two.add_theme_stylebox_override("pressed", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
     battle_button.disabled = phase == "battle" or (phase == "result" and week == MAX_WEEK)
     if phase == "battle":
-        battle_button.text = "전투 진행 중"
+        battle_label = "전투 진행 중"
     elif phase == "result" and week == MAX_WEEK:
-        battle_button.text = "52주 완료"
+        battle_label = "52주 완료"
     elif phase == "result":
-        battle_button.text = "다음 주"
+        battle_label = "다음 주"
     else:
-        battle_button.text = "전투 시작"
+        battle_label = "전투 시작"
     _update_popup()
     _refresh_log()
     _queue_ui_redraw()
 
-
 func _text(value: String, p: Vector2, font_size: int, color: Color = UI.TEXT) -> void:
-    draw_string(FONT, p + Vector2(0, font_size), value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
-
+    draw_string(FONT, p.round() + Vector2(0, font_size), value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
 
 func _layer_text(surface: Control, value: String, p: Vector2, font_size: int, color: Color = UI.TEXT) -> void:
-    surface.draw_string(FONT, p + Vector2(0, font_size), value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
-
+    surface.draw_string(FONT, p.round() + Vector2(0, font_size), value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
 
 func _layer_box(surface: Control, rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
     surface.draw_rect(rect, fill)
-    surface.draw_rect(rect, border, false, 2.0)
-
+    surface.draw_rect(rect, border, false, 3.0, false)
 
 func _queue_ui_redraw() -> void:
     queue_redraw()
@@ -598,36 +585,94 @@ func _queue_ui_redraw() -> void:
 
 
 func _box(rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
-    draw_rect(rect, fill)
-    draw_rect(rect, border, false, 2.0)
+    draw_rect(rect, border)
+    draw_rect(rect.grow(-1.0), fill)
+
+# Each beveled layer is a run of integer pixels. No subpixel edges or antialiasing.
+func _frame_layer(frame: Rect2i, inset: int, fill: Color, lit: Color, shade: Color) -> void:
+    var a := frame.position + Vector2i(inset, inset)
+    var e := frame.end - Vector2i(inset, inset)
+    var cut := maxi(0, 8 - inset)
+    for y in range(a.y, e.y):
+        var from_corner := mini(y - a.y, e.y - 1 - y)
+        var clip_left := maxi(0, cut - from_corner)
+        var x0 := a.x + clip_left
+        var x1 := e.x - clip_left
+        if x1 <= x0:
+            continue
+        draw_rect(Rect2(x0, y, x1 - x0, 1), fill)
+        if y - a.y < 2:
+            draw_rect(Rect2(x0, y, x1 - x0, 1), lit)
+        elif e.y - 1 - y < 2:
+            draw_rect(Rect2(x0, y, x1 - x0, 1), shade)
+        else:
+            draw_rect(Rect2(x0, y, mini(2, x1 - x0), 1), lit)
+            draw_rect(Rect2(x1 - mini(2, x1 - x0), y, mini(2, x1 - x0), 1), shade)
+
+
+func _draw_screw(top_left: Vector2i) -> void:
+    # The 3x3 footprint is centered at x+6.5, y+6.5 from the outer corner.
+    draw_rect(Rect2(Vector2(top_left), Vector2(3, 3)), UI.EDGE_DARK)
+    draw_rect(Rect2(Vector2(top_left + Vector2i(1, 0)), Vector2.ONE), UI.METAL_LIGHT)
+    draw_rect(Rect2(Vector2(top_left + Vector2i(1, 1)), Vector2.ONE), UI.METAL_MID)
+
+
+func _draw_frame(panel_id: String) -> void:
+    var f := UI.frame_rect(panel_id)
+    _frame_layer(f, 0, UI.METAL_MID, UI.METAL_LIGHT, UI.METAL_DARK)
+    _frame_layer(f, 2, UI.METAL_MID, UI.METAL_MID, UI.METAL_DARK)
+    _frame_layer(f, 6, UI.EDGE_DARK, UI.EDGE_DARK, UI.EDGE_DARK)
+    _frame_layer(f, 7, UI.PANEL, UI.PANEL, UI.PANEL)
+    for origin in UI.screw_origins(panel_id):
+        _draw_screw(origin)
+
+
+func _draw_help_arrow(button: TextureButton, glyph: String) -> void:
+    var background := UI.PANEL if button.disabled else (UI.PRIMARY_HOVER if button.is_hovered() else UI.PRIMARY)
+    var rect := Rect2(button.position, button.size)
+    _box(rect, background, UI.BUTTON_SHADE)
+    var color := UI.MUTED if button.disabled else UI.GAME_BACKGROUND
+    _text(glyph, button.position + Vector2(7, 3), 9, color)
+
+
+func _draw_action_background() -> void:
+    var rect := UI.content_rect("R4")
+    var disabled := battle_button.disabled
+    var fill := UI.PANEL if disabled else (UI.PRIMARY_HOVER if battle_button.is_hovered() else UI.GOLD)
+    if battle_button.button_pressed and not disabled:
+        fill = UI.BUTTON_SHADE
+    draw_rect(Rect2(rect), fill)
+    draw_rect(Rect2(rect.position.x, rect.position.y, rect.size.x, 2), UI.METAL_LIGHT if disabled else UI.TEXT)
+    draw_rect(Rect2(rect.position.x, rect.end.y - 3, rect.size.x, 3), UI.BUTTON_SHADE)
+    draw_rect(Rect2(rect.end.x - 2, rect.position.y, 2, rect.size.y), UI.BUTTON_EDGE)
+    draw_rect(Rect2(rect.end.x - 1, rect.end.y - 2, 1, 2), UI.BUTTON_DARK)
+    var font_px := 12
+    var label_width := FONT.get_string_size(battle_label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_px).x
+    var label_pos := Vector2(rect.position.x + roundi((rect.size.x - label_width) / 2.0), rect.position.y + 3)
+    _text(battle_label, label_pos, font_px, UI.MUTED if disabled else UI.GAME_BACKGROUND)
 
 
 func _draw() -> void:
-    # Fixed HUD background is drawn at the root; TreeArt renders in a clipped
-    # child Control and can never paint into the battlefield or other panels.
-    draw_rect(Rect2(0, 0, 1920, 1080), UI.BACKGROUND)
-    _box(TREE_RECT, UI.GAME_BACKGROUND)
-    for x in range(0, 1376, 56):
-        draw_line(Vector2(x, 84), Vector2(x, 976), UI.GRID, 1.0)
-    for y in range(84, 976, 56):
-        draw_line(Vector2(0, y), Vector2(1376, y), UI.GRID, 1.0)
-    _box(Rect2(0, 0, 1376, 84), UI.HEADER)
-    _box(Rect2(1376, 0, 544, 84), UI.HEADER)
-    _box(Rect2(0, 976, 1376, 104), UI.PANEL)
-    _box(Rect2(1376, 84, 544, 652), UI.GAME_BACKGROUND)
-    _box(Rect2(1376, 736, 544, 240), UI.PANEL)
-    _box(Rect2(1376, 976, 544, 104), UI.PANEL)
-    _text("%02d주차" % week, Vector2(44, 16), 38)
-    draw_line(Vector2(233, 17), Vector2(233, 67), UI.BORDER, 2)
-    _text("%s G" % _group_digits(g), Vector2(271, 17), 37, UI.GOLD)
-    var secs := int(battle_seconds)
-    _text("%02d:%02d" % [secs / 60, secs % 60], Vector2(1410, 16), 36)
+    # y=0..35 remains fully black: no title, frame, or decoration.
+    draw_rect(Rect2(Vector2.ZERO, Vector2(UI.DESIGN_SIZE)), UI.BACKGROUND)
+    for panel_id in UI.PANEL_IDS:
+        _draw_frame(panel_id)
+    # The tree grid and art both remain inside the frame's content rectangle.
+    for x in range(int(TREE_RECT.position.x), int(TREE_RECT.end.x), 23):
+        draw_rect(Rect2(x, TREE_RECT.position.y, 1, TREE_RECT.size.y), UI.GRID)
+    for y in range(int(TREE_RECT.position.y), int(TREE_RECT.end.y), 23):
+        draw_rect(Rect2(TREE_RECT.position.x, y, TREE_RECT.size.x, 1), UI.GRID)
+    var header := UI.content_rect("L1")
+    _text("%02d주차" % week, Vector2(header.position + Vector2i(10, 6)), 15)
+    draw_rect(Rect2(header.position.x + 128, header.position.y + 6, 1, 17), UI.METAL_MID)
+    _text("%s G" % _group_digits(g), Vector2(header.position + Vector2i(147, 7)), 14, UI.GOLD)
     _draw_field()
-    _text("전투 정보", Vector2(1400, 747), 28)
-    draw_line(Vector2(1400, 790), Vector2(1896, 790), UI.BORDER, 2)
-    _text("도움말", Vector2(115, 992), 23, UI.GOLD)
-    _text(_help_text(), Vector2(240, 992), 25)
-
+    var help := UI.content_rect("L3")
+    _text("도움말", Vector2(help.position + Vector2i(35, 7)), 10, UI.GOLD)
+    _text(_help_text(), Vector2(help.position + Vector2i(78, 7)), 9)
+    _draw_help_arrow(prev_button, "〈")
+    _draw_help_arrow(next_button, "〉")
+    _draw_action_background()
 
 func _group_digits(value: int) -> String:
     var s := str(value)
@@ -644,14 +689,42 @@ func _help_text() -> String:
     if help_index == 18:
         return "아군을 클릭하면 연결된 트리 노드로 포커스됩니다."
     if help_index == 35:
-        return "전투 속도는 1× 또는 2×로 변경할 수 있습니다."
+        return "전투 중에는 전투 정보를 확인할 수 있습니다."
     if help_index == 52:
         return "지난 도움말은 왼쪽 화살표로 다시 볼 수 있습니다."
     return "%d주차: 빌드와 전장 배치를 점검하세요." % help_index
 
 
+func _stroke_pixel_line(canvas: Control, from: Vector2, to: Vector2, tint: Color) -> void:
+    var a := Vector2i(from.round())
+    var b := Vector2i(to.round())
+    if a.x == b.x:
+        canvas.draw_rect(Rect2(a.x, mini(a.y, b.y), 1, absi(a.y - b.y) + 1), tint)
+    elif a.y == b.y:
+        canvas.draw_rect(Rect2(mini(a.x, b.x), a.y, absi(a.x - b.x) + 1, 1), tint)
+
+
+func _draw_pixel_circle(canvas: Control, center: Vector2i, radius: int, fill: Color, rim: Color) -> void:
+    for y in range(-radius, radius + 1):
+        var outer := int(floor(sqrt(float(radius * radius - y * y))))
+        canvas.draw_rect(Rect2(center.x - outer, center.y + y, outer * 2 + 1, 1), rim)
+        var inner_radius := radius - 3
+        if absi(y) <= inner_radius:
+            var inner := int(floor(sqrt(float(inner_radius * inner_radius - y * y))))
+            canvas.draw_rect(Rect2(center.x - inner, center.y + y, inner * 2 + 1, 1), fill)
+
+
+func _draw_pixel_diamond(canvas: Control, center: Vector2i, radius: int, fill: Color, rim: Color) -> void:
+    for y in range(-radius, radius + 1):
+        var outer := radius - absi(y)
+        canvas.draw_rect(Rect2(center.x - outer, center.y + y, outer * 2 + 1, 1), rim)
+        var inner := radius - 3 - absi(y)
+        if inner >= 0:
+            canvas.draw_rect(Rect2(center.x - inner, center.y + y, inner * 2 + 1, 1), fill)
+
+
 func _draw_tree() -> void:
-    # Local coordinates, rendered exclusively inside TreeClip.clip_contents.
+    # Drawn only by TreeArt within TreeClip; no antialiased diagonals/lines.
     var path := _selected_ancestors()
     for node in NODES:
         var parent_id := str(node["parent"])
@@ -660,36 +733,39 @@ func _draw_tree() -> void:
         var parent := _find_node(parent_id)
         var a := _node_tree_local(parent)
         var b := _node_tree_local(node)
-        var middle_y := (a.y + b.y) * 0.5
+        var middle_y := float(roundi((a.y + b.y) / 2.0))
         var highlight := str(node["id"]) in path and parent_id in path
         var tint := UI.TEAL if highlight else UI.TREE_LINE
-        tree_canvas.draw_polyline(PackedVector2Array([a - Vector2(0, 35), Vector2(a.x, middle_y),
-            Vector2(b.x, middle_y), b + Vector2(0, 35)]), tint, 5.0 if highlight else 3.5, true)
+        var first := a - Vector2(0, 9)
+        var last := b + Vector2(0, 9)
+        _stroke_pixel_line(tree_canvas, first, Vector2(first.x, middle_y), tint)
+        _stroke_pixel_line(tree_canvas, Vector2(first.x, middle_y), Vector2(last.x, middle_y), tint)
+        _stroke_pixel_line(tree_canvas, Vector2(last.x, middle_y), last, tint)
     for node in NODES:
         var p := _node_tree_local(node)
-        if p.y < -100 or p.y > TREE_RECT.size.y + 100 or p.x < -100 or p.x > TREE_RECT.size.x + 100:
+        if p.y < -40 or p.y > TREE_RECT.size.y + 40 or p.x < -70 or p.x > TREE_RECT.size.x + 70:
             continue
         var id := str(node["id"])
         var locked := int(node["week"]) > week
         var focused := id == selected_id
         var hovered := id == hover_id
-        var radius := 38.0 * (1.12 if focused or hovered else 1.0)
+        var radius := 10 if focused or hovered else 9
         var kind := str(node["kind"])
         var fill := UI.LOCKED if locked else UI.NODE_FILL
         var border := UI.TREE_LINE if locked else (UI.GOLD if focused else UI.TEAL)
+        var center := Vector2i(p)
         if kind == "branch":
-            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), fill)
-            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), border, false, 3.0)
+            var side := int(radius * 1.5)
+            var left := center.x - int(side / 2)
+            var top := center.y - int(side / 2)
+            tree_canvas.draw_rect(Rect2(left, top, side, side), border)
+            tree_canvas.draw_rect(Rect2(left + 3, top + 3, side - 6, side - 6), fill)
         elif kind == "root":
-            tree_canvas.draw_colored_polygon(PackedVector2Array([p+Vector2(0,-radius),p+Vector2(radius,0),
-                p+Vector2(0,radius),p+Vector2(-radius,0)]), fill)
+            _draw_pixel_diamond(tree_canvas, center, radius, fill, border)
         else:
-            tree_canvas.draw_circle(p, radius, fill)
-            tree_canvas.draw_arc(p, radius, 0.0, TAU, 48, border, 4.0, true)
-        var symbol: String = str(node["symbol"])
-        _layer_text(tree_canvas, symbol, p + Vector2(-13, -22), 31, border)
-        _layer_text(tree_canvas, str(node["name"]), p + Vector2(-40, radius + 7), 22, UI.MUTED if locked else UI.TEXT)
-
+            _draw_pixel_circle(tree_canvas, center, radius, fill, border)
+        _layer_text(tree_canvas, str(node["symbol"]), p + Vector2(-5, -7), 11, border)
+        _layer_text(tree_canvas, str(node["name"]), p + Vector2(-13, radius + 2), 10, UI.MUTED if locked else UI.TEXT)
 
 func _draw_popup() -> void:
     if selected_id.is_empty():
@@ -699,43 +775,46 @@ func _draw_popup() -> void:
         return
     var panel := _popup_rect()
     _layer_box(popup_surface, panel, UI.PANEL, UI.TEAL)
-    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(25, 20), 32)
+    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(7, 5), 13)
     var details := str(node["detail"]).split("|")
     for i in range(details.size()):
-        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(25, 75 + i * 37), 25, UI.MUTED)
-
+        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(7, 29 + i * 13), 10, UI.MUTED)
 
 func _draw_field() -> void:
-    var sz := _grid_size()
-    var cols: int = sz.x
-    var rows: int = sz.y
-    var start := Vector2(1376 + (544 - cols * 46) * 0.5, 84 + (652 - rows * 46) * 0.5)
+    var grid := _grid_geometry()
+    var cols: int = grid["cols"]
+    var rows: int = grid["rows"]
+    var cell: int = grid["cell"]
+    var start: Vector2i = grid["start"]
     for r in range(rows):
         for c in range(cols):
-            var pos := start + Vector2(c * 46, r * 46)
-            _box(Rect2(pos, Vector2(46, 46)), UI.ENEMY_CELL if r < rows / 2 else UI.ALLY_CELL, UI.GRID_BORDER)
-    var mid_y: float = start.y + float(rows / 2) * 46.0
-    draw_line(Vector2(start.x, mid_y), Vector2(start.x + cols * 46, mid_y), UI.TEXT, 2.0)
+            var pos := start + Vector2i(c * cell, r * cell)
+            _box(Rect2(Vector2(pos), Vector2(cell, cell)),
+                UI.ENEMY_CELL if r < rows / 2 else UI.ALLY_CELL, UI.GRID_BORDER)
+    var mid_y := start.y + int(rows / 2) * cell
+    draw_rect(Rect2(start.x, mid_y, cols * cell, 1), UI.TEXT)
+    var mark := maxi(3, cell - 5)
     for i in range(3):
-        var enemy_p := start + Vector2((1 + i * 2) * 46 + 8, (0 if i < 2 else 1) * 46 + 8)
-        draw_rect(Rect2(enemy_p, Vector2(30, 30)), UI.ENEMY)
-        _text("×", enemy_p + Vector2(6, -4), 28)
+        var enemy_p := start + Vector2i((1 + i * 2) * cell + 2, (0 if i < 2 else 1) * cell + 2)
+        draw_rect(Rect2(Vector2(enemy_p), Vector2(mark, mark)), UI.ENEMY)
+        _text("×", Vector2(enemy_p), 9)
     for i in range(placements.size()):
         var col: int = 1 + i % (cols - 2)
         var row: int = rows - 1 - int(i / (cols - 2))
-        var ally_p := start + Vector2(col * 46 + 8, row * 46 + 8)
-        draw_rect(Rect2(ally_p, Vector2(30, 30)), UI.TEAL)
-        _text("■", ally_p + Vector2(3, -2), 25, UI.BACKGROUND)
-
+        var ally_p := start + Vector2i(col * cell + 2, row * cell + 2)
+        draw_rect(Rect2(Vector2(ally_p), Vector2(mark, mark)), UI.TEAL)
+        _text("■", Vector2(ally_p), 9, UI.GAME_BACKGROUND)
 
 func _draw_dialogue_overlay() -> void:
     if phase != "dialogue":
         return
     _layer_box(dialogue_surface, DIALOGUE_RECT, UI.DIALOGUE_PANEL, UI.GOLD)
-    _layer_box(dialogue_surface, Rect2(52, 800, 112, 125), UI.NODE_FILL, UI.GOLD)
+    var portrait := Rect2(10, 257, 28, 29)
+    _layer_box(dialogue_surface, portrait, UI.NODE_FILL, UI.GOLD)
     var speaker := "해설" if dialogue_index == 0 or dialogue_index == 2 or dialogue_index == 4 else "작전 참모"
-    _layer_text(dialogue_surface, "≡" if speaker == "해설" else "◆", Vector2(83, 815), 48, UI.GOLD)
-    _layer_text(dialogue_surface, speaker, Vector2(196, 793), 26, UI.GOLD)
-    var text_lines := _dialogue_content()
-    _layer_text(dialogue_surface, text_lines[min(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(196, 845), 28)
-    _layer_text(dialogue_surface, "Space  다음 ›", Vector2(1137, 905), 21, UI.MUTED)
+    _layer_text(dialogue_surface, "≡" if speaker == "해설" else "◆", Vector2(18, 261), 17, UI.GOLD)
+    _layer_text(dialogue_surface, speaker, Vector2(46, 255), 10, UI.GOLD)
+    var lines := _dialogue_content()
+    _layer_text(dialogue_surface, lines[mini(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(46, 269), 10)
+    _layer_text(dialogue_surface, "Space  다음 ›", Vector2(336, 255), 8, UI.MUTED)
+

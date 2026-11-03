@@ -1,5 +1,8 @@
 # W52 UI 최종 구현·설계 교차검증 기록 — 2026-11-02
 
+> **기록 구분:** 아래 2026-11-02 검증 내용은 기존 1920×1080 논리 UI의 역사적 감사 기록입니다. 2026-11-03부터 새 640×360 구현의 적용/검증 기준은 문서 마지막의 "픽셀 UI 전환 감사"를 따르며, 이전 테스트 PASS를 새 버전의 PASS로 전용하지 않습니다.
+
+
 기준 설계: [UI_LAYOUT_DESIGN.md](UI_LAYOUT_DESIGN.md) (최종 단일 규격). 개발 범위는 Godot 4.7.2의 PC·Web 공용 W52 전략 UI, 52주 시연 흐름, 메뉴·저장 연결이다. 정식 전투·밸런스·고유 서사는 범위 밖이다.
 
 ## 1. 레거시 제거 범위
@@ -48,3 +51,43 @@
 - **1차 문서 불일치 발견 및 수정**: 기존 게임 실행 문서·README가 이전 오브젝트 이동/위치 저장 동작을 현행으로 설명하고 있었다. 실제 `Control` W52 씬·버전2 저장 계약으로 문서들을 전면 재정렬하고 불일치 재검사에서 15항목 PASS를 확인했다.
 - **Godot CI 실행 `41367879755`**: `devel` 커밋 `bc1b5bb5713a4a3fe99fe32f5f825a028a52ac5e`에서 Godot 임포트, 개발판 W52 헤드리스 스모크(로그 `W52_UI_SMOKE_OK: 52 battles ...`), 안정/개발 Web Export 및 결과 파일 검사 성공. 잡 로그에서 W52 오류·Parser Error를 확인하지 않았다. 이 시점의 `main`은 이전 게임이므로 안정판 W52 스모크 파일 조건은 아직 해당하지 않는다.
 - **승격 게이트**: 여기까지의 성공은 개발판 기준이다. `main` 승격 이후 실제 stable W52 시나리오 테스트와 안정판 Pages 게시 성공 여부를 반드시 별도로 확인해야 한다.
+
+
+---
+
+## 6. 픽셀 UI 전환 감사 — 2026-11-03
+
+설계 기준: `C:\\GPT-Workspace\\W52_PIXEL_UI_640x360_IMPLEMENTATION_DESIGN.md` (별도 저장소 상위 경로) 및 현행 [UI_LAYOUT_DESIGN.md](UI_LAYOUT_DESIGN.md).
+기준 커밋: `origin/main` = `34a6d2d4d12ce3f145ddbd93bffee2ec01340fc4`. 독립 기능 브랜치: `feature/w52-pixel-ui-640x360`.
+
+| 설계 요구 | 실제 연결점 | 확인된 증거/상태 |
+|---|---|---|
+| 640×360, 2배 기본 창/3배 FHD, integer/nearest | `project.godot` | viewport/stretch/필터 키를 `tests/w52_ui_smoke.gd`에서 검사: **PASS**. 실제 FHD 픽셀 시각 QA: 미검증 |
+| 공통 20행 정수 경계, 7개의 7px 금속 패널, 7px 분리 | `scripts/ui_style.gd:boundary/cell_rect/frame_rect/content_rect`; `scripts/game.gd:_draw_frame` | rect 7개와 행 경계 계산 헤드리스 검사: **PASS** |
+| 총 28개의 3px 나사/6.5px 중심, DB32 단색 | `scripts/ui_style.gd:screw_origins`; `scripts/game.gd:_draw_screw` | 각 코너 시작 좌표/개수/팔레트 토큰 검사: **PASS**. 실제 화면 디테일 판독: 미검증 |
+| y=0~35 비움, R1은 빈 프레임 | `scripts/game.gd:_draw` | 정적 소스 대조: 좌상단 장식 없음, 시간/배속 컨트롤 및 표시 삭제. 시각 QA: 미검증 |
+| 트리/노드/선분/선택/호버/드래그, 픽셀 클립 | `scripts/game.gd:TreeClip/_draw_tree/_clamp_pan/_node_at` | 극단 드래그, 49 위치, 8노드 포커스, 애니메이션 중 가시성, 드래그 후 선택 보존: **PASS** |
+| F1 (4,251,426,43) 3px 직각, 5개 대화/Space·클릭 | `scripts/game.gd:DIALOGUE_RECT/_draw_dialogue_overlay/_advance_dialogue` | 위치/정렬과 5개 대화 상태 진행: **PASS**. 한글 잘림: 미검증 |
+| 팝업 + 실제 배치 버튼, F1 간섭 없음 | `scripts/game.gd:_popup_rect/_update_popup` | popup/버튼 포함/클릭/대화 분리: **PASS** |
+| R2 가변 전장 정수 셀/아군 클릭 역선택 | `scripts/game.gd:_grid_size/_grid_geometry/_draw_field/_click_ally` | 6×6/8×8/10×8/10×10 주차별 좌표/클릭: **PASS** |
+| R3 내부 로그 스크롤, R4 전투 버튼 하나 | `scripts/game.gd:log_scroll/_draw_action_background/battle_button` | 프레임 내부 버튼 히트 영역과 스크롤 구조: **PASS**. 실제 휠 조작: 미검증 |
+| 시간·배속 UI 제거, 기본 1배 18초 전투 | `scripts/game.gd:_process/_battle_action` | 내부 `battle_seconds`는 유지, 2배 조작 제거, 52회 전투 결과 전환: **PASS** |
+| PC/Web 동일 프로젝트, 메뉴/설정·저장 버전2 | `main.gd`, `scripts/ui_style.gd`, `scripts/settings_menu.gd`, 기존 `save_manager.gd` | 공통 씬/설정 연결 소스 대조, 저장 v1 거부·v2 복구 헤드리스: **PASS**. 실제 PC·브라우저 입력: 미검증 |
+
+### 6.1 실패 수정 → 재검증 이력
+
+1. 처음 Godot 임포트에서 글꼴 정적 타입 오류 발견 → `main.gd` 타입 사용법 최소 수정; 파서 오류 해소.
+2. 트리 중심 포커스에 과거 1920 월드 좌표가 잔존 → 640 논리 좌표와 월드 스케일 0.25 연결, 노드 좌표를 정수 스냅하여 수정.
+3. 엔진 글꼴 최소 크기와 좁은 콘텐츠 높이 충돌 → 팝업 배치 버튼을 내부로 조정하고 도움말/전투용 기존 클릭 액션을 **텍스처 없는 고정 크기 TextureButton**으로 유지, 그림과 문자만 단색 픽셀로 그려 프레임 밖으로 넘치지 않도록 수정. 신규 이미지/아이콘 추가 없음.
+4. 단독 게임 씬의 스모크 검증에 상위 Main 한글 테마가 빠져 크기 판단이 달랐음 → 실제 글꼴 fallback/크기를 검증에 적용; 사용자 입력·게임 규칙은 변경하지 않음.
+5. 수정 후 동일 검증을 반복해 **GitHub Actions #41598940322** (커밋 `1cbb72399497a863b75a365fd4820bbfffe460b6`)에서 Godot 4.7.2 임포트, 헤드리스 UI 스모크 (`W52_UI_SMOKE_OK: 52 battles, dialogues, help gating, deployment, save/restore, 640x360 integer viewport`), 미배포 Web Export 및 결과 파일 존재 검사 **모두 성공** 확인.
+
+실제 검증 로그: https://github.com/xcliming-svg/w52/actions/runs/41598940322
+
+### 6.2 미검증/제한 사항
+
+- CI는 Web Export 성공을 확인했지만 **실제 게임 브라우저 렌더링/픽셀별 스크린샷, FHD 3× 확대의 시각 품질, 한글 문장의 판독·잘림, 마우스 조작감, 오디오 및 성능**은 검사하지 않았다.
+- PC 전체화면/웹 전체화면의 실제 OS·브라우저 제한과 640×360 미만 창에서의 표시는 확인하지 않았다.
+- 52주 진행 시연값을 테스트했으며 실제 게임 전투 AI·밸런스 구현/검증을 뜻하지 않는다.
+- devel/Pages 게시 성공과 실제 플레이 QA는 **기능 브랜치 검증과 독립된 게이트**이며 각각 별도의 실행 로그와 사용자 확인이 필요하다.
+- 로컬 Git 셸 접근은 연결 오류로 불가능하여 로컬 작업 트리의 미커밋 변경은 직접 검증하지 못했다. 로컬 `main`을 변경하지 않고 원격 독립 브랜치에서만 수정했다.
