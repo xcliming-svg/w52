@@ -15,6 +15,7 @@ func _ready() -> void:
     var fullscreen_toggle := CheckButton.new()
     fullscreen_toggle.text = "전체화면"
     fullscreen_toggle.button_pressed = bool(settings_store.get("fullscreen"))
+    fullscreen_toggle.add_theme_font_size_override("font_size", 12)
     fullscreen_toggle.add_theme_color_override("font_color", UI.TEXT)
     column.add_child(fullscreen_toggle)
     fullscreen_toggle.toggled.connect(func(enabled: bool) -> void: settings_store.call("set_fullscreen", enabled))
@@ -27,10 +28,10 @@ func _ready() -> void:
 
 func _add_volume_row(column: VBoxContainer, label_text: String, bus_name: String, volume: float) -> void:
     var row := HBoxContainer.new()
-    row.add_theme_constant_override("separation", 20)
-    var name_label: Label = UI.make_label(label_text, 25)
+    row.add_theme_constant_override("separation", 8)
+    var name_label: Label = UI.make_label(label_text, 12)
     name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-    name_label.custom_minimum_size.x = 214.0
+    name_label.custom_minimum_size.x = 86.0
     row.add_child(name_label)
 
     var slider := HSlider.new()
@@ -38,7 +39,7 @@ func _add_volume_row(column: VBoxContainer, label_text: String, bus_name: String
     slider.max_value = 100.0
     slider.step = 1.0
     slider.value = volume * 100.0
-    slider.custom_minimum_size = Vector2(320.0, 48.0)
+    slider.custom_minimum_size = Vector2(150.0, 18.0)
     slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     row.add_child(slider)
     column.add_child(row)
