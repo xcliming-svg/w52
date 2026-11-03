@@ -13,7 +13,7 @@ const WORLD_SCALE := 0.25
 const TREE_CENTER_LOCAL := Vector2(213, 102)
 const DRAG_THRESHOLD := 3.0
 const POPUP_SIZE := Vector2(160, 98)
-const POPUP_BUTTON_OFFSET := Vector2(91, 70)
+const POPUP_BUTTON_OFFSET := Vector2(91, 64)
 var TREE_RECT := Rect2(UI.content_rect("L2"))
 var DIALOGUE_RECT := Rect2(UI.DIALOGUE_RECT)
 const NODES := [
@@ -127,22 +127,22 @@ func _create_controls() -> void:
     dialogue_surface.draw.connect(_draw_dialogue_overlay)
     add_child(dialogue_surface)
 
-    deploy_button = UI.make_button("배치", Vector2(61, 20))
+    deploy_button = UI.make_button("배치", Vector2(61, 28))
     deploy_button.position = Vector2(-500, -500)
-    deploy_button.size = Vector2(61, 20)
-    deploy_button.add_theme_font_size_override("font_size", 10)
+    deploy_button.size = Vector2(61, 28)
+    deploy_button.add_theme_font_size_override("font_size", 8)
     deploy_button.pressed.connect(_deploy_selected)
     add_child(deploy_button)
 
     var help := UI.content_rect("L3")
-    prev_button = UI.make_button("〈", Vector2(23, 22))
-    next_button = UI.make_button("〉", Vector2(23, 22))
+    prev_button = UI.make_button("〈", Vector2(25, 26))
+    next_button = UI.make_button("〉", Vector2(25, 26))
     for b in [prev_button, next_button]:
-        b.size = Vector2(23, 22)
-        b.add_theme_font_size_override("font_size", 12)
+        b.size = Vector2(25, 26)
+        b.add_theme_font_size_override("font_size", 8)
         add_child(b)
-    prev_button.position = Vector2(help.position + Vector2i(2, 3))
-    next_button.position = Vector2(help.end - Vector2i(25, 25))
+    prev_button.position = Vector2(help.position + Vector2i(2, 1))
+    next_button.position = Vector2(help.end - Vector2i(27, 27))
     prev_button.pressed.connect(func() -> void: _change_help(-1))
     next_button.pressed.connect(func() -> void: _change_help(1))
 
@@ -150,7 +150,7 @@ func _create_controls() -> void:
     battle_button = UI.make_button("전투 시작", Vector2(action.size))
     battle_button.position = Vector2(action.position)
     battle_button.size = Vector2(action.size)
-    battle_button.add_theme_font_size_override("font_size", 13)
+    battle_button.add_theme_font_size_override("font_size", 10)
     for state in ["normal", "hover", "pressed", "disabled"]:
         battle_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
     battle_button.add_theme_color_override("font_color", UI.GAME_BACKGROUND)
