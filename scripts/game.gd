@@ -130,7 +130,7 @@ func _create_controls() -> void:
 
     deploy_button = UI.make_button("배치", Vector2(61, 31))
     deploy_button.position = Vector2(-500, -500)
-    deploy_button.add_theme_font_size_override("font_size", 8)
+    deploy_button.add_theme_font_size_override("font_size", 10)
     deploy_button.size = Vector2(61, 31)
     deploy_button.pressed.connect(_deploy_selected)
     add_child(deploy_button)
@@ -231,11 +231,11 @@ func _node_visual_rect(node: Dictionary) -> Rect2:
     # Entire node + name bounding box, including selection enlargement.
     var p := (Vector2(node["p"]) * WORLD_SCALE).round()
     var radius := 11.0
-    var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+    var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
     var left := minf(p.x - radius, p.x - 13.0)
     var right := maxf(p.x + radius, p.x - 13.0 + label_width)
     var top := p.y - radius
-    var bottom := p.y + radius + 2.0 + 10.0 + FONT.get_descent(10)
+    var bottom := p.y + radius + 2.0 + 11.0 + FONT.get_descent(11)
     return Rect2(Vector2(left, top), Vector2(right - left, bottom - top))
 
 func _readable_tree_area() -> Rect2:
@@ -535,7 +535,7 @@ func _refresh_log() -> void:
         log_column.remove_child(child)
         child.queue_free()
     for entry in log_items:
-        var label := UI.make_label("◆ " + entry, 9, UI.TEXT)
+        var label := UI.make_label("◆ " + entry, 11, UI.TEXT)
         label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
         label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
         label.custom_minimum_size.x = UI.content_rect("R3").size.x - 15
@@ -676,8 +676,8 @@ func _draw() -> void:
     _text("%s G" % _group_digits(g), Vector2(header.position + Vector2i(147, 7)), 14, UI.GOLD)
     _draw_field()
     var help := UI.content_rect("L3")
-    _text("도움말", Vector2(help.position + Vector2i(35, 7)), 10, UI.GOLD)
-    _text(_help_text(), Vector2(help.position + Vector2i(78, 7)), 9)
+    _text("도움말", Vector2(help.position + Vector2i(35, 7)), 11, UI.GOLD)
+    _text(_help_text(), Vector2(help.position + Vector2i(78, 7)), 10)
     _draw_help_arrow(prev_button, "〈")
     _draw_help_arrow(next_button, "〉")
     _draw_action_background()
@@ -773,7 +773,7 @@ func _draw_tree() -> void:
         else:
             _draw_pixel_circle(tree_canvas, center, radius, fill, border)
         _layer_text(tree_canvas, str(node["symbol"]), p + Vector2(-5, -7), 11, border)
-        _layer_text(tree_canvas, str(node["name"]), p + Vector2(-13, radius + 2), 10, UI.MUTED if locked else UI.TEXT)
+        _layer_text(tree_canvas, str(node["name"]), p + Vector2(-13, radius + 2), 11, UI.MUTED if locked else UI.TEXT)
 
 func _draw_popup() -> void:
     if selected_id.is_empty():
@@ -786,7 +786,7 @@ func _draw_popup() -> void:
     _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(7, 5), 13)
     var details := str(node["detail"]).split("|")
     for i in range(details.size()):
-        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(7, 29 + i * 13), 10, UI.MUTED)
+        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(7, 29 + i * 13), 11, UI.MUTED)
 
 func _draw_field() -> void:
     var grid := _grid_geometry()
@@ -821,8 +821,8 @@ func _draw_dialogue_overlay() -> void:
     _layer_box(dialogue_surface, portrait, UI.NODE_FILL, UI.GOLD)
     var speaker := "해설" if dialogue_index == 0 or dialogue_index == 2 or dialogue_index == 4 else "작전 참모"
     _layer_text(dialogue_surface, "≡" if speaker == "해설" else "◆", Vector2(18, 261), 17, UI.GOLD)
-    _layer_text(dialogue_surface, speaker, Vector2(46, 255), 10, UI.GOLD)
+    _layer_text(dialogue_surface, speaker, Vector2(46, 255), 11, UI.GOLD)
     var lines := _dialogue_content()
-    _layer_text(dialogue_surface, lines[mini(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(46, 269), 10)
-    _layer_text(dialogue_surface, "Space  다음 ›", Vector2(336, 255), 8, UI.MUTED)
+    _layer_text(dialogue_surface, lines[mini(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(46, 269), 12)
+    _layer_text(dialogue_surface, "Space  다음 ›", Vector2(336, 255), 10, UI.MUTED)
 
