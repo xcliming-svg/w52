@@ -611,10 +611,13 @@ func _frame_layer(frame: Rect2i, inset: int, fill: Color, lit: Color, shade: Col
 
 
 func _draw_screw(top_left: Vector2i) -> void:
-    # The 3x3 footprint is centered at x+6.5, y+6.5 from the outer corner.
-    draw_rect(Rect2(Vector2(top_left), Vector2(3, 3)), UI.EDGE_DARK)
+    # Five opaque pixels keep the 3px screw centered on the diagonal metal band.
+    # The four footprint corners remain uncovered, protecting the 1px inner rim.
     draw_rect(Rect2(Vector2(top_left + Vector2i(1, 0)), Vector2.ONE), UI.METAL_LIGHT)
+    draw_rect(Rect2(Vector2(top_left + Vector2i(0, 1)), Vector2.ONE), UI.METAL_LIGHT)
     draw_rect(Rect2(Vector2(top_left + Vector2i(1, 1)), Vector2.ONE), UI.METAL_MID)
+    draw_rect(Rect2(Vector2(top_left + Vector2i(2, 1)), Vector2.ONE), UI.METAL_DARK)
+    draw_rect(Rect2(Vector2(top_left + Vector2i(1, 2)), Vector2.ONE), UI.METAL_DARK)
 
 
 func _draw_frame(panel_id: String) -> void:
@@ -631,8 +634,13 @@ func _draw_help_arrow(button: TextureButton, glyph: String) -> void:
     var background := UI.PANEL if button.disabled else (UI.PRIMARY_HOVER if button.is_hovered() else UI.PRIMARY)
     var rect := Rect2(button.position, button.size)
     _box(rect, background, UI.BUTTON_SHADE)
+    # Hand-painted five-pixel stair-step avoids a tiny unreadable glyph.
     var color := UI.MUTED if button.disabled else UI.GAME_BACKGROUND
-    _text(glyph, button.position + Vector2(7, 3), 9, color)
+    var center := Vector2i(button.position + button.size / 2.0)
+    for step in range(5):
+        var dx := (1 - step) if glyph == "〈" else (step - 1)
+        draw_rect(Rect2(center.x + dx, center.y - 4 + step, 1, 1), color)
+        draw_rect(Rect2(center.x + dx, center.y + 4 - step, 1, 1), color)
 
 
 func _draw_action_background() -> void:
