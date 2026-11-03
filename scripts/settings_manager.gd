@@ -36,11 +36,22 @@ func set_volume(bus_name: String, volume: float) -> void:
     _save_settings()
 
 
+func is_fullscreen() -> bool:
+    # Browser Esc and OS window controls can change the actual state outside
+    # the settings menu. Read the window rather than a cached preference.
+    var mode := DisplayServer.window_get_mode()
+    return mode == DisplayServer.WINDOW_MODE_FULLSCREEN \
+        or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+
+
 func set_fullscreen(enabled: bool) -> void:
-    # On the Web, this is invoked directly from the settings button event.
+    # Web callers must request fullscreen inside an active input event.
     fullscreen = enabled
     _apply_fullscreen()
-    _save_settings()
+    # A saved web fullscreen preference cannot be restored on reload because
+    # browsers prohibit fullscreen without a fresh user gesture.
+    if not OS.has_feature("web"):
+        _save_settings()
 
 
 func _ensure_bus(bus_name: String) -> void:
