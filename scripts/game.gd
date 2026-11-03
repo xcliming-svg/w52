@@ -263,7 +263,7 @@ func _select_node(id: String) -> void:
     if node.is_empty():
         return
     selected_id = id
-    camera_target = _clamp_pan(TREE_CENTER_LOCAL - node["p"])
+    camera_target = _clamp_pan(TREE_CENTER_LOCAL - Vector2(node["p"]) * WORLD_SCALE)
     _update_popup()
     _queue_ui_redraw()
 
