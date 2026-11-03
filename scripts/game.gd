@@ -208,7 +208,7 @@ func _find_node(id: String) -> Dictionary:
 
 
 func _node_tree_local(node: Dictionary) -> Vector2:
-    return (Vector2(node["p"]) * WORLD_SCALE + camera_offset).round()
+    return (Vector2(node["p"]) * WORLD_SCALE).round() + camera_offset
 
 func _node_screen(node: Dictionary) -> Vector2:
     return TREE_RECT.position + _node_tree_local(node)
@@ -265,7 +265,7 @@ func _select_node(id: String) -> void:
     if node.is_empty():
         return
     selected_id = id
-    camera_target = _clamp_pan(TREE_CENTER_LOCAL - Vector2(node["p"]) * WORLD_SCALE)
+    camera_target = _clamp_pan(TREE_CENTER_LOCAL - (Vector2(node["p"]) * WORLD_SCALE).round())
     _update_popup()
     _queue_ui_redraw()
 
@@ -741,8 +741,10 @@ func _draw_tree() -> void:
         var center := Vector2i(p)
         if kind == "branch":
             var side := int(radius * 1.5)
-            tree_canvas.draw_rect(Rect2(center.x - side / 2, center.y - side / 2, side, side), border)
-            tree_canvas.draw_rect(Rect2(center.x - side / 2 + 3, center.y - side / 2 + 3, side - 6, side - 6), fill)
+            var left := center.x - int(side / 2)
+            var top := center.y - int(side / 2)
+            tree_canvas.draw_rect(Rect2(left, top, side, side), border)
+            tree_canvas.draw_rect(Rect2(left + 3, top + 3, side - 6, side - 6), fill)
         elif kind == "root":
             _draw_pixel_diamond(tree_canvas, center, radius, fill, border)
         else:
