@@ -313,6 +313,19 @@ func _run() -> void:
         quit(1)
         return
     var game: Control = game_scene.instantiate() as Control
+    # Standalone Game needs the same parent Theme as Main._ready() uses;
+    # otherwise engine fallback font 16px falsely inflates button hit targets.
+    var font := load("res://assets/fonts/ui_ko_subset.woff2") as Font
+    var fallback_fonts: Array[Font] = []
+    for part in [19, 96, 98, 101, 103, 105, 106, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119]:
+        var part_font := load("res://assets/fonts/nanum-%d.woff2" % part) as Font
+        if part_font != null:
+            fallback_fonts.append(part_font)
+    font.set_fallbacks(fallback_fonts)
+    var ui_theme := Theme.new()
+    ui_theme.default_font = font
+    ui_theme.default_font_size = 12
+    game.theme = ui_theme
     root.add_child(game)
     await process_frame
 
