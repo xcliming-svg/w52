@@ -129,8 +129,8 @@ func _create_controls() -> void:
 
     deploy_button = UI.make_button("배치", Vector2(61, 28))
     deploy_button.position = Vector2(-500, -500)
-    deploy_button.size = Vector2(61, 28)
     deploy_button.add_theme_font_size_override("font_size", 8)
+    deploy_button.size = Vector2(61, 28)
     deploy_button.pressed.connect(_deploy_selected)
     add_child(deploy_button)
 
@@ -138,8 +138,8 @@ func _create_controls() -> void:
     prev_button = UI.make_button("〈", Vector2(25, 26))
     next_button = UI.make_button("〉", Vector2(25, 26))
     for b in [prev_button, next_button]:
-        b.size = Vector2(25, 26)
         b.add_theme_font_size_override("font_size", 8)
+        b.size = Vector2(25, 26)
         add_child(b)
     prev_button.position = Vector2(help.position + Vector2i(2, 1))
     next_button.position = Vector2(help.end - Vector2i(27, 27))
@@ -149,8 +149,8 @@ func _create_controls() -> void:
     var action := UI.content_rect("R4")
     battle_button = UI.make_button("전투 시작", Vector2(action.size))
     battle_button.position = Vector2(action.position)
-    battle_button.size = Vector2(action.size)
     battle_button.add_theme_font_size_override("font_size", 10)
+    battle_button.size = Vector2(action.size)
     for state in ["normal", "hover", "pressed", "disabled"]:
         battle_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
     battle_button.add_theme_color_override("font_color", UI.GAME_BACKGROUND)
