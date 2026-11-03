@@ -106,3 +106,19 @@
 | 화면 비율/웹 확대 | `project.godot`의 640×360, `aspect=keep`, `scale_mode=integer` 및 Web `html/canvas_resize_policy=2`는 설계와 일치. 실제 브라우저 표시 크기는 미확인 | `export_presets.cfg`의 Web HTML head에 `canvas { image-rendering: pixelated; }` 지정, HTML 캔버스가 CSS로 확대되는 경우 최근접 픽셀 요청. 16:9, 7:3, 20행 레이아웃은 변경하지 않음. 브라우저 사용 가능 높이가 1080px 미만이면 3배 정수 확대가 아닌 2배 및 검은 여백이 정상 조건 |
 
 스모크에 논리 뷰포트 640×360 및 Web Export Adaptive/Canvas CSS 조건을 추가했다. 기존 52주·전투/저장 v2·트리·배치 검사는 유지한다. 외부 브라우저 자동조작 및 실제 게임 화면 캡처는 실시하지 않았으며 사용자의 웹 시각 재확인이 필요하다.
+
+---
+
+## 8. HTML v8 금속 나사·모서리 및 Web 전체화면 후속 감사 — 2026-11-03
+
+근거: `C:\\GPT-Workspace\\w52_640x360_layout_v8_db32.html`의 `.panel`, `.panel::before`, `.panel::after`, `.panel-core`, `.screw` 규칙 및 Godot Web Export 문서.
+
+| 요구 | 기존 차이 | 보정 및 정적 검증 |
+|---|---|---|
+| 3px 모서리 나사 | 이전 보정에서 5개 픽셀 십자의 색이 밝음/어두움 혼합이며 원본의 나사 원주색·미세광이 아님 | v8의 `#323c39` 테두리 네 방향 픽셀과 `#847e87` 중앙 반사 1px을 적용. 3x3 footprint 모퉁이 4픽셀은 비워둠. 중심 상대좌표 6.5/6.5px 유지 |
+| 7px 절단 금속 베벨 | 모든 inset의 절단 깊이를 `8-inset`으로 계산해 안쪽 판넬색이 외곽 사선에 침범. 중간층 밝기/폭도 v8과 불일치 | 0/2/6/7px inset에서 독립 corner cut 8/7/5/4px, 밝은 엣지 폭 2/1/0/0px로 정정. 중간층 바탕 `#323c39`, 상단/좌측 `#595652` 적용. `UI.metal_corner_cut`와 스모크 테스트로 계산 대조 |
+| 웹 전체화면 사용자 제스처 | 이전 `CheckButton.toggled` 시그널에서 `DisplayServer.window_set_mode` 호출. 웹 브라우저의 입력 이벤트 컨텍스트 요구 조건을 정적으로 보장하지 못함 | Web은 설정 메뉴의 `_input`에서 해당 토글의 실제 마우스 누름/키보드 활성화 입력을 선처리해 동일 `settings_store.set_fullscreen` 호출. PC는 기존 `toggled` 유지 |
+| 전체화면 표시 상태 | 웹에서 Esc 등 브라우저 측 전체화면 해제 후 캐시된 `settings_store.fullscreen`이 오래된 값일 수 있음 | 메뉴 최초 생성시 `DisplayServer.window_get_mode()` 기반 `is_fullscreen`으로 표시, 웹 창 크기 변경 시 deferred 동기화. 브라우저 전체화면 선호도 자동 복원은 보안상 하지 않음 |
+| 640×360/PC-Web 단일 프로젝트·게임 상태 | 변경 대상 아님 | 기존 project/export 해상도와 주차/경제/전투/save v2 규칙 변경 없음 |
+
+**검증 수준:** 변경 코드·원본 CSS 정적 비교 및 GitHub Actions의 Godot 임포트·헤드리스 W52 스모크·Web Export에 한정한다. 브라우저에서 실제 전체화면 진입·해제, FHD 정수 배율, 표시 나사의 모양 및 폰트 가독성은 사용자의 실제 브라우저 확인 전까지 미검증이다.
