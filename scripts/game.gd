@@ -9,12 +9,13 @@ const MAX_WEEK := 52
 const DEMO_BATTLE_COST := 40
 const DEMO_WEEK_REWARD := 70
 const DIALOGUE_COUNT := 5
-const TREE_RECT := Rect2(0, 84, 1376, 892)
-const TREE_CENTER_LOCAL := Vector2(688, 446)
-const DRAG_THRESHOLD := 8.0
-const POPUP_SIZE := Vector2(390, 274)
-const POPUP_BUTTON_OFFSET := Vector2(205, 194)
-const DIALOGUE_RECT := Rect2(28, 778, 1320, 171)
+const WORLD_SCALE := 0.25
+const TREE_CENTER_LOCAL := Vector2(213, 102)
+const DRAG_THRESHOLD := 3.0
+const POPUP_SIZE := Vector2(160, 98)
+const POPUP_BUTTON_OFFSET := Vector2(91, 70)
+var TREE_RECT := Rect2(UI.content_rect("L2"))
+var DIALOGUE_RECT := Rect2(UI.DIALOGUE_RECT)
 const NODES := [
     {"id":"root", "name":"지휘 본부", "kind":"root", "parent":"", "p":Vector2(670, 744), "week":1, "symbol":"◆", "detail":"전략의 시작 노드입니다."},
     {"id":"command", "name":"초기 전술", "kind":"branch", "parent":"root", "p":Vector2(670, 612), "week":1, "symbol":"◇", "detail":"기본 지휘 분기입니다."},
@@ -35,7 +36,6 @@ var selected_id: String = ""
 var hover_id: String = ""
 var placements: Array[String] = []
 var log_items: Array[String] = []
-var speed: int = 1
 var battle_seconds: float = 0.0
 var camera_offset: Vector2 = Vector2.ZERO
 var camera_target: Vector2 = Vector2.ZERO
@@ -49,8 +49,6 @@ var deploy_button: Button
 var battle_button: Button
 var prev_button: Button
 var next_button: Button
-var speed_one: Button
-var speed_two: Button
 var log_scroll: ScrollContainer
 var log_column: VBoxContainer
 var tree_surface: Control
@@ -99,8 +97,7 @@ func snapshot() -> Dictionary:
 
 
 func _create_controls() -> void:
-    # Only the tree surface is clipped. Panels and interactive Controls remain
-    # separate layers so a dragged line can never enter the battlefield.
+    # The same logical rects control painting, clipping, and hit testing.
     tree_surface = Control.new()
     tree_surface.name = "TreeClip"
     tree_surface.position = TREE_RECT.position
@@ -109,8 +106,6 @@ func _create_controls() -> void:
     tree_surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
     add_child(tree_surface)
 
-    # Draw on a child: the clipping parent masks the entire canvas,
-    # including lines partially outside its rectangle.
     tree_canvas = Control.new()
     tree_canvas.name = "TreeArt"
     tree_canvas.size = TREE_RECT.size
@@ -120,71 +115,72 @@ func _create_controls() -> void:
 
     popup_surface = Control.new()
     popup_surface.name = "NodeInfoLayer"
-    popup_surface.size = Vector2(1920, 1080)
+    popup_surface.size = Vector2(UI.DESIGN_SIZE)
     popup_surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
     popup_surface.draw.connect(_draw_popup)
     add_child(popup_surface)
 
     dialogue_surface = Control.new()
     dialogue_surface.name = "DialogueLayer"
-    dialogue_surface.size = Vector2(1920, 1080)
+    dialogue_surface.size = Vector2(UI.DESIGN_SIZE)
     dialogue_surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
     dialogue_surface.draw.connect(_draw_dialogue_overlay)
     add_child(dialogue_surface)
 
-    deploy_button = UI.make_button("배치", Vector2(160, 62))
+    deploy_button = UI.make_button("배치", Vector2(61, 20))
     deploy_button.position = Vector2(-500, -500)
-    deploy_button.size = Vector2(160, 62)
-    deploy_button.add_theme_font_size_override("font_size", 26)
+    deploy_button.size = Vector2(61, 20)
+    deploy_button.add_theme_font_size_override("font_size", 10)
     deploy_button.pressed.connect(_deploy_selected)
     add_child(deploy_button)
 
-    prev_button = UI.make_button("〈", Vector2(72, 64))
-    next_button = UI.make_button("〉", Vector2(72, 64))
+    var help := UI.content_rect("L3")
+    prev_button = UI.make_button("〈", Vector2(23, 22))
+    next_button = UI.make_button("〉", Vector2(23, 22))
     for b in [prev_button, next_button]:
-        b.size = Vector2(72, 64)
-        b.add_theme_font_size_override("font_size", 32)
+        b.size = Vector2(23, 22)
+        b.add_theme_font_size_override("font_size", 12)
         add_child(b)
-    prev_button.position = Vector2(26, 995)
-    next_button.position = Vector2(1278, 995)
+    prev_button.position = Vector2(help.position + Vector2i(2, 3))
+    next_button.position = Vector2(help.end - Vector2i(25, 25))
     prev_button.pressed.connect(func() -> void: _change_help(-1))
     next_button.pressed.connect(func() -> void: _change_help(1))
 
-    speed_one = UI.make_button("1×", Vector2(103, 52))
-    speed_two = UI.make_button("2×", Vector2(103, 52))
-    for b in [speed_one, speed_two]:
-        b.size = Vector2(103, 52)
-        b.add_theme_font_size_override("font_size", 26)
-        add_child(b)
-    speed_one.position = Vector2(1688, 16)
-    speed_two.position = Vector2(1791, 16)
-    speed_one.toggle_mode = true
-    speed_two.toggle_mode = true
-    speed_one.pressed.connect(func() -> void: _set_speed(1))
-    speed_two.pressed.connect(func() -> void: _set_speed(2))
-
-    battle_button = UI.make_button("전투 시작", Vector2(505, 74))
-    battle_button.position = Vector2(1395, 991)
-    battle_button.size = Vector2(505, 74)
-    battle_button.add_theme_font_size_override("font_size", 32)
-    battle_button.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD))
-    battle_button.add_theme_stylebox_override("hover", UI._button_style(UI.GOLD.lightened(0.12)))
-    battle_button.add_theme_color_override("font_color", UI.BACKGROUND)
-    battle_button.add_theme_color_override("font_hover_color", UI.BACKGROUND)
+    var action := UI.content_rect("R4")
+    battle_button = UI.make_button("전투 시작", Vector2(action.size))
+    battle_button.position = Vector2(action.position)
+    battle_button.size = Vector2(action.size)
+    battle_button.add_theme_font_size_override("font_size", 13)
+    for state in ["normal", "hover", "pressed", "disabled"]:
+        battle_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+    battle_button.add_theme_color_override("font_color", UI.GAME_BACKGROUND)
+    battle_button.add_theme_color_override("font_hover_color", UI.GAME_BACKGROUND)
+    battle_button.add_theme_color_override("font_pressed_color", UI.TEXT)
+    battle_button.add_theme_color_override("font_disabled_color", UI.MUTED)
+    battle_button.mouse_entered.connect(queue_redraw)
+    battle_button.mouse_exited.connect(queue_redraw)
+    battle_button.button_down.connect(queue_redraw)
+    battle_button.button_up.connect(queue_redraw)
     battle_button.pressed.connect(_battle_action)
     add_child(battle_button)
 
+    var log := UI.content_rect("R3")
     log_scroll = ScrollContainer.new()
-    log_scroll.position = Vector2(1396, 792)
-    log_scroll.size = Vector2(502, 173)
+    log_scroll.position = Vector2(log.position + Vector2i(3, 2))
+    log_scroll.size = Vector2(log.size - Vector2i(6, 4))
     log_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     log_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
     log_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
     add_child(log_scroll)
     log_column = VBoxContainer.new()
-    log_column.add_theme_constant_override("separation", 12)
+    log_column.add_theme_constant_override("separation", 2)
     log_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     log_scroll.add_child(log_column)
+    var scrollbar := log_scroll.get_v_scroll_bar()
+    scrollbar.add_theme_stylebox_override("scroll", UI._button_style(UI.GAME_BACKGROUND))
+    scrollbar.add_theme_stylebox_override("grabber", UI._button_style(UI.METAL_MID))
+    scrollbar.add_theme_stylebox_override("grabber_highlight", UI._button_style(UI.METAL_LIGHT))
+    scrollbar.add_theme_stylebox_override("grabber_pressed", UI._button_style(UI.GOLD))
 
 
 func _set_week_intro() -> void:
