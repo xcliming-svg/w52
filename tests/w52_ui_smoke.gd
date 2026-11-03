@@ -158,7 +158,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     var popup: Rect2 = game.call("_popup_rect")
     var deploy: Button = game.get("deploy_button")
     if deploy.size != Vector2(61, 20) or deploy.custom_minimum_size != Vector2(61, 20):
-        push_error("W52 smoke: deploy control inherited menu button dimensions")
+        push_error("W52 smoke: deploy dimensions actual=%s min=%s expected=(61, 20)" % [str(deploy.size), str(deploy.custom_minimum_size)])
         return false
     var prev: Button = game.get("prev_button")
     var next_help: Button = game.get("next_button")
