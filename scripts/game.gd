@@ -562,17 +562,14 @@ func _refresh_all() -> void:
     _queue_ui_redraw()
 
 func _text(value: String, p: Vector2, font_size: int, color: Color = UI.TEXT) -> void:
-    draw_string(FONT, p + Vector2(0, font_size), value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
-
+    draw_string(FONT, p.round() + Vector2(0, font_size), value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
 
 func _layer_text(surface: Control, value: String, p: Vector2, font_size: int, color: Color = UI.TEXT) -> void:
-    surface.draw_string(FONT, p + Vector2(0, font_size), value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
-
+    surface.draw_string(FONT, p.round() + Vector2(0, font_size), value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
 
 func _layer_box(surface: Control, rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
     surface.draw_rect(rect, fill)
-    surface.draw_rect(rect, border, false, 2.0)
-
+    surface.draw_rect(rect, border, false, 3.0, false)
 
 func _queue_ui_redraw() -> void:
     queue_redraw()
@@ -585,36 +582,82 @@ func _queue_ui_redraw() -> void:
 
 
 func _box(rect: Rect2, fill: Color, border: Color = UI.BORDER) -> void:
-    draw_rect(rect, fill)
-    draw_rect(rect, border, false, 2.0)
+    draw_rect(rect, border)
+    draw_rect(rect.grow(-1.0), fill)
+
+# Each beveled layer is a run of integer pixels. No subpixel edges or antialiasing.
+func _frame_layer(frame: Rect2i, inset: int, fill: Color, lit: Color, shade: Color) -> void:
+    var a := frame.position + Vector2i(inset, inset)
+    var e := frame.end - Vector2i(inset, inset)
+    var cut := maxi(0, 8 - inset)
+    for y in range(a.y, e.y):
+        var from_corner := mini(y - a.y, e.y - 1 - y)
+        var clip_left := maxi(0, cut - from_corner)
+        var x0 := a.x + clip_left
+        var x1 := e.x - clip_left
+        if x1 <= x0:
+            continue
+        draw_rect(Rect2(x0, y, x1 - x0, 1), fill)
+        if y - a.y < 2:
+            draw_rect(Rect2(x0, y, x1 - x0, 1), lit)
+        elif e.y - 1 - y < 2:
+            draw_rect(Rect2(x0, y, x1 - x0, 1), shade)
+        else:
+            draw_rect(Rect2(x0, y, mini(2, x1 - x0), 1), lit)
+            draw_rect(Rect2(x1 - mini(2, x1 - x0), y, mini(2, x1 - x0), 1), shade)
+
+
+func _draw_screw(top_left: Vector2i) -> void:
+    # The 3x3 footprint is centered at x+6.5, y+6.5 from the outer corner.
+    draw_rect(Rect2(Vector2(top_left), Vector2(3, 3)), UI.EDGE_DARK)
+    draw_rect(Rect2(Vector2(top_left + Vector2i(1, 0)), Vector2.ONE), UI.METAL_LIGHT)
+    draw_rect(Rect2(Vector2(top_left + Vector2i(1, 1)), Vector2.ONE), UI.METAL_MID)
+
+
+func _draw_frame(panel_id: String) -> void:
+    var f := UI.frame_rect(panel_id)
+    _frame_layer(f, 0, UI.METAL_MID, UI.METAL_LIGHT, UI.METAL_DARK)
+    _frame_layer(f, 2, UI.METAL_MID, UI.METAL_MID, UI.METAL_DARK)
+    _frame_layer(f, 6, UI.EDGE_DARK, UI.EDGE_DARK, UI.EDGE_DARK)
+    _frame_layer(f, 7, UI.PANEL, UI.PANEL, UI.PANEL)
+    _draw_screw(f.position + Vector2i(5, 5))
+    _draw_screw(Vector2i(f.end.x - 8, f.position.y + 5))
+    _draw_screw(Vector2i(f.position.x + 5, f.end.y - 8))
+    _draw_screw(f.end - Vector2i(8, 8))
+
+
+func _draw_action_background() -> void:
+    var rect := UI.content_rect("R4")
+    var disabled := battle_button.disabled
+    var fill := UI.PANEL if disabled else (UI.PRIMARY_HOVER if battle_button.is_hovered() else UI.GOLD)
+    if battle_button.button_pressed and not disabled:
+        fill = UI.BUTTON_SHADE
+    draw_rect(Rect2(rect), fill)
+    draw_rect(Rect2(rect.position.x, rect.position.y, rect.size.x, 2), UI.METAL_LIGHT if disabled else UI.TEXT)
+    draw_rect(Rect2(rect.position.x, rect.end.y - 3, rect.size.x, 3), UI.BUTTON_SHADE)
+    draw_rect(Rect2(rect.end.x - 2, rect.position.y, 2, rect.size.y), UI.BUTTON_EDGE)
+    draw_rect(Rect2(rect.end.x - 1, rect.end.y - 2, 1, 2), UI.BUTTON_DARK)
 
 
 func _draw() -> void:
-    # Fixed HUD background is drawn at the root; TreeArt renders in a clipped
-    # child Control and can never paint into the battlefield or other panels.
-    draw_rect(Rect2(0, 0, 1920, 1080), UI.BACKGROUND)
-    _box(TREE_RECT, UI.GAME_BACKGROUND)
-    for x in range(0, 1376, 56):
-        draw_line(Vector2(x, 84), Vector2(x, 976), UI.GRID, 1.0)
-    for y in range(84, 976, 56):
-        draw_line(Vector2(0, y), Vector2(1376, y), UI.GRID, 1.0)
-    _box(Rect2(0, 0, 1376, 84), UI.HEADER)
-    _box(Rect2(1376, 0, 544, 84), UI.HEADER)
-    _box(Rect2(0, 976, 1376, 104), UI.PANEL)
-    _box(Rect2(1376, 84, 544, 652), UI.GAME_BACKGROUND)
-    _box(Rect2(1376, 736, 544, 240), UI.PANEL)
-    _box(Rect2(1376, 976, 544, 104), UI.PANEL)
-    _text("%02d주차" % week, Vector2(44, 16), 38)
-    draw_line(Vector2(233, 17), Vector2(233, 67), UI.BORDER, 2)
-    _text("%s G" % _group_digits(g), Vector2(271, 17), 37, UI.GOLD)
-    var secs := int(battle_seconds)
-    _text("%02d:%02d" % [secs / 60, secs % 60], Vector2(1410, 16), 36)
+    # y=0..35 remains fully black: no title, frame, or decoration.
+    draw_rect(Rect2(Vector2.ZERO, Vector2(UI.DESIGN_SIZE)), UI.BACKGROUND)
+    for panel_id in ["L1", "L2", "L3", "R1", "R2", "R3", "R4"]:
+        _draw_frame(panel_id)
+    # The tree grid and art both remain inside the frame's content rectangle.
+    for x in range(int(TREE_RECT.position.x), int(TREE_RECT.end.x), 23):
+        draw_rect(Rect2(x, TREE_RECT.position.y, 1, TREE_RECT.size.y), UI.GRID)
+    for y in range(int(TREE_RECT.position.y), int(TREE_RECT.end.y), 23):
+        draw_rect(Rect2(TREE_RECT.position.x, y, TREE_RECT.size.x, 1), UI.GRID)
+    var header := UI.content_rect("L1")
+    _text("%02d주차" % week, Vector2(header.position + Vector2i(10, 6)), 15)
+    draw_rect(Rect2(header.position.x + 128, header.position.y + 6, 1, 17), UI.METAL_MID)
+    _text("%s G" % _group_digits(g), Vector2(header.position + Vector2i(147, 7)), 14, UI.GOLD)
     _draw_field()
-    _text("전투 정보", Vector2(1400, 747), 28)
-    draw_line(Vector2(1400, 790), Vector2(1896, 790), UI.BORDER, 2)
-    _text("도움말", Vector2(115, 992), 23, UI.GOLD)
-    _text(_help_text(), Vector2(240, 992), 25)
-
+    var help := UI.content_rect("L3")
+    _text("도움말", Vector2(help.position + Vector2i(35, 7)), 10, UI.GOLD)
+    _text(_help_text(), Vector2(help.position + Vector2i(78, 7)), 9)
+    _draw_action_background()
 
 func _group_digits(value: int) -> String:
     var s := str(value)
