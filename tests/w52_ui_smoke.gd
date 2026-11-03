@@ -106,6 +106,15 @@ func _check_pixel_layout(game: Control) -> bool:
         if not token.to_html(false) in allowed:
             push_error("W52 smoke: palette token outside allowed DB32 colors")
             return false
+    if int(ProjectSettings.get_setting("display/window/size/viewport_width")) != 640 \
+            or int(ProjectSettings.get_setting("display/window/size/viewport_height")) != 360:
+        push_error("W52 smoke: logical 16:9 resolution must be exactly 640x360")
+        return false
+    var export_config := FileAccess.get_file_as_string("res://export_presets.cfg")
+    if not export_config.contains("html/canvas_resize_policy=2") \
+            or not export_config.contains("image-rendering: pixelated"):
+        push_error("W52 smoke: adaptive browser canvas nearest-neighbor CSS missing")
+        return false
     if ProjectSettings.get_setting("display/window/stretch/mode") != "viewport" \
             or ProjectSettings.get_setting("display/window/stretch/aspect") != "keep" \
             or ProjectSettings.get_setting("display/window/stretch/scale_mode") != "integer" \
