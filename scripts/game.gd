@@ -135,12 +135,26 @@ func _create_controls() -> void:
     add_child(deploy_button)
 
     var help := UI.content_rect("L3")
-    prev_button = UI.make_button("〈", Vector2(25, 26))
-    next_button = UI.make_button("〉", Vector2(25, 26))
+    # Construct compact arrows directly: menu button's initial font minimum
+    # height is 31px and cannot fit the 28px content interior.
+    prev_button = Button.new()
+    next_button = Button.new()
+    prev_button.text = "〈"
+    next_button.text = "〉"
     for b in [prev_button, next_button]:
+        b.custom_minimum_size = Vector2(25, 26)
         b.add_theme_font_size_override("font_size", 8)
         for visual in ["normal", "hover", "pressed", "disabled"]:
-            b.add_theme_stylebox_override(visual, StyleBoxEmpty.new())
+            var style := UI._button_style(UI.PRIMARY if visual == "normal" else UI.PRIMARY_HOVER)
+            style.set_border_width_all(1)
+            style.content_margin_left = 0
+            style.content_margin_right = 0
+            style.content_margin_top = 0
+            style.content_margin_bottom = 0
+            b.add_theme_stylebox_override(visual, style)
+        b.add_theme_color_override("font_color", UI.GAME_BACKGROUND)
+        b.add_theme_color_override("font_hover_color", UI.GAME_BACKGROUND)
+        b.add_theme_color_override("font_disabled_color", UI.MUTED)
         b.size = Vector2(25, 26)
         add_child(b)
     prev_button.position = Vector2(help.position + Vector2i(2, 1))
@@ -149,7 +163,9 @@ func _create_controls() -> void:
     next_button.pressed.connect(func() -> void: _change_help(1))
 
     var action := UI.content_rect("R4")
-    battle_button = UI.make_button("전투 시작", Vector2(action.size))
+    battle_button = Button.new()
+    battle_button.text = "전투 시작"
+    battle_button.custom_minimum_size = Vector2(action.size)
     battle_button.position = Vector2(action.position)
     battle_button.add_theme_font_size_override("font_size", 10)
     battle_button.size = Vector2(action.size)
