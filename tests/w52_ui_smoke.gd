@@ -56,6 +56,19 @@ func _check_pixel_layout(game: Control) -> bool:
     if UI.PANEL_IDS.size() != 7 or UI.SCREW_DIAMETER != 3 or UI.FRAME_THICKNESS != 7:
         push_error("W52 smoke: wrong seven-panel metal hardware contract")
         return false
+    # v8 CSS bevel polygons use deeper cuts at every nested layer;
+    # the former 8-inset formula exposed panel fill under the corner screw.
+    for inset in [0, 2, 6, 7]:
+        var expected_cut := 8 if inset == 0 else (7 if inset == 2 else (5 if inset == 6 else 4))
+        if UI.metal_corner_cut(inset) != expected_cut:
+            push_error("W52 smoke: v8 nested metal diagonal cut incorrect")
+            return false
+    # At diagonal x+y=13 (the center of the 3px screw), the
+    # 6px inner rim and 7px panel core must not overwrite the metal band.
+    if 6 + 6 + UI.metal_corner_cut(6) != 17 \
+            or 7 + 7 + UI.metal_corner_cut(7) != 18:
+        push_error("W52 smoke: diagonal screw band not centered between cuts")
+        return false
     var screws := 0
     for id in UI.PANEL_IDS:
         var frame: Rect2i = UI.frame_rect(id)
