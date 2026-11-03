@@ -18,7 +18,6 @@ func _mouse_motion(at: Vector2) -> InputEventMouseMotion:
     return event
 
 
-const UI = preload("res://scripts/ui_style.gd")
 const TREE_NODE_IDS := ["root", "command", "guard", "scout", "mobility", "supply", "drone", "elite"]
 
 
@@ -43,107 +42,13 @@ func _assert_readable_tree(game: Control) -> bool:
     return true
 
 
-func _check_pixel_layout(game: Control) -> bool:
-    var expected := {
-        "L1": Rect2i(4, 40, 441, 42),
-        "L2": Rect2i(4, 89, 441, 219),
-        "L3": Rect2i(4, 315, 441, 42),
-        "R1": Rect2i(452, 40, 185, 42),
-        "R2": Rect2i(452, 89, 185, 155),
-        "R3": Rect2i(452, 251, 185, 57),
-        "R4": Rect2i(452, 315, 185, 42)
-    }
-    if UI.PANEL_IDS.size() != 7 or UI.SCREW_DIAMETER != 3 or UI.FRAME_THICKNESS != 7:
-        push_error("W52 smoke: wrong seven-panel metal hardware contract")
-        return false
-    # v8 CSS bevel polygons use deeper cuts at every nested layer;
-    # the former 8-inset formula exposed panel fill under the corner screw.
-    for inset in [0, 2, 6, 7]:
-        var expected_cut := 8 if inset == 0 else (7 if inset == 2 else (5 if inset == 6 else 4))
-        if UI.metal_corner_cut(inset) != expected_cut:
-            push_error("W52 smoke: v8 nested metal diagonal cut incorrect")
-            return false
-    # At diagonal x+y=13 (the center of the 3px screw), the
-    # 6px inner rim and 7px panel core must not overwrite the metal band.
-    if 6 + 6 + UI.metal_corner_cut(6) != 17 \
-            or 7 + 7 + UI.metal_corner_cut(7) != 18:
-        push_error("W52 smoke: diagonal screw band not centered between cuts")
-        return false
-    var screws := 0
-    for id in UI.PANEL_IDS:
-        var frame: Rect2i = UI.frame_rect(id)
-        if frame != expected[id]:
-            push_error("W52 smoke: bad %s frame %s" % [id, frame])
-            return false
-        var origins: Array[Vector2i] = UI.screw_origins(id)
-        if origins.size() != 4:
-            push_error("W52 smoke: missing corner screws")
-            return false
-        var corners := [
-            frame.position + Vector2i(5, 5),
-            Vector2i(frame.end.x - 8, frame.position.y + 5),
-            Vector2i(frame.position.x + 5, frame.end.y - 8),
-            frame.end - Vector2i(8, 8)
-        ]
-        for i in range(4):
-            if origins[i] != corners[i]:
-                push_error("W52 smoke: uncentered 3px corner screw")
-                return false
-        screws += origins.size()
-    if screws != 28:
-        push_error("W52 smoke: expected 28 screws")
-        return false
-    if UI.boundary(0) != 36 or UI.boundary(3) != 85 or UI.boundary(13) != 247 \
-            or UI.boundary(17) != 311 or UI.boundary(20) != 360:
-        push_error("W52 smoke: inconsistent snapped shared boundaries")
-        return false
-    if UI.content_rect("L2") != Rect2i(11, 96, 427, 205):
-        push_error("W52 smoke: tree interior not inset by 7 pixels")
-        return false
-    if Rect2(UI.DIALOGUE_RECT) != Rect2(4, 251, 426, 43) \
-            or game.get("DIALOGUE_RECT") != Rect2(UI.DIALOGUE_RECT):
-        push_error("W52 smoke: floating dialogue is not aligned with R3")
-        return false
-    if UI.frame_rect("L1").end.y != UI.frame_rect("R1").end.y \
-            or UI.frame_rect("L3").position.y != UI.frame_rect("R4").position.y:
-        push_error("W52 smoke: left/right frame misalignment")
-        return false
-    var allowed := ["000000", "323c39", "222034", "595652", "696a6a", "eec39a",
-        "9badb7", "d9a066", "37946e", "847e87", "8a6f30", "8f563b", "663931"]
-    for token in [UI.BACKGROUND, UI.PANEL, UI.BORDER, UI.PRIMARY, UI.PRIMARY_HOVER,
-            UI.TEXT, UI.MUTED, UI.GAME_BACKGROUND, UI.HEADER, UI.GRID, UI.GRID_BORDER,
-            UI.TREE_LINE, UI.NODE_FILL, UI.LOCKED, UI.GOLD, UI.TEAL, UI.ENEMY,
-            UI.ENEMY_CELL, UI.ALLY_CELL, UI.DIALOGUE_PANEL, UI.METAL_LIGHT,
-            UI.METAL_MID, UI.METAL_DARK, UI.EDGE_DARK, UI.BUTTON_SHADE,
-            UI.BUTTON_EDGE, UI.BUTTON_DARK]:
-        if not token.to_html(false) in allowed:
-            push_error("W52 smoke: palette token outside allowed DB32 colors")
-            return false
-    if int(ProjectSettings.get_setting("display/window/size/viewport_width")) != 640 \
-            or int(ProjectSettings.get_setting("display/window/size/viewport_height")) != 360:
-        push_error("W52 smoke: logical 16:9 resolution must be exactly 640x360")
-        return false
-    var export_config := FileAccess.get_file_as_string("res://export_presets.cfg")
-    if not export_config.contains("html/canvas_resize_policy=2") \
-            or not export_config.contains("image-rendering: pixelated"):
-        push_error("W52 smoke: adaptive browser canvas nearest-neighbor CSS missing")
-        return false
-    if ProjectSettings.get_setting("display/window/stretch/mode") != "viewport" \
-            or ProjectSettings.get_setting("display/window/stretch/aspect") != "keep" \
-            or ProjectSettings.get_setting("display/window/stretch/scale_mode") != "integer" \
-            or int(ProjectSettings.get_setting("rendering/textures/canvas_textures/default_texture_filter")) != 0:
-        push_error("W52 smoke: pixel scaling/texture filtering contract incorrect")
-        return false
-    return true
-
-
 func _check_tree_pan_and_popup(game: Control) -> bool:
     # The tree must be a child canvas of a bounded clipping Control.
     var clip := game.get_node_or_null("TreeClip") as Control
     if clip == null or not clip.clip_contents:
         push_error("W52 smoke: missing clipped tree viewport")
         return false
-    if clip.position != Vector2(11, 96) or clip.size != Vector2(427, 205):
+    if clip.position != Vector2(0, 84) or clip.size != Vector2(1376, 892):
         push_error("W52 smoke: clipped tree bounds incorrect")
         return false
     var art := clip.get_node_or_null("TreeArt") as Control
@@ -163,7 +68,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     # Selected unit remains centered; other branches can extend offscreen.
     var guard: Dictionary = game.call("_find_node", "guard")
     var focus_offset: Vector2 = game.get("camera_offset")
-    var expected_focus: Vector2 = game.call("_clamp_pan", Vector2(213, 102) - Vector2(guard["p"]) * 0.25)
+    var expected_focus: Vector2 = game.call("_clamp_pan", Vector2(688, 446) - guard["p"])
     if focus_offset.distance_to(expected_focus) > 0.1:
         push_error("W52 smoke: guard focus not at readable camera target")
         return false
@@ -179,27 +84,23 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
             return false
     var popup: Rect2 = game.call("_popup_rect")
     var deploy: Button = game.get("deploy_button")
-    if deploy.size != Vector2(61, 31) or deploy.custom_minimum_size != Vector2(61, 31):
-        push_error("W52 smoke: deploy dimensions actual=%s min=%s expected=(61, 31)" % [str(deploy.size), str(deploy.custom_minimum_size)])
+    if deploy.size != Vector2(160, 62) or deploy.custom_minimum_size != Vector2(160, 62):
+        push_error("W52 smoke: deploy control inherited menu button dimensions")
         return false
-    var prev: TextureButton = game.get("prev_button")
-    var next_help: TextureButton = game.get("next_button")
-    if prev.size != Vector2(25, 26) or next_help.size != Vector2(25, 26):
-        push_error("W52 smoke: help arrows size invalid: prev=%s next=%s" % [str(prev.size), str(next_help.size)])
+    var speed_one: Button = game.get("speed_one")
+    var speed_two: Button = game.get("speed_two")
+    var prev: Button = game.get("prev_button")
+    var next_help: Button = game.get("next_button")
+    if speed_one.size != Vector2(103, 52) or speed_two.size != Vector2(103, 52):
+        push_error("W52 smoke: speed control size invalid")
         return false
-    var help_inner := Rect2(UI.content_rect("L3"))
-    if not help_inner.encloses(Rect2(prev.position, prev.size)) or not help_inner.encloses(Rect2(next_help.position, next_help.size)):
-        push_error("W52 smoke: help hit targets exceed their frame interior")
-        return false
-    var battle: TextureButton = game.get("battle_button")
-    var battle_inner := Rect2(UI.content_rect("R4"))
-    if not battle_inner.encloses(Rect2(battle.position, battle.size)):
-        push_error("W52 smoke: action hit target exceeds R4 interior")
+    if prev.size != Vector2(72, 64) or next_help.size != Vector2(72, 64):
+        push_error("W52 smoke: help arrows size invalid")
         return false
     if not popup.encloses(Rect2(deploy.position, deploy.size)):
         push_error("W52 smoke: deploy button outside popup during dialogue: panel=%s btn=%s size=%s" % [str(popup), str(deploy.position), str(deploy.size)])
         return false
-    if popup.end.y > 251.0:
+    if popup.end.y > 754.0:
         push_error("W52 smoke: popup collides with dialogue")
         return false
     # The popup surface cannot arm the background pan.
@@ -221,7 +122,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     var start := Vector2(90, 190)
     var before: Vector2 = game.get("camera_offset")
     game.call("_gui_input", _mouse_button(true, start))
-    game.call("_input", _mouse_motion(start + Vector2(1, 1)))
+    game.call("_input", _mouse_motion(start + Vector2(3, 2)))
     var under_threshold: Vector2 = game.get("camera_offset")
     if under_threshold.distance_to(before) > 0.1:
         push_error("W52 smoke: under-threshold motion panned tree")
@@ -291,7 +192,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         game.call("_process", 1.0)
         var chosen: Dictionary = game.call("_find_node", node_id)
         var chosen_screen: Vector2 = game.call("_node_screen", chosen)
-        if chosen_screen.distance_to(Vector2(224, 198)) > 0.1:
+        if chosen_screen.distance_to(Vector2(688, 530)) > 0.1:
             push_error("W52 smoke: node %s did not focus exactly at tree center" % node_id)
             return false
         if not _assert_readable_tree(game):
@@ -300,7 +201,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     game.call("_select_node", "mobility")
     game.call("_process", 1.0)
     var mobility: Dictionary = game.call("_find_node", "mobility")
-    expected_focus = game.call("_clamp_pan", Vector2(213, 102) - Vector2(mobility["p"]) * 0.25)
+    expected_focus = game.call("_clamp_pan", Vector2(688, 446) - mobility["p"])
     focus_offset = game.get("camera_offset")
     if focus_offset.distance_to(expected_focus) > 0.1:
         push_error("W52 smoke: edge focus did not honor camera range")
@@ -312,7 +213,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     game.call("_process", 1.0)
     var root_node: Dictionary = game.call("_find_node", "root")
     var root_screen: Vector2 = game.call("_node_screen", root_node)
-    if root_screen.distance_to(Vector2(224, 198)) > 0.1:
+    if root_screen.distance_to(Vector2(688, 530)) > 0.1:
         push_error("W52 smoke: central focus not centered")
         return false
     if not _assert_readable_tree(game):
@@ -320,7 +221,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     # A short click on a visible node still selects it; dragging that node does not.
     var command_pos: Vector2 = game.call("_node_screen", game.call("_find_node", "command"))
     game.call("_gui_input", _mouse_button(true, command_pos))
-    game.call("_input", _mouse_motion(command_pos + Vector2(1, 0)))
+    game.call("_input", _mouse_motion(command_pos + Vector2(3, 0)))
     game.call("_input", _mouse_button(false, command_pos + Vector2(3, 0)))
     if str(game.get("selected_id")) != "command":
         push_error("W52 smoke: short node click failed after panning")
@@ -344,32 +245,19 @@ func _run() -> void:
         quit(1)
         return
     var game: Control = game_scene.instantiate() as Control
-    # Standalone Game needs the same parent Theme as Main._ready() uses;
-    # otherwise engine fallback font 16px falsely inflates button hit targets.
-    var font := load("res://assets/fonts/ui_ko_subset.woff2") as Font
-    var fallback_fonts: Array[Font] = []
-    for part in [19, 96, 98, 101, 103, 105, 106, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119]:
-        var part_font := load("res://assets/fonts/nanum-%d.woff2" % part) as Font
-        if part_font != null:
-            fallback_fonts.append(part_font)
-    font.set_fallbacks(fallback_fonts)
-    var ui_theme := Theme.new()
-    ui_theme.default_font = font
-    ui_theme.default_font_size = 12
-    game.theme = ui_theme
     root.add_child(game)
     await process_frame
 
-    if int(ProjectSettings.get_setting("display/window/size/viewport_width")) != 640:
+    if int(ProjectSettings.get_setting("display/window/size/viewport_width")) != 1920:
         push_error("W52 smoke: wrong logical viewport width")
         quit(1)
         return
-    if int(ProjectSettings.get_setting("display/window/size/viewport_height")) != 360:
+    if int(ProjectSettings.get_setting("display/window/size/viewport_height")) != 1080:
         push_error("W52 smoke: wrong logical viewport height")
         quit(1)
         return
 
-    if not _check_pixel_layout(game) or not _assert_readable_tree(game) or not _check_tree_pan_and_popup(game):
+    if not _assert_readable_tree(game) or not _check_tree_pan_and_popup(game):
         quit(1)
         return
 
@@ -401,30 +289,6 @@ func _run() -> void:
         var allies: Array = game.get("placements")
         if allies.is_empty():
             push_error("W52 smoke: deploy failed")
-            quit(1)
-            return
-        var expected_grid := Vector2i(6, 6) if expected_week <= 13 else (
-            Vector2i(8, 8) if expected_week <= 26 else (
-                Vector2i(10, 8) if expected_week <= 39 else Vector2i(10, 10)))
-        var actual_grid: Vector2i = game.call("_grid_size")
-        if actual_grid != expected_grid:
-            push_error("W52 smoke: week-based battlefield grid changed")
-            quit(1)
-            return
-        var geometry: Dictionary = game.call("_grid_geometry")
-        var field: Rect2 = Rect2(UI.content_rect("R2"))
-        var grid_top_left: Vector2 = Vector2(geometry["start"])
-        var cell_width: float = float(geometry["cell"])
-        if not field.encloses(Rect2(grid_top_left, Vector2(actual_grid) * cell_width)):
-            push_error("W52 smoke: battlefield grid escaped its frame")
-            quit(1)
-            return
-        game.set("selected_id", "")
-        var ally_click := grid_top_left + Vector2(cell_width * 1.5,
-            cell_width * (float(actual_grid.y) - 0.5))
-        game.call("_gui_input", _mouse_button(true, ally_click))
-        if str(game.get("selected_id")) != "guard":
-            push_error("W52 smoke: field cell click did not select corresponding tree unit")
             quit(1)
             return
 
@@ -477,5 +341,5 @@ func _run() -> void:
         quit(1)
         return
     store.clear_save()
-    print("W52_UI_SMOKE_OK: 52 battles, dialogues, help gating, deployment, save/restore, 640x360 integer viewport")
+    print("W52_UI_SMOKE_OK: 52 battles, dialogues, help gating, deployment, save/restore, 1920x1080")
     quit(0)

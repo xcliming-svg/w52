@@ -23,11 +23,6 @@ var settings_overlay: Control
 
 
 func _ready() -> void:
-    # Grayscale coverage repairs small Korean outline strokes at 640x360.
-    # Bevels and viewport scaling remain pixel-aligned and unfiltered.
-    KOREAN_UI_FONT.set("antialiasing", TextServer.FONT_ANTIALIASING_GRAY)
-    KOREAN_UI_FONT.set("hinting", TextServer.HINTING_NORMAL)
-    KOREAN_UI_FONT.set("subpixel_positioning", TextServer.SUBPIXEL_POSITIONING_DISABLED)
     # Web builds do not reliably provide system CJK font fallbacks.
     # Include only the licensed Nanum Gothic Unicode ranges used by the new UI.
     var fallback_fonts: Array[Font] = []
@@ -36,14 +31,11 @@ func _ready() -> void:
         if font == null:
             push_error("Missing bundled Korean glyph subset: %d" % part)
         else:
-            font.set("antialiasing", TextServer.FONT_ANTIALIASING_GRAY)
-            font.set("hinting", TextServer.HINTING_NORMAL)
-            font.set("subpixel_positioning", TextServer.SUBPIXEL_POSITIONING_DISABLED)
             fallback_fonts.append(font)
     KOREAN_UI_FONT.set_fallbacks(fallback_fonts)
     var ui_theme := Theme.new()
     ui_theme.default_font = KOREAN_UI_FONT
-    ui_theme.default_font_size = 12
+    ui_theme.default_font_size = 26
     theme = ui_theme
     process_mode = Node.PROCESS_MODE_ALWAYS
     settings_store = SettingsStore.new()

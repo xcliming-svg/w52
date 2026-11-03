@@ -24,7 +24,7 @@ stretch_mode = 6
 
 [node name="LogoArt" type="TextureRect" parent="."]
 visible = false
-custom_minimum_size = Vector2(260, 50)
+custom_minimum_size = Vector2(520, 160)
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
