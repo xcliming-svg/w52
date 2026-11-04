@@ -108,10 +108,14 @@ func restore_state(data: Dictionary) -> void:
     owned_buildings = ["hq", "robot_factory"]
     var stored: Variant = data.get("buildings", [])
     if stored is Array:
-        for item in stored:
-            var node := _find_node(str(item))
-            if not node.is_empty() and str(node["kind"]) != "unit" and str(item) not in owned_buildings:
-                owned_buildings.append(str(item))
+        # Reconstruct only valid building paths, regardless of serialized order.
+        for pass_index in range(stored.size()):
+            for item in stored:
+                var node := _find_node(str(item))
+                if node.is_empty() or str(node["kind"]) == "unit" or str(item) in owned_buildings:
+                    continue
+                if _has_building(str(node["parent"])):
+                    owned_buildings.append(str(item))
     placements.clear()
     var saved_placements: Variant = data.get("placements", [])
     if saved_placements is Array:
@@ -290,6 +294,8 @@ func _node_half_size(node: Dictionary) -> float:
 func _toggle_tree_view() -> void:
     full_tree_view = not full_tree_view
     full_view_button.text = "기본 트리" if full_tree_view else "전체 기술도"
+    if not selected_id.is_empty() and not _node_visible(_find_node(selected_id)):
+        selected_id = ""
     camera_offset = _clamp_pan(camera_offset)
     camera_target = camera_offset
     _refresh_all()
