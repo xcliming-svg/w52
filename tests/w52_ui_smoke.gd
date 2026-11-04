@@ -393,6 +393,128 @@ func _check_integrated_tree(game: Control) -> bool:
 
 
 
+func _field_point(game: Control, cell: Vector2i) -> Vector2:
+    var origin: Vector2 = game.call("_grid_origin")
+    return origin + Vector2(cell) * 46.0 + Vector2(22, 22)
+
+
+func _check_field_placement(game: Control) -> bool:
+    game.call("restore_state", {"week":1, "g":160, "phase":"prepare", "dialogue":5,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    game.call("_select_node", "rifle")
+    game.call("_begin_new_unit_placement", "rifle")
+    if game.get("placements").size() != 0 or str(game.get("placement_mode")) != "PLACE_NEW":
+        push_error("W52 field: deploy button created a unit before selecting a cell")
+        return false
+    game.call("_click_ally", _field_point(game, Vector2i(1, 0)))
+    if game.get("placements").size() != 0 or str(game.get("placement_mode")) != "PLACE_NEW":
+        push_error("W52 field: enemy cell was accepted or pending mode lost")
+        return false
+    game.call("_click_ally", _field_point(game, Vector2i(1, 5)))
+    var units: Array = game.get("placements")
+    if units.size() != 1 or str(game.get("placement_mode")) != "NORMAL":
+        push_error("W52 field: valid cell did not create exactly one unit")
+        return false
+    var first_id := str(units[0]["instance_id"])
+    if first_id.is_empty() or str(game.get("selected_instance_id")) != first_id:
+        push_error("W52 field: new unit was not uniquely selected")
+        return false
+    game.call("_select_node", "rifle")
+    game.call("_begin_new_unit_placement", "rifle")
+    game.call("_click_ally", _field_point(game, Vector2i(1, 5)))
+    if game.get("placements").size() != 1 or str(game.get("placement_mode")) != "PLACE_NEW":
+        push_error("W52 field: occupied cell duplicated a unit")
+        return false
+    game.call("_cancel_pending_placement")
+    if game.get("placements").size() != 1:
+        push_error("W52 field: pending cancel removed an existing unit")
+        return false
+    game.call("_begin_new_unit_placement", "rifle")
+    game.call("_click_ally", _field_point(game, Vector2i(2, 5)))
+    units = game.get("placements")
+    if units.size() != 2 or str(units[1]["instance_id"]) == first_id:
+        push_error("W52 field: same-type instances share identity")
+        return false
+    var other_id := str(units[1]["instance_id"])
+    var start := _field_point(game, Vector2i(1, 5))
+    game.call("_start_field_interaction", start)
+    game.call("_update_field_drag", start + Vector2(3, 2))
+    game.call("_finish_field_interaction", start + Vector2(3, 2))
+    units = game.get("placements")
+    if int(units[0]["col"]) != 1 or str(game.get("selected_instance_id")) != first_id:
+        push_error("W52 field: short click moved unit or failed selection")
+        return false
+    game.call("_start_field_interaction", start)
+    game.call("_update_field_drag", start + Vector2(18, 0))
+    game.call("_finish_field_interaction", _field_point(game, Vector2i(2, 5)))
+    units = game.get("placements")
+    if int(units[0]["col"]) != 1:
+        push_error("W52 field: occupied drop moved source")
+        return false
+    game.call("_start_field_interaction", start)
+    game.call("_update_field_drag", start + Vector2(20, 0))
+    game.call("_finish_field_interaction", _field_point(game, Vector2i(3, 5)))
+    units = game.get("placements")
+    if int(units[0]["col"]) != 3 or str(units[0]["instance_id"]) != first_id or units.size() != 2:
+        push_error("W52 field: drag must preserve identity and count")
+        return false
+    game.call("_remove_placed_instance", first_id)
+    units = game.get("placements")
+    if units.size() != 1 or str(units[0]["instance_id"]) != other_id:
+        push_error("W52 field: remove canceled more than the selected instance")
+        return false
+    game.call("_select_node", "rifle")
+    # All grid-size boundaries preserve the same coordinate transform.
+    for boundary in [[13, Vector2i(6,6)], [14, Vector2i(8,8)],
+                     [26, Vector2i(8,8)], [27, Vector2i(10,8)],
+                     [39, Vector2i(10,8)], [40, Vector2i(10,10)]]:
+        game.set("week", boundary[0])
+        var size: Vector2i = game.call("_grid_size")
+        if size != boundary[1]:
+            push_error("W52 field: week grid-size boundary failed")
+            return false
+        var legal := Vector2i(size.x - 1, size.y - 1)
+        if game.call("_field_cell", _field_point(game, legal)) != legal:
+            push_error("W52 field: screen/cell conversion mismatch")
+            return false
+    game.call("restore_state", {"week":1, "g":160, "phase":"prepare", "dialogue":5,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    game.call("_select_node", "rifle")
+    for row in range(3, 6):
+        for col in range(6):
+            if game.get("placements").size() == 12:
+                break
+            game.call("_begin_new_unit_placement", "rifle")
+            game.call("_click_ally", _field_point(game, Vector2i(col, row)))
+    if game.get("placements").size() != 12:
+        push_error("W52 field: valid placements did not reach 12")
+        return false
+    game.call("_select_node", "rifle")
+    var actions: Dictionary = game.call("_get_info_actions", game.call("_resolve_info_context"))
+    if bool(actions["enabled"]) or str(actions["primary"]) != "배치 불가":
+        push_error("W52 field: 13th placement action not disabled")
+        return false
+    game.call("_begin_new_unit_placement", "rifle")
+    if game.get("placements").size() != 12 or str(game.get("placement_mode")) != "NORMAL":
+        push_error("W52 field: 13th unit bypassed guard")
+        return false
+    var one_id := str(game.get("placements")[0]["instance_id"])
+    game.set("phase", "battle")
+    game.call("_select_field_instance", one_id)
+    game.call("_remove_placed_instance", one_id)
+    var first_cell: int = game.get("placements")[0]["col"]
+    start = _field_point(game, Vector2i(first_cell, game.get("placements")[0]["row"]))
+    game.call("_start_field_interaction", start)
+    game.call("_update_field_drag", start + Vector2(20, 0))
+    game.call("_finish_field_interaction", _field_point(game, Vector2i(5, 5)))
+    if game.get("placements").size() != 12 or int(game.get("placements")[0]["col"]) != first_cell:
+        push_error("W52 field: battle phase permitted movement/removal")
+        return false
+    game.call("restore_state", {"week":1, "g":160, "phase":"dialogue", "dialogue":0,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    return true
+
+
 func _check_main_entry() -> bool:
     # The exported game starts at main.tscn, not directly at scenes/game.tscn.
     # Exercise title -> menu -> new game so an old alternate tree cannot slip through.
@@ -445,7 +567,7 @@ func _run() -> void:
         quit(1)
         return
 
-    if not _check_integrated_tree(game) or not _assert_readable_tree(game) or not _check_tree_pan_and_popup(game):
+    if not _check_integrated_tree(game) or not _assert_readable_tree(game) or not _check_tree_pan_and_popup(game) or not _check_field_placement(game):
         quit(1)
         return
 
@@ -476,9 +598,15 @@ func _run() -> void:
             quit(1)
             return
         game.call("_deploy_selected")
+        if game.get("placements").size() != 0 or str(game.get("placement_mode")) != "PLACE_NEW":
+            push_error("W52 smoke: deploy must wait for battlefield cell")
+            quit(1)
+            return
+        var sz: Vector2i = game.call("_grid_size")
+        game.call("_click_ally", _field_point(game, Vector2i(1, sz.y - 1)))
         var allies: Array = game.get("placements")
-        if allies.is_empty():
-            push_error("W52 smoke: deploy failed")
+        if allies.size() != 1 or str(game.get("placement_mode")) != "NORMAL":
+            push_error("W52 smoke: battlefield placement failed")
             quit(1)
             return
 
