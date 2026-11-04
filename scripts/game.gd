@@ -370,8 +370,11 @@ func _clamp_pan(candidate: Vector2) -> Vector2:
         if not _node_visible(node):
             continue
         var artwork := _node_visual_rect(node)
-        var min_offset := visible.position - artwork.position
-        var max_offset := visible.end - artwork.end
+        # One-pixel numeric safety margin avoids Rect2.encloses() rejecting
+        # a node due to float rounding when a pan ends exactly at the edge.
+        var pan_margin := Vector2.ONE * 2.0
+        var min_offset := visible.position + pan_margin - artwork.position
+        var max_offset := visible.end - pan_margin - artwork.end
         var projected := candidate.clamp(min_offset, max_offset)
         var distance := candidate.distance_squared_to(projected)
         if distance < nearest_distance:
