@@ -626,6 +626,14 @@ func _render_info_content(context: Dictionary) -> void:
                     _add_info_link(str(child["id"]), str(child["name"]))
         else:
             _add_info_line("즉시 완공 · 건설 비용 미정(시연)", 18, UI.MUTED)
+            var linked_buildings: Array[String] = []
+            for child in NODES:
+                if str(child["parent"]) == id and str(child["kind"]) != "unit":
+                    linked_buildings.append(str(child["id"]))
+            if not linked_buildings.is_empty():
+                _add_info_line("연결 시설", 19, UI.GOLD)
+                for building_id in linked_buildings:
+                    _add_info_link(building_id, str(_find_node(building_id)["name"]))
             var related := _related_unit_ids(id)
             if not related.is_empty():
                 var names: Array[String] = []
@@ -678,6 +686,10 @@ func _refresh_info_panel() -> void:
     var status := "보유" if _has_building(str(node["id"])) else ("조건 충족" if _is_node_unlocked(node) else "잠금")
     if kind == "unit":
         status = "배치 가능" if _is_node_unlocked(node) else "배치 잠금"
+        if phase not in ["dialogue", "prepare"]:
+            status = "조회 전용"
+    if placement_mode == "PLACE_NEW":
+        status = "위치 지정 대기"
     if str(context["kind"]) == "FIELD_INSTANCE":
         status = "개체 선택 · " + ("배치 편집 가능" if phase in ["dialogue", "prepare"] else "조회 전용")
     info_status.text = class_name + " · " + status
@@ -1309,7 +1321,7 @@ func _help_text() -> String:
 
 func _draw_tree() -> void:
     # Only the 20 structural nodes render here. The 24 upgrades are drawn
-    # in the independent _draw_popup detail panel, never on the tree.
+    # within the fixed information panel, never as extra tree nodes.
     var path := _selected_ancestors()
     for node in NODES:
         if not _node_visible(node):
