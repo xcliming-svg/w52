@@ -197,10 +197,41 @@ func _create_controls() -> void:
 
     popup_surface = Control.new()
     popup_surface.name = "NodeInfoLayer"
-    popup_surface.size = Vector2(1920, 1080)
-    popup_surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    popup_surface.draw.connect(_draw_popup)
+    popup_surface.position = INFO_PANEL_RECT.position
+    popup_surface.size = INFO_PANEL_RECT.size
+    popup_surface.mouse_filter = Control.MOUSE_FILTER_STOP
+    popup_surface.draw.connect(_draw_info_frame)
     add_child(popup_surface)
+
+    info_title = UI.make_label("", 30)
+    info_title.position = Vector2(18, 12)
+    info_title.size = Vector2(382, 43)
+    info_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+    info_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    popup_surface.add_child(info_title)
+    info_status = UI.make_label("", 19, UI.GOLD)
+    info_status.position = Vector2(18, 57)
+    info_status.size = Vector2(382, 29)
+    info_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+    info_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    popup_surface.add_child(info_status)
+    info_scroll = ScrollContainer.new()
+    info_scroll.position = Vector2(18, 98)
+    info_scroll.size = Vector2(382, 350)
+    info_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    info_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+    info_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+    popup_surface.add_child(info_scroll)
+    info_column = VBoxContainer.new()
+    info_column.add_theme_constant_override("separation", 9)
+    info_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    info_scroll.add_child(info_column)
+    info_reason = UI.make_label("", 17, UI.MUTED)
+    info_reason.position = Vector2(18, 453)
+    info_reason.size = Vector2(382, 27)
+    info_reason.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+    info_reason.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    popup_surface.add_child(info_reason)
 
     dialogue_surface = Control.new()
     dialogue_surface.name = "DialogueLayer"
@@ -216,12 +247,18 @@ func _create_controls() -> void:
     full_view_button.pressed.connect(_toggle_tree_view)
     add_child(full_view_button)
 
-    deploy_button = UI.make_button("배치", Vector2(160, 62))
-    deploy_button.position = Vector2(-500, -500)
-    deploy_button.size = Vector2(160, 62)
-    deploy_button.add_theme_font_size_override("font_size", 26)
-    deploy_button.pressed.connect(_action_selected)
-    add_child(deploy_button)
+    deploy_button = UI.make_button("배치", Vector2(184, 62))
+    deploy_button.position = Vector2(18, 483)
+    deploy_button.size = Vector2(184, 62)
+    deploy_button.add_theme_font_size_override("font_size", 23)
+    deploy_button.pressed.connect(_on_info_primary_action)
+    popup_surface.add_child(deploy_button)
+    secondary_button = UI.make_button("관련 정보", Vector2(184, 62))
+    secondary_button.position = Vector2(218, 483)
+    secondary_button.size = Vector2(184, 62)
+    secondary_button.add_theme_font_size_override("font_size", 20)
+    secondary_button.pressed.connect(_on_info_secondary_action)
+    popup_surface.add_child(secondary_button)
 
     prev_button = UI.make_button("〈", Vector2(72, 64))
     next_button = UI.make_button("〉", Vector2(72, 64))
@@ -426,69 +463,345 @@ func _clamp_pan(candidate: Vector2) -> Vector2:
     return nearest
 
 
-func _select_node(id: String) -> void:
+func _select_node(id: String, user_input: bool = true) -> void:
     var node := _find_node(id)
     if node.is_empty() or not _node_visible(node):
         return
     selected_id = id
+    selected_instance_id = ""
+    placement_mode = "NORMAL"
+    pending_unit_type_id = ""
+    show_related_links = false
+    field_drag_armed = false
+    if user_input:
+        user_selected_context = true
     camera_target = _clamp_pan(TREE_CENTER_LOCAL - node["p"])
-    _update_popup()
+    _refresh_info_panel()
     _queue_ui_redraw()
 
 
-func _popup_rect() -> Rect2:
-    if selected_id.is_empty():
-        return Rect2()
+func _info_panel_rect() -> Rect2:
+    return INFO_PANEL_RECT
+
+
+func _draw_info_frame() -> void:
+    _layer_box(popup_surface, Rect2(Vector2.ZERO, INFO_PANEL_RECT.size), UI.PANEL, UI.TEAL)
+    popup_surface.draw_line(Vector2(18, 93), Vector2(402, 93), UI.BORDER, 2.0)
+    popup_surface.draw_line(Vector2(18, 479), Vector2(402, 479), UI.BORDER, 2.0)
+
+
+func _selected_instance() -> Dictionary:
+    var index := _instance_index(selected_instance_id)
+    return placements[index] if index >= 0 else {}
+
+
+func _active_tree_node_id() -> String:
+    var entry := _selected_instance()
+    if not entry.is_empty():
+        return str(entry["unit_id"])
+    return selected_id if not _find_node(selected_id).is_empty() else "hq"
+
+
+func _resolve_info_context() -> Dictionary:
+    var entry := _selected_instance()
+    if not entry.is_empty():
+        return {"kind":"FIELD_INSTANCE", "id":str(entry["unit_id"]), "entry":entry}
     var node := _find_node(selected_id)
     if node.is_empty():
-        return Rect2()
-    var p := _node_screen(node)
-    var panel_x: float = clampf(p.x + 100.0, 28.0, TREE_RECT.size.x - POPUP_SIZE.x - 28.0)
-    var bottom_limit: float = 480.0 if phase == "dialogue" else 670.0
-    var panel_y: float = clampf(p.y - 112.0, 104.0, bottom_limit)
-    return Rect2(Vector2(panel_x, panel_y), POPUP_SIZE)
+        selected_id = "hq"
+        node = _find_node("hq")
+    return {"kind":"TREE_UNIT" if str(node["kind"]) == "unit" else "TREE_BUILDING",
+        "id":str(node["id"])}
 
 
-func _upgrade_rect() -> Rect2:
-    if selected_id.is_empty():
-        return Rect2()
-    var node := _find_node(selected_id)
-    if node.is_empty() or str(node["kind"]) != "unit":
-        return Rect2()
-    var panel := _popup_rect()
-    var x := panel.end.x + 12.0
-    if x + 420.0 > TREE_RECT.size.x - 12.0:
-        x = panel.position.x - 432.0
-    return Rect2(Vector2(x, panel.position.y), Vector2(420, 256))
+func _missing_requirement(node: Dictionary) -> String:
+    if str(node["kind"]) != "unit":
+        var parent_id := str(node["parent"])
+        return parent_id if not parent_id.is_empty() and not _has_building(parent_id) else ""
+    for req in node["requires"]:
+        if not _has_building(str(req)):
+            return str(req)
+    return ""
 
 
-func _update_popup() -> void:
-    if selected_id.is_empty():
-        deploy_button.visible = false
-        return
-    var node := _find_node(selected_id)
-    if node.is_empty():
-        deploy_button.visible = false
-        return
-    var panel := _popup_rect()
-    deploy_button.position = panel.position + POPUP_BUTTON_OFFSET
+func _get_info_actions(context: Dictionary) -> Dictionary:
+    var actions := {"primary":"", "enabled":false, "reason":"", "secondary":""}
+    var node := _find_node(str(context["id"]))
+    var ready := phase in ["dialogue", "prepare"]
+    if placement_mode == "PLACE_NEW":
+        actions["primary"] = "위치 지정 취소"
+        actions["enabled"] = true
+        actions["reason"] = "우측 전장의 빈 아군 칸을 선택하세요."
+        return actions
+    if str(context["kind"]) == "FIELD_INSTANCE":
+        if ready:
+            actions["primary"] = "배치 취소"
+            actions["enabled"] = true
+        else:
+            actions["reason"] = "전투/결과 중에는 조회만 가능합니다."
+        actions["secondary"] = "트리 병종 보기"
+        return actions
+    if str(node["kind"]) == "root":
+        return actions
+    if str(node["kind"]) != "unit" and _has_building(str(node["id"])):
+        actions["secondary"] = "관련 병종 보기"
+        return actions
+    var unlocked := _is_node_unlocked(node)
+    var slot_available := placements.size() < 12
+    actions["enabled"] = ready and unlocked and (slot_available if str(node["kind"]) == "unit" else true)
+    actions["primary"] = ("배치" if actions["enabled"] else "배치 불가") if str(node["kind"]) == "unit" else ("시연 건설" if actions["enabled"] else "건설 불가")
+    var missing := _missing_requirement(node)
+    if not missing.is_empty():
+        actions["secondary"] = "필요 시설 찾기"
+    if not ready:
+        actions["reason"] = "전투/결과 단계에서는 변경할 수 없습니다."
+    elif week < int(node["week"]):
+        actions["reason"] = "최소 W%02d 이후 시연 후보입니다." % int(node["week"])
+    elif not missing.is_empty():
+        actions["reason"] = "선행 시설이 필요합니다."
+    elif str(node["kind"]) == "unit" and not slot_available:
+        actions["reason"] = "최대 12기까지 배치할 수 있습니다."
+    return actions
+
+
+func _add_info_line(value: String, size: int = 19, tint: Color = UI.TEXT) -> void:
+    var label := UI.make_label(value, size, tint)
+    label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+    label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    label.custom_minimum_size.x = 350
+    label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    info_column.add_child(label)
+
+
+func _add_info_link(id: String, caption: String) -> void:
+    var button := UI.make_button(caption, Vector2(350, 35))
+    button.add_theme_font_size_override("font_size", 18)
+    button.pressed.connect(_focus_requirement.bind(id))
+    info_column.add_child(button)
+
+
+func _related_unit_ids(building_id: String) -> Array[String]:
+    var ids: Array[String] = []
+    for node in NODES:
+        if str(node["kind"]) != "unit":
+            continue
+        if building_id in node["requires"] or (building_id == "radar" and "drone_hangar" in node["requires"]):
+            ids.append(str(node["id"]))
+    return ids
+
+
+func _unit_count(unit_id: String) -> int:
+    var count := 0
+    for entry in placements:
+        if str(entry["unit_id"]) == unit_id:
+            count += 1
+    return count
+
+
+func _render_info_content(context: Dictionary) -> void:
+    var node := _find_node(str(context["id"]))
+    var id := str(node["id"])
     var kind := str(node["kind"])
-    deploy_button.visible = kind != "root" and (kind == "unit" or not _has_building(str(node["id"])))
-    deploy_button.disabled = phase not in ["dialogue", "prepare"] or not _is_node_unlocked(node)
+    _add_info_line(str(node["detail"]), 20)
+    _add_info_line("최소 W%02d (시연 후보) · 현재 W%02d" % [int(node["week"]), week], 18, UI.GOLD)
+    if kind != "unit":
+        var parent_id := str(node["parent"])
+        if not parent_id.is_empty():
+            var parent := _find_node(parent_id)
+            _add_info_line("선행: %s [%s]" % [str(parent["name"]), "보유" if _has_building(parent_id) else "미보유"], 18)
+            _add_info_link(parent_id, "선행 시설: " + str(parent["name"]))
+        if kind == "root":
+            _add_info_line("본부 기본 보유 · 기술트리 시작 경로", 18)
+            _add_info_line("직계 시설", 19, UI.GOLD)
+            for child in NODES:
+                if str(child["parent"]) == "hq":
+                    _add_info_link(str(child["id"]), str(child["name"]))
+        else:
+            _add_info_line("즉시 완공 · 건설 비용 미정(시연)", 18, UI.MUTED)
+            var related := _related_unit_ids(id)
+            if not related.is_empty():
+                var names: Array[String] = []
+                for related_id in related:
+                    names.append(str(_find_node(related_id)["name"]))
+                _add_info_line("연계 병종(별도 주차/시설 조건): " + ", ".join(names), 18)
+                if show_related_links:
+                    for related_id in related:
+                        _add_info_link(related_id, str(_find_node(related_id)["name"]))
+        return
+    _add_info_line("필수 시설", 19, UI.GOLD)
+    for req in node["requires"]:
+        var req_id := str(req)
+        var required := _find_node(req_id)
+        var owned := _has_building(req_id)
+        _add_info_line("• %s [%s]" % [str(required["name"]), "보유" if owned else "미보유"], 18, UI.TEXT if owned else UI.MUTED)
+        if not owned:
+            _add_info_link(req_id, "필요 시설: " + str(required["name"]))
+    _add_info_line("HP: 미구현 · 사거리: 미정", 18, UI.MUTED)
+    _add_info_line("공격력/공격주기: 미정", 18, UI.MUTED)
+    if str(context["kind"]) == "FIELD_INSTANCE":
+        var entry: Dictionary = context["entry"]
+        _add_info_line("개체 ID: " + str(entry["instance_id"]), 18, UI.GOLD)
+        _add_info_line("배치 위치: 열 %d · 행 %d (아군)" % [int(entry["col"]) + 1, int(entry["row"]) + 1], 18)
+    _add_info_line("배치 수: %d기 / 전체 %d·12기" % [_unit_count(id), placements.size()], 18)
+    var upgrades: Array = UPGRADES.get(id, [])
+    if upgrades.size() == 2:
+        _add_info_line("고유 강화 · 조회 전용", 20, UI.GOLD)
+        for i in range(2):
+            var pair: Array = upgrades[i]
+            _add_info_line("%s  %s — %s (제안)" % ["A" if i == 0 else "B", str(pair[0]), str(pair[1])], 18)
+        _add_info_line("가격·구매·전투 효과 미확정", 17, UI.MUTED)
+
+
+func _refresh_info_panel() -> void:
+    if not is_instance_valid(info_column):
+        return
+    var context := _resolve_info_context()
+    var node := _find_node(str(context["id"]))
+    var info_key := "%s:%s:%s" % [str(context["kind"]), str(context["id"]), selected_instance_id]
+    if info_content_key != info_key:
+        info_content_key = info_key
+        info_scroll.scroll_vertical = 0
+    for child in info_column.get_children():
+        info_column.remove_child(child)
+        child.queue_free()
+    var kind := str(node["kind"])
+    info_title.text = str(node["name"]) + (" · 개체" if str(context["kind"]) == "FIELD_INSTANCE" else "")
+    var class_name := "본부" if kind == "root" else ("유닛" if kind == "unit" else ("생산시설" if kind == "production" else "기술시설"))
+    var status := "보유" if _has_building(str(node["id"])) else ("조건 충족" if _is_node_unlocked(node) else "잠금")
     if kind == "unit":
-        deploy_button.text = "배치" if not deploy_button.disabled else "배치 불가"
+        status = "배치 가능" if _is_node_unlocked(node) else "배치 잠금"
+    if str(context["kind"]) == "FIELD_INSTANCE":
+        status = "개체 선택 · " + ("배치 편집 가능" if phase in ["dialogue", "prepare"] else "조회 전용")
+    info_status.text = class_name + " · " + status
+    _render_info_content(context)
+    var actions := _get_info_actions(context)
+    deploy_button.visible = not str(actions["primary"]).is_empty()
+    deploy_button.text = str(actions["primary"])
+    deploy_button.disabled = not bool(actions["enabled"])
+    secondary_button.visible = not str(actions["secondary"]).is_empty()
+    secondary_button.text = str(actions["secondary"])
+    info_reason.text = str(actions["reason"])
+
+
+func _on_info_primary_action() -> void:
+    var context := _resolve_info_context()
+    var actions := _get_info_actions(context)
+    if not bool(actions["enabled"]):
+        if not str(actions["reason"]).is_empty():
+            _append_log(str(actions["reason"]))
+        return
+    if placement_mode == "PLACE_NEW":
+        _cancel_pending_placement()
+    elif str(context["kind"]) == "FIELD_INSTANCE":
+        _remove_placed_instance(str((context["entry"] as Dictionary)["instance_id"]))
+    elif str(context["kind"]) == "TREE_UNIT":
+        _begin_new_unit_placement(str(context["id"]))
     else:
-        deploy_button.text = "시연 건설" if not deploy_button.disabled else "건설 불가"
+        _build_selected()
+
+
+func _on_info_secondary_action() -> void:
+    var context := _resolve_info_context()
+    var actions := _get_info_actions(context)
+    match str(actions["secondary"]):
+        "트리 병종 보기":
+            _focus_requirement(str(context["id"]))
+        "관련 병종 보기":
+            _show_related_units(str(context["id"]))
+        "필요 시설 찾기":
+            var node := _find_node(str(context["id"]))
+            var missing := _missing_requirement(node)
+            if not missing.is_empty():
+                _focus_requirement(missing)
+
+
+func _focus_requirement(id: String) -> void:
+    var node := _find_node(id)
+    if node.is_empty():
+        return
+    if not _node_visible(node):
+        full_tree_view = true
+    _select_node(id)
+    _refresh_all()
+
+
+func _show_related_units(building_id: String) -> void:
+    var context := _resolve_info_context()
+    if str(context["id"]) != building_id or str(context["kind"]) != "TREE_BUILDING":
+        return
+    show_related_links = true
+    _refresh_info_panel()
+
+
+func _return_to_tree_context() -> void:
+    selected_instance_id = ""
+    if _find_node(selected_id).is_empty():
+        selected_id = "hq"
+    _refresh_info_panel()
+    _queue_ui_redraw()
+
+
+func _begin_new_unit_placement(unit_id: String) -> void:
+    var node := _find_node(unit_id)
+    if placement_mode != "NORMAL" or str(node.get("kind", "")) != "unit" or phase not in ["dialogue", "prepare"] or not _is_node_unlocked(node) or placements.size() >= 12 or not selected_instance_id.is_empty():
+        return
+    placement_mode = "PLACE_NEW"
+    pending_unit_type_id = unit_id
+    _append_log("%s: 우측 전장의 빈 아군 칸을 선택하세요." % str(node["name"]))
+    _refresh_info_panel()
+    _queue_ui_redraw()
+
+
+func _cancel_pending_placement() -> void:
+    if placement_mode != "PLACE_NEW":
+        return
+    placement_mode = "NORMAL"
+    pending_unit_type_id = ""
+    field_drag_armed = false
+    _refresh_all()
+
+
+func _remove_placed_instance(instance_id: String) -> void:
+    if phase not in ["dialogue", "prepare"] or placement_mode != "NORMAL":
+        return
+    var index := _instance_index(instance_id)
+    if index < 0 or instance_id != selected_instance_id:
+        return
+    var entry := placements[index]
+    placements.remove_at(index)
+    selected_instance_id = ""
+    _append_log("%s 1기 배치 취소" % str(_find_node(str(entry["unit_id"]))["name"]))
+    _refresh_all()
+
+
+# Unapproved policies have explicit non-executing boundaries; no active UI calls these.
+func _request_upgrade_purchase(_unit_id: String, _upgrade_key: String) -> bool:
+    return false
+
+
+func _request_building_refund(_building_id: String) -> bool:
+    return false
+
+
+func _request_paid_unit_production(_unit_id: String) -> bool:
+    return false
+
+
+func _request_range_overlay(_instance_id: String) -> bool:
+    return false
+
+
+func _request_combat_reposition(_instance_id: String, _cell: Vector2i) -> bool:
+    return false
 
 
 func _action_selected() -> void:
-    var node := _find_node(selected_id)
-    if node.is_empty():
-        return
-    if str(node["kind"]) == "unit":
-        _deploy_selected()
-    else:
-        _build_selected()
+    _on_info_primary_action()
+
+
+func _update_popup() -> void:
+    _refresh_info_panel()
 
 func _process(delta: float) -> void:
     if camera_offset.distance_squared_to(camera_target) > 0.5:
