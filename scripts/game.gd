@@ -114,7 +114,7 @@ func restore_state(data: Dictionary) -> void:
                 var node := _find_node(str(item))
                 if node.is_empty() or str(node["kind"]) == "unit" or str(item) in owned_buildings:
                     continue
-                if _has_building(str(node["parent"])):
+                if int(node["week"]) <= week and _has_building(str(node["parent"])):
                     owned_buildings.append(str(item))
     placements.clear()
     var saved_placements: Variant = data.get("placements", [])
@@ -881,14 +881,13 @@ func _draw_popup() -> void:
     _layer_text(popup_surface, "최소 W%02d · %s (후보)" % [int(node["week"]), status],
         panel.position + Vector2(24, 64), 20, UI.GOLD)
     if str(node["kind"]) == "unit":
-        var requirements: PackedStringArray = PackedStringArray()
-        for req in node["requires"]:
-            var required_node := _find_node(str(req))
-            var mark := "보유" if _has_building(str(req)) else "미보유"
-            requirements.append("%s(%s)" % [str(required_node["name"]), mark])
-        _layer_text(popup_surface, "필수: " + " · ".join(requirements),
-            panel.position + Vector2(24, 101), 18, UI.MUTED)
-        _layer_text(popup_surface, str(node["detail"]), panel.position + Vector2(24, 143), 21, UI.TEXT)
+        _layer_text(popup_surface, "필수 시설", panel.position + Vector2(24, 91), 18, UI.GOLD)
+        for i in range(node["requires"].size()):
+            var req_id: String = str(node["requires"][i])
+            var required_node := _find_node(req_id)
+            var mark := "보유" if _has_building(req_id) else "미보유"
+            _layer_text(popup_surface, "• %s [%s]" % [str(required_node["name"]), mark],
+                panel.position + Vector2(24, 118 + i * 23), 19, UI.TEXT if _has_building(req_id) else UI.MUTED)
         _draw_upgrade_panel()
     else:
         var parent := _find_node(str(node["parent"]))
@@ -909,9 +908,10 @@ func _draw_upgrade_panel() -> void:
     var panel := _upgrade_rect()
     _layer_box(popup_surface, panel, UI.PANEL, UI.GOLD)
     _layer_text(popup_surface, "고유 강화 · 조회 전용", panel.position + Vector2(18, 12), 24, UI.GOLD)
+    _layer_text(popup_surface, str(_find_node(selected_id)["detail"]), panel.position + Vector2(20, 44), 18, UI.MUTED)
     for i in range(2):
         var pair: Array = content[i]
-        var y: float = 62.0 + i * 78.0
+        var y: float = 70.0 + i * 72.0
         _layer_text(popup_surface, "%s  %s" % ["A" if i == 0 else "B", str(pair[0])],
             panel.position + Vector2(22, y), 23, UI.TEXT)
         _layer_text(popup_surface, str(pair[1]) + " (제안)",
