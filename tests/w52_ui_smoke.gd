@@ -408,6 +408,11 @@ func _check_field_placement(game: Control) -> bool:
         push_error("W52 intro: tutorial overrode explicit user selection")
         return false
     game.call("_set_week_intro")
+    game.call("_refresh_all")
+    var battle_control: Button = game.get("battle_button")
+    if battle_control == null or not battle_control.disabled:
+        push_error("W52 intro: battle button must not be a no-op during dialogue")
+        return false
     if str(game.get("selected_id")) != "hq":
         push_error("W52 intro: next entry did not restore HQ")
         return false
@@ -493,8 +498,8 @@ func _check_field_placement(game: Control) -> bool:
     if int(units[0]["col"]) != 1:
         push_error("W52 field: occupied drop moved source")
         return false
+    # Simulate lost motion notifications: release distance alone establishes dragging.
     game.call("_start_field_interaction", start)
-    game.call("_update_field_drag", start + Vector2(20, 0))
     game.call("_finish_field_interaction", _field_point(game, Vector2i(3, 5)))
     units = game.get("placements")
     if int(units[0]["col"]) != 3 or str(units[0]["instance_id"]) != first_id or units.size() != 2:
@@ -806,8 +811,10 @@ func _run() -> void:
     wrong_type["col"] = "1"
     var unapproved_stat: Dictionary = one.duplicate(true)
     unapproved_stat["hp_current"] = 100
+    var empty_id: Dictionary = one.duplicate(true)
+    empty_id["instance_id"] = "   "
     for malformed in [[one, one.duplicate(true)], [one, another], [enemy], [outside],
-                    [unknown], [wrong_type], [unapproved_stat], [{"unit_id":"rifle"}]]:
+                    [unknown], [wrong_type], [unapproved_stat], [empty_id], [{"unit_id":"rifle"}]]:
         bad = restored.duplicate(true)
         bad["placements"] = malformed
         if store.save_game(bad):
