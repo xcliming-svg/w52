@@ -3,26 +3,37 @@ extends RefCounted
 const SAVE_PATH := "user://game_save.cfg"
 const SAVE_VERSION := 3
 const MAX_WEEK := 52
-const BUILDING_IDS := [
-    "hq", "robot_factory", "walker_factory", "armory",
-    "radar", "drone_hangar", "machine_shop", "reactor"
-]
+const GameRules = preload("res://scripts/game.gd")
 
 
 func has_save() -> bool:
     return not load_game().is_empty()
 
 
-func _valid_buildings(buildings: Variant) -> bool:
-    if not (buildings is Array) or buildings.size() > BUILDING_IDS.size():
+func _valid_buildings(buildings: Variant, at_week: int) -> bool:
+    if not (buildings is Array) or buildings.size() > 8:
         return false
     if "hq" not in buildings or "robot_factory" not in buildings:
         return false
     var seen: Dictionary = {}
     for id in buildings:
-        if not (id is String) or id not in BUILDING_IDS or seen.has(id):
+        if not (id is String) or seen.has(id):
             return false
         seen[id] = true
+    for id in buildings:
+        var found := false
+        for node in GameRules.NODES:
+            if str(node["id"]) != id:
+                continue
+            if str(node["kind"]) == "unit" or int(node["week"]) > at_week:
+                return false
+            var parent: String = str(node["parent"])
+            if not parent.is_empty() and parent not in buildings:
+                return false
+            found = true
+            break
+        if not found:
+            return false
     return true
 
 
@@ -53,7 +64,7 @@ func load_game() -> Dictionary:
     var buildings: Variant = ["hq", "robot_factory"]
     if version == SAVE_VERSION:
         buildings = config.get_value("session", "buildings", null)
-        if not _valid_buildings(buildings):
+        if not _valid_buildings(buildings, week):
             return {}
     return {"week":week, "g":g, "phase":phase,
         "dialogue":clampi(int(config.get_value("session", "dialogue", 0)), 0, 5),
@@ -68,7 +79,7 @@ func save_game(data: Dictionary) -> bool:
         push_warning("Rejected invalid W52 progress.")
         return false
     var buildings: Variant = data.get("buildings", null)
-    if not _valid_buildings(buildings):
+    if not _valid_buildings(buildings, week):
         push_warning("Rejected invalid W52 building ownership.")
         return false
     var config := ConfigFile.new()
