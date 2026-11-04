@@ -393,6 +393,103 @@ func _check_integrated_tree(game: Control) -> bool:
 
 
 
+func _check_action_matrix(game: Control) -> bool:
+    game.call("restore_state", {"week":1, "g":160, "phase":"prepare", "dialogue":5,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    game.set("full_tree_view", true)
+    var nodes: Array = game.get_script().get_script_constant_map().get("NODES", [])
+    for node in nodes:
+        game.call("_select_node", str(node["id"]))
+        var context: Dictionary = game.call("_resolve_info_context")
+        var actions: Dictionary = game.call("_get_info_actions", context)
+        if str(node["kind"]) == "root":
+            if str(actions["primary"]) != "" or str(actions["secondary"]) != "":
+                push_error("W52 actions: HQ must be display-only")
+                return false
+        elif str(node["id"]) == "robot_factory":
+            if str(actions["primary"]) != "" or str(actions["secondary"]) != "관련 병종 보기":
+                push_error("W52 actions: starting owned factory action mismatch")
+                return false
+        elif str(node["kind"]) == "unit":
+            var available := str(node["id"]) == "rifle"
+            if bool(actions["enabled"]) != available or str(actions["primary"]) != ("배치" if available else "배치 불가"):
+                push_error("W52 actions: initial unit access mismatch: " + str(node["id"]))
+                return false
+        else:
+            if bool(actions["enabled"]) or str(actions["primary"]) != "건설 불가":
+                push_error("W52 actions: future-week building enabled too early: " + str(node["id"]))
+                return false
+    # Unlock all existing demonstration buildings in strict parent-first order.
+    game.set("week", 52)
+    var before_g: int = game.get("g")
+    for building_id in ["walker_factory", "radar", "reactor", "armory",
+                        "machine_shop", "drone_hangar"]:
+        game.call("_select_node", building_id)
+        game.call("_build_selected")
+        if building_id not in game.get("owned_buildings"):
+            push_error("W52 actions: permitted facility failed to build: " + building_id)
+            return false
+        var owned_count: int = game.get("owned_buildings").size()
+        game.call("_build_selected")
+        if game.get("owned_buildings").size() != owned_count:
+            push_error("W52 actions: duplicate construction changed ownership")
+            return false
+    if game.get("owned_buildings").size() != 8 or int(game.get("g")) != before_g:
+        push_error("W52 actions: demonstration building changed resources/ownership")
+        return false
+    var related := {
+        "robot_factory":["rifle","mg","mortar","anti_tank","artillery"],
+        "walker_factory":["car","tank","destroyer","heavy"],
+        "drone_hangar":["fighter","attacker","bomber"],
+        "armory":["anti_tank","artillery","attacker"],
+        "radar":["artillery","destroyer","fighter","attacker","bomber"],
+        "machine_shop":["tank","destroyer","heavy"],
+        "reactor":["heavy","bomber"]
+    }
+    for id in related:
+        var actual: Array = game.call("_related_unit_ids", id)
+        var expected: Array = related[id]
+        if actual != expected:
+            push_error("W52 actions: unrelated/missing production nodes for " + id)
+            return false
+    for node in nodes:
+        var id: String = str(node["id"])
+        game.call("_select_node", id)
+        var actions: Dictionary = game.call("_get_info_actions", game.call("_resolve_info_context"))
+        if str(node["kind"]) == "unit":
+            if str(actions["primary"]) != "배치" or not bool(actions["enabled"]):
+                push_error("W52 actions: fully unlocked unit should deploy: " + id)
+                return false
+        elif str(node["kind"]) != "root":
+            if str(actions["primary"]) != "" or str(actions["secondary"]) != "관련 병종 보기":
+                push_error("W52 actions: owned facility still presents construction: " + id)
+                return false
+    game.call("_select_node", "rifle")
+    game.call("_begin_new_unit_placement", "rifle")
+    if not game.call("_confirm_pending_at", Vector2i(1, 9)):
+        push_error("W52 actions: valid late-week unit placement failed")
+        return false
+    var unit_id := str(game.get("selected_instance_id"))
+    if unit_id.is_empty():
+        push_error("W52 actions: no individual selection after placement")
+        return false
+    for readonly_phase in ["battle", "result"]:
+        game.set("phase", readonly_phase)
+        game.call("_select_field_instance", unit_id)
+        var context: Dictionary = game.call("_resolve_info_context")
+        var actions: Dictionary = game.call("_get_info_actions", context)
+        if str(context["kind"]) != "FIELD_INSTANCE" or not str(actions["primary"]).is_empty() or str(actions["secondary"]) != "트리 병종 보기":
+            push_error("W52 actions: combat phase permitted removal: " + readonly_phase)
+            return false
+        game.call("_remove_placed_instance", unit_id)
+        if game.get("placements").size() != 1:
+            push_error("W52 actions: combat phase removal bypassed policy")
+            return false
+    game.call("restore_state", {"week":1, "g":160, "phase":"dialogue", "dialogue":0,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    return true
+
+
 func _field_point(game: Control, cell: Vector2i) -> Vector2:
     var origin: Vector2 = game.call("_grid_origin")
     return origin + Vector2(cell) * 46.0 + Vector2(22, 22)
@@ -670,7 +767,7 @@ func _run() -> void:
         quit(1)
         return
 
-    if not _check_integrated_tree(game) or not _assert_readable_tree(game) or not _check_tree_pan_and_popup(game) or not _check_field_placement(game):
+    if not _check_integrated_tree(game) or not _assert_readable_tree(game) or not _check_tree_pan_and_popup(game) or not _check_field_placement(game) or not _check_action_matrix(game):
         quit(1)
         return
 
