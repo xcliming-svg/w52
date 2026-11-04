@@ -655,41 +655,123 @@ func _run() -> void:
     version2.set_value("session", "phase", "prepare")
     version2.set_value("session", "dialogue", 5)
     version2.set_value("session", "help", 24)
-    version2.set_value("session", "placements", ["guard"])
+    version2.set_value("session", "placements", ["guard", "rifle", "rifle"])
     if version2.save("user://game_save.cfg") != OK:
-        push_error("W52 tech: cannot create v2 fixture")
+        push_error("W52 save: cannot create v2 fixture")
         quit(1)
         return
     var migrated: Dictionary = store.load_game()
-    if int(migrated.get("week", 0)) != 24 or migrated.get("buildings", []).size() != 2:
-        push_error("W52 tech: v2 progression migration failed")
+    var legacy_units: Array = migrated.get("placements", [])
+    if int(migrated.get("week", 0)) != 24 or migrated.get("buildings", []).size() != 2 or legacy_units.size() != 2:
+        push_error("W52 save: v2 migration failed to filter unknown demo unit")
         quit(1)
         return
+    if int(legacy_units[0]["col"]) != 1 or int(legacy_units[1]["col"]) != 2 or int(legacy_units[0]["row"]) != 7:
+        push_error("W52 save: v2 ordered placement conversion mismatch")
+        quit(1)
+        return
+    var version3 := ConfigFile.new()
+    version3.set_value("session", "version", 3)
+    version3.set_value("session", "week", 24)
+    version3.set_value("session", "g", 230)
+    version3.set_value("session", "phase", "battle")
+    version3.set_value("session", "dialogue", 5)
+    version3.set_value("session", "help", 24)
+    version3.set_value("session", "buildings", ["hq", "robot_factory", "walker_factory", "machine_shop"])
+    version3.set_value("session", "placements", ["rifle", "car"])
+    if version3.save("user://game_save.cfg") != OK:
+        push_error("W52 save: cannot create v3 fixture")
+        quit(1)
+        return
+    var migrated3: Dictionary = store.load_game()
+    var v3_units: Array = migrated3.get("placements", [])
+    if v3_units.size() != 2 or str(v3_units[0]["unit_id"]) != "rifle" or str(v3_units[1]["unit_id"]) != "car":
+        push_error("W52 save: v3 unit conversion failed")
+        quit(1)
+        return
+    game.call("restore_state", migrated3)
+    if str(game.get("phase")) != "prepare" or game.get("placements") != v3_units:
+        push_error("W52 save: v3 battle restore did not preserve positions")
+        quit(1)
+        return
+    if not store.save_game(game.call("snapshot")):
+        push_error("W52 save: v3-to-v4 migration could not be saved")
+        quit(1)
+        return
+    var converted: Dictionary = store.load_game()
+    if converted.get("placements", []) != v3_units:
+        push_error("W52 save: v4 round trip lost instance IDs or positions")
+        quit(1)
+        return
+    var version_check := ConfigFile.new()
+    if version_check.load("user://game_save.cfg") != OK or int(version_check.get_value("session", "version", -1)) != 4:
+        push_error("W52 save: output version did not increment to v4")
+        quit(1)
+        return
+    # Preserve a complete week-52 snapshot with the last deployed rifle.
+    game.call("restore_state", {"week":52, "g":230, "phase":"result", "dialogue":5,
+        "help":52, "placements":[{"instance_id":"persist_1", "unit_id":"rifle", "col":1, "row":9}],
+        "buildings":["hq", "robot_factory"]})
     var saved: Dictionary = game.call("snapshot")
     if not store.save_game(saved):
-        push_error("W52 smoke: save failed")
+        push_error("W52 save: v4 save failed")
         quit(1)
         return
     var restored: Dictionary = store.load_game()
-    if int(restored.get("week", 0)) != 52 or int(restored.get("g", -1)) < 0 or not ("robot_factory" in restored.get("buildings", [])):
-        push_error("W52 smoke: restore invalid")
+    if int(restored.get("week", 0)) != 52 or int(restored.get("g", -1)) < 0 or restored.get("placements", []) != saved.get("placements", []):
+        push_error("W52 save: v4 instance restore changed identity or location")
         quit(1)
         return
     var bad: Dictionary = restored.duplicate(true)
     bad["buildings"] = ["hq", "robot_factory", "invalid_building"]
     if store.save_game(bad):
-        push_error("W52 tech: unknown building accepted by save writer")
+        push_error("W52 save: unknown building accepted by writer")
         quit(1)
         return
     bad["buildings"] = ["hq", "robot_factory", "machine_shop"]
     if store.save_game(bad):
-        push_error("W52 tech: orphaned machine shop accepted by save writer")
+        push_error("W52 save: orphaned machine shop accepted")
         quit(1)
         return
     bad["week"] = 1
     bad["buildings"] = ["hq", "robot_factory", "walker_factory"]
     if store.save_game(bad):
-        push_error("W52 tech: future-week building accepted by save writer")
+        push_error("W52 save: future-week building accepted")
+        quit(1)
+        return
+    var one: Dictionary = (restored["placements"] as Array)[0]
+    var another: Dictionary = one.duplicate(true)
+    another["instance_id"] = "different_id"
+    var enemy: Dictionary = one.duplicate(true)
+    enemy["row"] = 0
+    var outside: Dictionary = one.duplicate(true)
+    outside["col"] = 99
+    var unknown: Dictionary = one.duplicate(true)
+    unknown["unit_id"] = "unknown_unit"
+    var wrong_type: Dictionary = one.duplicate(true)
+    wrong_type["col"] = "1"
+    for malformed in [[one, one.duplicate(true)], [one, another], [enemy], [outside],
+                      [unknown], [wrong_type], [{"unit_id":"rifle"}]]:
+        bad = restored.duplicate(true)
+        bad["placements"] = malformed
+        if store.save_game(bad):
+            push_error("W52 save: invalid v4 unit schema or cell accepted")
+            quit(1)
+            return
+    bad = restored.duplicate(true)
+    bad["week"] = 1
+    bad["placements"] = [{"instance_id":"x", "unit_id":"bomber", "col":1, "row":5}]
+    if store.save_game(bad):
+        push_error("W52 save: future unit accepted")
+        quit(1)
+        return
+    var corrupted := ConfigFile.new()
+    corrupted.set_value("session", "version", 4)
+    for key in ["week", "g", "phase", "dialogue", "help", "buildings"]:
+        corrupted.set_value("session", key, restored[key])
+    corrupted.set_value("session", "placements", [one, another])
+    if corrupted.save("user://game_save.cfg") != OK or not store.load_game().is_empty():
+        push_error("W52 save: malformed v4 load was silently accepted")
         quit(1)
         return
     if not store.clear_save():
@@ -699,5 +781,5 @@ func _run() -> void:
     if not _check_main_entry():
         quit(1)
         return
-    print("W52_UI_SMOKE_OK: 20 nodes, 24 upgrades, facility prerequisites, 52 battles, save v2/v3, 1920x1080")
+    print("W52_UI_SMOKE_OK: fixed info, HQ default, 20 nodes, 24 upgrades, field placement, 52 battles, save v2/v3/v4, 1920x1080")
     quit(0)
