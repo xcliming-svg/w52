@@ -399,6 +399,30 @@ func _field_point(game: Control, cell: Vector2i) -> Vector2:
 
 
 func _check_field_placement(game: Control) -> bool:
+    game.call("restore_state", {"week":1, "g":160, "phase":"dialogue", "dialogue":0,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    game.call("_select_node", "robot_factory")
+    for i in range(3):
+        game.call("_advance_dialogue")
+    if str(game.get("selected_id")) != "robot_factory":
+        push_error("W52 intro: tutorial overrode explicit user selection")
+        return false
+    game.call("_set_week_intro")
+    if str(game.get("selected_id")) != "hq":
+        push_error("W52 intro: next entry did not restore HQ")
+        return false
+    for i in range(3):
+        game.call("_advance_dialogue")
+    if str(game.get("selected_id")) != "rifle":
+        push_error("W52 intro: W01 untouched HQ tutorial lost rifle focus")
+        return false
+    game.set("week", 2)
+    game.call("_set_week_intro")
+    for i in range(3):
+        game.call("_advance_dialogue")
+    if str(game.get("selected_id")) != "hq":
+        push_error("W52 intro: W02+ should never auto-select rifle")
+        return false
     game.call("restore_state", {"week":1, "g":160, "phase":"prepare", "dialogue":5,
         "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
     game.call("_select_node", "rifle")
@@ -418,6 +442,20 @@ func _check_field_placement(game: Control) -> bool:
     var first_id := str(units[0]["instance_id"])
     if first_id.is_empty() or str(game.get("selected_instance_id")) != first_id:
         push_error("W52 field: new unit was not uniquely selected")
+        return false
+    var title: Label = game.get("info_title")
+    var instance_action: Dictionary = game.call("_get_info_actions", game.call("_resolve_info_context"))
+    if title == null or not title.text.contains("개체") or str(instance_action["primary"]) != "배치 취소":
+        push_error("W52 field: selected instance did not own shared info/actions")
+        return false
+    game.call("_select_node", "robot_factory")
+    game.call("_click_ally", _field_point(game, Vector2i(1, 5)))
+    if str(game.get("selected_id")) != "robot_factory" or str(game.call("_active_tree_node_id")) != "rifle":
+        push_error("W52 field: field highlight overwrote last tree selection")
+        return false
+    game.call("_click_ally", _field_point(game, Vector2i(4, 5)))
+    if str(game.get("selected_instance_id")) != "" or str(game.get("selected_id")) != "robot_factory":
+        push_error("W52 field: empty cell did not return to last tree context")
         return false
     game.call("_select_node", "rifle")
     game.call("_begin_new_unit_placement", "rifle")
