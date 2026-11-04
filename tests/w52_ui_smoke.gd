@@ -504,8 +504,8 @@ func _check_field_placement(game: Control) -> bool:
     game.call("_select_node", "rifle")
     # All grid-size boundaries preserve the same coordinate transform.
     for boundary in [[13, Vector2i(6,6)], [14, Vector2i(8,8)],
-                     [26, Vector2i(8,8)], [27, Vector2i(10,8)],
-                     [39, Vector2i(10,8)], [40, Vector2i(10,10)]]:
+                    [26, Vector2i(8,8)], [27, Vector2i(10,8)],
+                    [39, Vector2i(10,8)], [40, Vector2i(10,10)]]:
         game.set("week", boundary[0])
         var size: Vector2i = game.call("_grid_size")
         if size != boundary[1]:
