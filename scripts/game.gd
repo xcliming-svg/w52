@@ -374,8 +374,8 @@ func _node_half_size(node: Dictionary) -> float:
 func _toggle_tree_view() -> void:
     full_tree_view = not full_tree_view
     full_view_button.text = "기본 트리" if full_tree_view else "전체 기술도"
-    if not selected_id.is_empty() and not _node_visible(_find_node(selected_id)):
-        selected_id = ""
+    if not _node_visible(_find_node(selected_id)):
+        selected_id = "hq"
     camera_offset = _clamp_pan(camera_offset)
     camera_target = camera_offset
     _refresh_all()
@@ -405,8 +405,9 @@ func _node_screen(node: Dictionary) -> Vector2:
 
 func _selected_ancestors() -> Array[String]:
     var result: Array[String] = []
-    var starts: Array[String] = [selected_id]
-    var selected := _find_node(selected_id)
+    var active_id := _active_tree_node_id()
+    var starts: Array[String] = [active_id]
+    var selected := _find_node(active_id)
     if not selected.is_empty() and str(selected["kind"]) == "unit":
         for req in selected["requires"]:
             starts.append(str(req))
@@ -437,7 +438,7 @@ func _readable_tree_area() -> Rect2:
     var visible_height: float = TREE_RECT.size.y
     if phase == "dialogue":
         visible_height = DIALOGUE_RECT.position.y - TREE_RECT.position.y
-    return Rect2(Vector2.ZERO, Vector2(TREE_RECT.size.x, visible_height))
+    return Rect2(Vector2.ZERO, Vector2(INFO_PANEL_RECT.position.x - 12.0, visible_height))
 
 
 func _clamp_pan(candidate: Vector2) -> Vector2:
@@ -806,7 +807,6 @@ func _update_popup() -> void:
 func _process(delta: float) -> void:
     if camera_offset.distance_squared_to(camera_target) > 0.5:
         camera_offset = _clamp_pan(camera_offset.lerp(camera_target, minf(1.0, delta * 9.0)))
-        _update_popup()
         _queue_ui_redraw()
     if phase == "battle":
         var previous_second := int(battle_seconds)
@@ -828,9 +828,10 @@ func _node_at(mouse: Vector2) -> String:
         return ""
     if phase == "dialogue" and DIALOGUE_RECT.has_point(mouse):
         return ""
-    if not selected_id.is_empty():
-        if _popup_rect().has_point(mouse) or _upgrade_rect().has_point(mouse):
-            return ""
+    if INFO_PANEL_RECT.has_point(mouse):
+        return ""
+    if not _readable_tree_area().has_point(mouse - TREE_RECT.position):
+        return ""
     if Rect2(Vector2(22, 100), Vector2(188, 52)).has_point(mouse):
         return ""
     for node in NODES:
@@ -862,7 +863,6 @@ func _update_pan(mouse: Vector2) -> void:
     hover_id = ""
     camera_offset = _clamp_pan(pan_start_camera + delta)
     camera_target = camera_offset
-    _update_popup()
     _queue_ui_redraw()
 
 
@@ -883,6 +883,16 @@ func _finish_pan(mouse: Vector2) -> void:
 
 
 func _input(event: InputEvent) -> void:
+    if event is InputEventMouseMotion and field_drag_armed:
+        _update_field_drag((event as InputEventMouseMotion).position)
+        get_viewport().set_input_as_handled()
+        return
+    if event is InputEventMouseButton and field_drag_armed:
+        var field_release := event as InputEventMouseButton
+        if field_release.button_index == MOUSE_BUTTON_LEFT and not field_release.pressed:
+            _finish_field_interaction(field_release.position)
+            get_viewport().set_input_as_handled()
+            return
     if event is InputEventMouseMotion and pan_armed:
         _update_pan((event as InputEventMouseMotion).position)
         get_viewport().set_input_as_handled()
@@ -908,29 +918,33 @@ func _gui_input(event: InputEvent) -> void:
         if found != hover_id:
             hover_id = found
             _queue_ui_redraw()
+        if FIELD_RECT.has_point(mouse):
+            var hovered := _field_cell(mouse)
+            if hovered != field_hover_cell:
+                field_hover_cell = hovered
+                _queue_ui_redraw()
     elif event is InputEventMouseButton:
         var click := event as InputEventMouseButton
         if not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
+            return
+        if INFO_PANEL_RECT.has_point(click.position):
             return
         if phase == "dialogue" and DIALOGUE_RECT.has_point(click.position):
             _advance_dialogue()
             return
         if TREE_RECT.has_point(click.position):
-            if not selected_id.is_empty() and (_popup_rect().has_point(click.position) or _upgrade_rect().has_point(click.position)):
-                return
             if Rect2(Vector2(22, 100), Vector2(188, 52)).has_point(click.position):
                 return
             _start_pan(click.position)
-        elif Rect2(1376, 84, 544, 652).has_point(click.position):
-            _click_ally(click.position)
-
+        elif FIELD_RECT.has_point(click.position):
+            _start_field_interaction(click.position)
 
 func _advance_dialogue() -> void:
     if phase != "dialogue":
         return
     dialogue_index += 1
-    if dialogue_index == 3:
-        _select_node("rifle") # First unit on the integrated tree.
+    if week == 1 and dialogue_index == 3 and not user_selected_context and selected_id == "hq" and selected_instance_id.is_empty():
+        _select_node("rifle", false) # Tutorial only; never overrides explicit user selection.
     elif dialogue_index >= DIALOGUE_COUNT:
         phase = "prepare"
     _refresh_all()
@@ -965,17 +979,7 @@ func _set_speed(next_speed: int) -> void:
 
 
 func _deploy_selected() -> void:
-    if phase == "battle" or phase == "result":
-        return
-    var node := _find_node(selected_id)
-    if node.is_empty() or str(node["kind"]) != "unit" or not _is_node_unlocked(node) or phase not in ["dialogue", "prepare"]:
-        return
-    if placements.size() >= 12:
-        _append_log("현재 시연 배치 슬롯이 가득 찼습니다.")
-        return
-    placements.append(selected_id)
-    _append_log("%s 1기 배치됨" % str(node["name"]))
-    _refresh_all()
+    _begin_new_unit_placement(selected_id)
 
 
 func _battle_action() -> void:
@@ -992,6 +996,8 @@ func _battle_action() -> void:
     if g < DEMO_BATTLE_COST:
         _append_log("물자 G가 부족합니다. (시연 비용 %d G)" % DEMO_BATTLE_COST)
         return
+    if placement_mode == "PLACE_NEW":
+        _cancel_pending_placement()
     g -= DEMO_BATTLE_COST
     phase = "battle"
     battle_seconds = 0
@@ -999,22 +1005,152 @@ func _battle_action() -> void:
     _refresh_all()
 
 
-func _click_ally(mouse: Vector2) -> void:
-    var size := _grid_size()
-    var cols: int = size.x
-    var rows: int = size.y
-    var grid_pos := Vector2(1376 + (544 - cols * 46) * 0.5, 84 + (652 - rows * 46) * 0.5)
-    var cell := ((mouse - grid_pos) / 46.0).floor()
-    if cell.x < 0 or cell.y < 0 or cell.x >= cols or cell.y >= rows:
-        return
-    if cell.y < rows / 2:
-        return
-    for i in range(placements.size()):
-        var pos := Vector2i(1 + (i % (cols - 2)), rows - 1 - (i / (cols - 2)))
-        if pos == Vector2i(cell):
-            _select_node(placements[i])
-            return
+func _grid_origin() -> Vector2:
+    var sz := _grid_size()
+    return FIELD_RECT.position + (FIELD_RECT.size - Vector2(sz) * GRID_CELL_SIZE) * 0.5
 
+
+func _field_cell(mouse: Vector2) -> Vector2i:
+    if not FIELD_RECT.has_point(mouse):
+        return Vector2i(-1, -1)
+    var sz := _grid_size()
+    var cell := Vector2i(((mouse - _grid_origin()) / GRID_CELL_SIZE).floor())
+    if cell.x < 0 or cell.y < 0 or cell.x >= sz.x or cell.y >= sz.y:
+        return Vector2i(-1, -1)
+    return cell
+
+
+func _is_ally_cell(cell: Vector2i) -> bool:
+    var sz := _grid_size()
+    return cell.x >= 0 and cell.x < sz.x and cell.y >= int(sz.y / 2) and cell.y < sz.y
+
+
+func _instance_index(instance_id: String) -> int:
+    if instance_id.is_empty():
+        return -1
+    for i in range(placements.size()):
+        if str(placements[i]["instance_id"]) == instance_id:
+            return i
+    return -1
+
+
+func _instance_at_cell(cell: Vector2i) -> int:
+    if not _is_ally_cell(cell):
+        return -1
+    for i in range(placements.size()):
+        var entry: Dictionary = placements[i]
+        if int(entry["col"]) == cell.x and int(entry["row"]) == cell.y:
+            return i
+    return -1
+
+
+func _start_field_interaction(mouse: Vector2) -> void:
+    field_drag_armed = true
+    field_dragging = false
+    field_drag_start = mouse
+    field_drag_cell = _field_cell(mouse)
+    field_hover_cell = field_drag_cell
+    var found := _instance_at_cell(field_drag_cell)
+    field_drag_instance_id = str(placements[found]["instance_id"]) if found >= 0 else ""
+    _queue_ui_redraw()
+
+
+func _update_field_drag(mouse: Vector2) -> void:
+    if not field_drag_armed:
+        return
+    if not field_dragging and mouse.distance_to(field_drag_start) < DRAG_THRESHOLD:
+        return
+    field_dragging = true
+    field_drag_cell = _field_cell(mouse)
+    _queue_ui_redraw()
+
+
+func _tree_node_readable(node: Dictionary) -> bool:
+    var bounds := _node_visual_rect(node)
+    return _readable_tree_area().encloses(Rect2(bounds.position + camera_offset, bounds.size))
+
+
+func _select_field_instance(instance_id: String) -> void:
+    var index := _instance_index(instance_id)
+    if index < 0:
+        return
+    selected_instance_id = instance_id
+    user_selected_context = true
+    show_related_links = false
+    var node := _find_node(str(placements[index]["unit_id"]))
+    if not _node_visible(node):
+        full_tree_view = true
+    if not field_dragging and not _tree_node_readable(node):
+        camera_target = _clamp_pan(TREE_CENTER_LOCAL - node["p"])
+    _refresh_all()
+
+
+func _confirm_pending_at(cell: Vector2i) -> bool:
+    if placement_mode != "PLACE_NEW" or phase not in ["dialogue", "prepare"]:
+        return false
+    var node := _find_node(pending_unit_type_id)
+    if node.is_empty() or str(node["kind"]) != "unit" or not _is_node_unlocked(node) or placements.size() >= 12:
+        _append_log("배치 조건이 더 이상 충족되지 않습니다.")
+        return false
+    if not _is_ally_cell(cell):
+        _append_log("아군 배치 영역의 칸을 선택하세요.")
+        return false
+    if _instance_at_cell(cell) >= 0:
+        _append_log("이미 다른 유닛이 있는 칸입니다.")
+        return false
+    var instance_id := "unit_%06d" % next_instance_serial
+    while _instance_index(instance_id) >= 0:
+        next_instance_serial += 1
+        instance_id = "unit_%06d" % next_instance_serial
+    next_instance_serial += 1
+    placements.append({"instance_id":instance_id, "unit_id":pending_unit_type_id,
+        "col":cell.x, "row":cell.y})
+    placement_mode = "NORMAL"
+    pending_unit_type_id = ""
+    _select_field_instance(instance_id)
+    _append_log("%s 1기 배치 완료" % str(node["name"]))
+    return true
+
+
+func _finish_field_interaction(mouse: Vector2) -> void:
+    if not field_drag_armed:
+        return
+    var dragged := field_dragging
+    var instance_id := field_drag_instance_id
+    field_drag_armed = false
+    field_dragging = false
+    field_drag_instance_id = ""
+    var cell := _field_cell(mouse)
+    field_drag_cell = Vector2i(-1, -1)
+    if placement_mode == "PLACE_NEW":
+        if not dragged:
+            _confirm_pending_at(cell)
+        _queue_ui_redraw()
+        return
+    if instance_id.is_empty():
+        if not dragged and _is_ally_cell(cell):
+            _return_to_tree_context()
+        return
+    var index := _instance_index(instance_id)
+    if index < 0:
+        return
+    if dragged and phase in ["dialogue", "prepare"]:
+        if not _is_ally_cell(cell):
+            _append_log("아군 영역 밖으로 이동할 수 없습니다.")
+        elif _instance_at_cell(cell) >= 0 and _instance_at_cell(cell) != index:
+            _append_log("해당 칸에 다른 유닛이 있습니다.")
+        else:
+            var entry: Dictionary = placements[index]
+            entry["col"] = cell.x
+            entry["row"] = cell.y
+            placements[index] = entry
+    _select_field_instance(instance_id)
+
+
+func _click_ally(mouse: Vector2) -> void:
+    # Compatibility entry point: one complete click, not an index-based selection.
+    _start_field_interaction(mouse)
+    _finish_field_interaction(mouse)
 
 static func grid_size_for_week(at_week: int) -> Vector2i:
     if at_week <= 13:
