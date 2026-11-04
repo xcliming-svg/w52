@@ -540,6 +540,9 @@ func _check_field_placement(game: Control) -> bool:
         for col in range(6):
             if game.get("placements").size() == 12:
                 break
+            # Every placed unit is now the active instance; the next production
+            # request must first explicitly select the unit type in the tree.
+            game.call("_select_node", "rifle")
             game.call("_begin_new_unit_placement", "rifle")
             game.call("_click_ally", _field_point(game, Vector2i(col, row)))
     if game.get("placements").size() != 12:
