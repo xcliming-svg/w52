@@ -161,7 +161,11 @@ func restore_state(data: Dictionary) -> void:
     pending_unit_type_id = ""
     field_drag_armed = false
     field_dragging = false
+    field_drag_instance_id = ""
+    field_drag_cell = Vector2i(-1, -1)
     field_hover_cell = Vector2i(-1, -1)
+    pan_armed = false
+    pan_dragging = false
     user_selected_context = false
     info_content_key = ""
     full_tree_view = false
@@ -1140,7 +1144,8 @@ func _confirm_pending_at(cell: Vector2i) -> bool:
 func _finish_field_interaction(mouse: Vector2) -> void:
     if not field_drag_armed:
         return
-    var dragged := field_dragging
+    # The release point can move past the threshold without an intermediate motion event.
+    var dragged := field_dragging or mouse.distance_to(field_drag_start) >= DRAG_THRESHOLD
     var instance_id := field_drag_instance_id
     field_drag_armed = false
     field_dragging = false
@@ -1236,7 +1241,7 @@ func _refresh_all() -> void:
     speed_two.add_theme_color_override("font_color", UI.BACKGROUND if speed == 2 else UI.TEXT)
     speed_two.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
     speed_two.add_theme_stylebox_override("pressed", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
-    battle_button.disabled = phase == "battle" or (phase == "result" and week == MAX_WEEK)
+    battle_button.disabled = phase == "dialogue" or phase == "battle" or (phase == "result" and week == MAX_WEEK)
     if phase == "battle":
         battle_button.text = "전투 진행 중"
     elif phase == "result" and week == MAX_WEEK:
