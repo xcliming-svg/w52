@@ -591,6 +591,9 @@ func _check_main_entry() -> bool:
             and live.get_node_or_null("TreeClip") != null
             and full_button != null
             and full_button.text == "전체 기술도"
+            and str(live.get("selected_id")) == "hq"
+            and (live.get("info_title") as Label).text == "본부"
+            and (live.get("placements") as Array).is_empty()
         )
     root.remove_child(app)
     app.queue_free()
