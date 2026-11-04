@@ -881,7 +881,7 @@ func _draw_popup() -> void:
     _layer_text(popup_surface, "최소 W%02d · %s (후보)" % [int(node["week"]), status],
         panel.position + Vector2(24, 64), 20, UI.GOLD)
     if str(node["kind"]) == "unit":
-        var requirements: Array[String] = []
+        var requirements: PackedStringArray = PackedStringArray()
         for req in node["requires"]:
             var required_node := _find_node(str(req))
             var mark := "보유" if _has_building(str(req)) else "미보유"
