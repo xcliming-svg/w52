@@ -654,6 +654,11 @@ func _render_info_content(context: Dictionary) -> void:
         _add_info_line("• %s [%s]" % [str(required["name"]), "보유" if owned else "미보유"], 18, UI.TEXT if owned else UI.MUTED)
         if not owned:
             _add_info_link(req_id, "필요 시설: " + str(required["name"]))
+        var indirect_id := str(required["parent"])
+        if not indirect_id.is_empty() and indirect_id != "hq" and indirect_id not in node["requires"]:
+            var indirect := _find_node(indirect_id)
+            _add_info_line("↳ 간접 선행: %s [%s]" % [str(indirect["name"]),
+                "보유" if _has_building(indirect_id) else "미보유"], 17, UI.MUTED)
     _add_info_line("HP: 미구현 · 사거리: 미정", 18, UI.MUTED)
     _add_info_line("공격력/공격주기: 미정", 18, UI.MUTED)
     if str(context["kind"]) == "FIELD_INSTANCE":
