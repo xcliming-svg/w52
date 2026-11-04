@@ -693,7 +693,7 @@ func _refresh_info_panel() -> void:
         child.queue_free()
     var kind := str(node["kind"])
     info_title.text = str(node["name"]) + (" · 개체" if str(context["kind"]) == "FIELD_INSTANCE" else "")
-    var class_name := "본부" if kind == "root" else ("유닛" if kind == "unit" else ("생산시설" if kind == "production" else "기술시설"))
+    var kind_label := "본부" if kind == "root" else ("유닛" if kind == "unit" else ("생산시설" if kind == "production" else "기술시설"))
     var status := "보유" if _has_building(str(node["id"])) else ("조건 충족" if _is_node_unlocked(node) else "잠금")
     if kind == "unit":
         status = "배치 가능" if _is_node_unlocked(node) else "배치 잠금"
@@ -703,7 +703,7 @@ func _refresh_info_panel() -> void:
         status = "위치 지정 대기"
     if str(context["kind"]) == "FIELD_INSTANCE":
         status = "개체 선택 · " + ("배치 편집 가능" if phase in ["dialogue", "prepare"] else "조회 전용")
-    info_status.text = class_name + " · " + status
+    info_status.text = kind_label + " · " + status
     _render_info_content(context)
     var actions := _get_info_actions(context)
     deploy_button.visible = not str(actions["primary"]).is_empty()
