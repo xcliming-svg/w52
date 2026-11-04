@@ -12,8 +12,9 @@ const DIALOGUE_COUNT := 5
 const TREE_RECT := Rect2(0, 84, 1376, 892)
 const TREE_CENTER_LOCAL := Vector2(688, 446)
 const DRAG_THRESHOLD := 8.0
-const POPUP_SIZE := Vector2(390, 274)
-const POPUP_BUTTON_OFFSET := Vector2(205, 194)
+const INFO_PANEL_RECT := Rect2(930, 170, 420, 560)
+const FIELD_RECT := Rect2(1376, 84, 544, 652)
+const GRID_CELL_SIZE := 46.0
 const DIALOGUE_RECT := Rect2(28, 778, 1320, 171)
 const NODES := [
     {"id":"hq", "name":"본부", "kind":"root", "parent":"", "p":Vector2(920, 825), "week":1, "requires":[], "symbol":"HQ", "detail":"기술트리의 뿌리"},
@@ -58,9 +59,21 @@ var g: int = 160
 var phase: String = "dialogue" # dialogue, prepare, battle, result
 var dialogue_index: int = 0
 var help_index: int = 1
-var selected_id: String = ""
+var selected_id: String = "hq" # Last explicit tree selection (HQ fallback).
+var selected_instance_id: String = ""
+var user_selected_context: bool = false
 var hover_id: String = ""
-var placements: Array[String] = []
+var placements: Array[Dictionary] = []
+var next_instance_serial: int = 1
+var placement_mode: String = "NORMAL" # NORMAL, PLACE_NEW
+var pending_unit_type_id: String = ""
+var field_drag_armed: bool = false
+var field_dragging: bool = false
+var field_drag_start: Vector2 = Vector2.ZERO
+var field_drag_instance_id: String = ""
+var field_hover_cell: Vector2i = Vector2i(-1, -1)
+var field_drag_cell: Vector2i = Vector2i(-1, -1)
+var show_related_links: bool = false
 var owned_buildings: Array[String] = ["hq", "robot_factory"]
 var full_tree_view: bool = false
 var log_items: Array[String] = []
@@ -87,6 +100,13 @@ var tree_surface: Control
 var tree_canvas: Control
 var popup_surface: Control
 var dialogue_surface: Control
+var info_title: Label
+var info_status: Label
+var info_reason: Label
+var info_scroll: ScrollContainer
+var info_column: VBoxContainer
+var secondary_button: Button
+var info_content_key: String = ""
 
 
 func _ready() -> void:
@@ -117,27 +137,42 @@ func restore_state(data: Dictionary) -> void:
                 if int(node["week"]) <= week and _has_building(str(node["parent"])):
                     owned_buildings.append(str(item))
     placements.clear()
+    next_instance_serial = 1
     var saved_placements: Variant = data.get("placements", [])
     if saved_placements is Array:
         for item in saved_placements:
-            var node := _find_node(str(item))
-            if not node.is_empty() and str(node["kind"]) == "unit" and _is_node_unlocked(node) and placements.size() < 12:
-                placements.append(str(item))
+            if not (item is Dictionary):
+                continue
+            var entry: Dictionary = item
+            var node := _find_node(str(entry.get("unit_id", "")))
+            var cell := Vector2i(int(entry.get("col", -1)), int(entry.get("row", -1)))
+            var instance_id := str(entry.get("instance_id", ""))
+            if instance_id.is_empty() or node.is_empty() or str(node["kind"]) != "unit" or not _is_node_unlocked(node) or not _is_ally_cell(cell) or _instance_index(instance_id) >= 0 or _instance_at_cell(cell) >= 0 or placements.size() >= 12:
+                continue
+            placements.append({"instance_id":instance_id, "unit_id":str(node["id"]), "col":cell.x, "row":cell.y})
+            var serial_part := instance_id.trim_prefix("unit_")
+            if serial_part.is_valid_int():
+                next_instance_serial = maxi(next_instance_serial, int(serial_part) + 1)
     if phase == "dialogue" and dialogue_index >= DIALOGUE_COUNT:
         phase = "prepare"
-    selected_id = ""
+    selected_id = "hq"
+    selected_instance_id = ""
+    placement_mode = "NORMAL"
+    pending_unit_type_id = ""
+    field_drag_armed = false
+    user_selected_context = false
     full_tree_view = false
     camera_offset = _clamp_pan(TREE_CENTER_LOCAL - _find_node("hq")["p"])
     camera_target = camera_offset
     log_items = ["%d주차 전투 준비 중입니다." % week]
-    for id in placements:
-        log_items.append("%s 배치됨" % str(_find_node(id)["name"]))
+    for entry in placements:
+        log_items.append("%s 배치됨" % str(_find_node(str(entry["unit_id"]))["name"]))
     _refresh_all()
 
 
 func snapshot() -> Dictionary:
     return {"week":week, "g":g, "phase":phase, "dialogue":dialogue_index,
-        "help":help_index, "placements":placements.duplicate(),
+        "help":help_index, "placements":placements.duplicate(true),
         "buildings":owned_buildings.duplicate()}
 
 func _create_controls() -> void:
@@ -241,7 +276,14 @@ func _set_week_intro() -> void:
     dialogue_index = 0
     help_index = week
     placements.clear()
-    selected_id = ""
+    next_instance_serial = 1
+    selected_id = "hq"
+    selected_instance_id = ""
+    placement_mode = "NORMAL"
+    pending_unit_type_id = ""
+    field_drag_armed = false
+    user_selected_context = false
+    show_related_links = false
     hover_id = ""
     # At the beginning of each week keep the HQ identifiable above the dialogue overlay.
     camera_offset = _clamp_pan(TREE_CENTER_LOCAL - _find_node("hq")["p"])
@@ -661,14 +703,23 @@ func _click_ally(mouse: Vector2) -> void:
             return
 
 
-func _grid_size() -> Vector2i:
-    if week <= 13:
+static func grid_size_for_week(at_week: int) -> Vector2i:
+    if at_week <= 13:
         return Vector2i(6, 6)
-    if week <= 26:
+    if at_week <= 26:
         return Vector2i(8, 8)
-    if week <= 39:
+    if at_week <= 39:
         return Vector2i(10, 8)
     return Vector2i(10, 10)
+
+
+static func legacy_cell_for_index(index: int, at_week: int) -> Vector2i:
+    var sz := grid_size_for_week(at_week)
+    return Vector2i(1 + index % (sz.x - 2), sz.y - 1 - int(index / (sz.x - 2)))
+
+
+func _grid_size() -> Vector2i:
+    return grid_size_for_week(week)
 
 
 func _append_log(message: String) -> void:
