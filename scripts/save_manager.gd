@@ -72,7 +72,7 @@ func _valid_placements(items: Variant, at_week: int, buildings: Array) -> bool:
         var unit_id: String = entry["unit_id"]
         var col: int = entry["col"]
         var row: int = entry["row"]
-        if instance_id.is_empty() or ids.has(instance_id) or not _usable_unit(unit_id, at_week, buildings):
+        if instance_id.strip_edges().is_empty() or ids.has(instance_id) or not _usable_unit(unit_id, at_week, buildings):
             return false
         if col < 0 or col >= sz.x or row < int(sz.y / 2) or row >= sz.y:
             return false
