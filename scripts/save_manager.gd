@@ -1,11 +1,41 @@
 extends RefCounted
 
 const SAVE_PATH := "user://game_save.cfg"
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 const MAX_WEEK := 52
+const GameRules = preload("res://scripts/game.gd")
+
 
 func has_save() -> bool:
     return not load_game().is_empty()
+
+
+func _valid_buildings(buildings: Variant, at_week: int) -> bool:
+    if not (buildings is Array) or buildings.size() > 8:
+        return false
+    if "hq" not in buildings or "robot_factory" not in buildings:
+        return false
+    var seen: Dictionary = {}
+    for id in buildings:
+        if not (id is String) or seen.has(id):
+            return false
+        seen[id] = true
+    for id in buildings:
+        var found := false
+        for node in GameRules.NODES:
+            if str(node["id"]) != id:
+                continue
+            if str(node["kind"]) == "unit" or int(node["week"]) > at_week:
+                return false
+            var parent: String = str(node["parent"])
+            if not parent.is_empty() and parent not in buildings:
+                return false
+            found = true
+            break
+        if not found:
+            return false
+    return true
+
 
 func load_game() -> Dictionary:
     if not FileAccess.file_exists(SAVE_PATH):
@@ -14,7 +44,7 @@ func load_game() -> Dictionary:
     if config.load(SAVE_PATH) != OK:
         return {}
     var version: int = int(config.get_value("session", "version", -1))
-    if version != SAVE_VERSION:
+    if version not in [2, SAVE_VERSION]:
         return {}
     var week: Variant = config.get_value("session", "week", null)
     var g: Variant = config.get_value("session", "g", null)
@@ -31,10 +61,16 @@ func load_game() -> Dictionary:
     for id in placements:
         if not (id is String):
             return {}
+    var buildings: Variant = ["hq", "robot_factory"]
+    if version == SAVE_VERSION:
+        buildings = config.get_value("session", "buildings", null)
+        if not _valid_buildings(buildings, week):
+            return {}
     return {"week":week, "g":g, "phase":phase,
-        "dialogue":clampi(int(config.get_value("session", "dialogue", 0)),0,5),
-        "help":clampi(int(config.get_value("session", "help", week)),1,week),
-        "placements":placements}
+        "dialogue":clampi(int(config.get_value("session", "dialogue", 0)), 0, 5),
+        "help":clampi(int(config.get_value("session", "help", week)), 1, week),
+        "placements":placements, "buildings":buildings}
+
 
 func save_game(data: Dictionary) -> bool:
     var week: int = int(data.get("week", 0))
@@ -42,15 +78,20 @@ func save_game(data: Dictionary) -> bool:
     if week < 1 or week > MAX_WEEK or g < 0 or g > 1000000000:
         push_warning("Rejected invalid W52 progress.")
         return false
+    var buildings: Variant = data.get("buildings", null)
+    if not _valid_buildings(buildings, week):
+        push_warning("Rejected invalid W52 building ownership.")
+        return false
     var config := ConfigFile.new()
     config.set_value("session", "version", SAVE_VERSION)
-    for key in ["week","g","phase","dialogue","help","placements"]:
+    for key in ["week", "g", "phase", "dialogue", "help", "placements", "buildings"]:
         config.set_value("session", key, data.get(key))
     var error := config.save(SAVE_PATH)
     if error != OK:
         push_warning("Unable to write game save (%s)." % error)
         return false
     return true
+
 
 func clear_save() -> bool:
     if not FileAccess.file_exists(SAVE_PATH):
