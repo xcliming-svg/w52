@@ -1,7 +1,7 @@
 extends RefCounted
 
 const SAVE_PATH := "user://game_save.cfg"
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 const MAX_WEEK := 52
 const GameRules = preload("res://scripts/game.gd")
 
@@ -37,6 +37,66 @@ func _valid_buildings(buildings: Variant, at_week: int) -> bool:
     return true
 
 
+
+func _usable_unit(unit_id: String, at_week: int, buildings: Array) -> bool:
+    for node in GameRules.NODES:
+        if str(node["id"]) != unit_id or str(node["kind"]) != "unit":
+            continue
+        if int(node["week"]) > at_week:
+            return false
+        for req in node["requires"]:
+            if str(req) not in buildings:
+                return false
+        return true
+    return false
+
+
+func _valid_placements(items: Variant, at_week: int, buildings: Array) -> bool:
+    if not (items is Array) or items.size() > 12:
+        return false
+    var ids: Dictionary = {}
+    var occupied: Dictionary = {}
+    var sz: Vector2i = GameRules.grid_size_for_week(at_week)
+    for raw in items:
+        if not (raw is Dictionary):
+            return false
+        var entry: Dictionary = raw
+        if entry.size() != 4:
+            return false
+        for key in ["instance_id", "unit_id", "col", "row"]:
+            if not entry.has(key):
+                return false
+        if not (entry["instance_id"] is String) or not (entry["unit_id"] is String) or not (entry["col"] is int) or not (entry["row"] is int):
+            return false
+        var instance_id: String = entry["instance_id"]
+        var unit_id: String = entry["unit_id"]
+        var col: int = entry["col"]
+        var row: int = entry["row"]
+        if instance_id.strip_edges().is_empty() or ids.has(instance_id) or not _usable_unit(unit_id, at_week, buildings):
+            return false
+        if col < 0 or col >= sz.x or row < int(sz.y / 2) or row >= sz.y:
+            return false
+        var cell_key := "%d:%d" % [col, row]
+        if occupied.has(cell_key):
+            return false
+        ids[instance_id] = true
+        occupied[cell_key] = true
+    return true
+
+
+func _migrate_legacy_placements(items: Array, at_week: int, buildings: Array) -> Array[Dictionary]:
+    var converted: Array[Dictionary] = []
+    for raw in items:
+        if not (raw is String):
+            continue
+        if not _usable_unit(raw, at_week, buildings):
+            continue
+        var cell: Vector2i = GameRules.legacy_cell_for_index(converted.size(), at_week)
+        converted.append({"instance_id":"legacy_%02d" % (converted.size() + 1),
+            "unit_id":raw, "col":cell.x, "row":cell.y})
+    return converted
+
+
 func load_game() -> Dictionary:
     if not FileAccess.file_exists(SAVE_PATH):
         return {}
@@ -44,33 +104,42 @@ func load_game() -> Dictionary:
     if config.load(SAVE_PATH) != OK:
         return {}
     var version: int = int(config.get_value("session", "version", -1))
-    if version not in [2, SAVE_VERSION]:
+    if version not in [2, 3, SAVE_VERSION]:
         return {}
-    var week: Variant = config.get_value("session", "week", null)
-    var g: Variant = config.get_value("session", "g", null)
-    if not (week is int) or not (g is int):
+    var at_week: Variant = config.get_value("session", "week", null)
+    var stored_g: Variant = config.get_value("session", "g", null)
+    if not (at_week is int) or not (stored_g is int):
         return {}
+    var week: int = int(at_week)
+    var g: int = int(stored_g)
     if week < 1 or week > MAX_WEEK or g < 0 or g > 1000000000:
         return {}
     var phase: String = str(config.get_value("session", "phase", "dialogue"))
     if phase not in ["dialogue", "prepare", "battle", "result"]:
         return {}
-    var placements: Variant = config.get_value("session", "placements", [])
-    if not (placements is Array) or placements.size() > 12:
+    var raw_placements: Variant = config.get_value("session", "placements", [])
+    if not (raw_placements is Array) or raw_placements.size() > 12:
         return {}
-    for id in placements:
-        if not (id is String):
-            return {}
     var buildings: Variant = ["hq", "robot_factory"]
-    if version == SAVE_VERSION:
+    if version >= 3:
         buildings = config.get_value("session", "buildings", null)
         if not _valid_buildings(buildings, week):
             return {}
+    var placements: Array[Dictionary] = []
+    if version == SAVE_VERSION:
+        if not _valid_placements(raw_placements, week, buildings):
+            return {}
+        for entry in raw_placements:
+            placements.append((entry as Dictionary).duplicate(true))
+    else:
+        for id in raw_placements:
+            if not (id is String):
+                return {}
+        placements = _migrate_legacy_placements(raw_placements, week, buildings)
     return {"week":week, "g":g, "phase":phase,
         "dialogue":clampi(int(config.get_value("session", "dialogue", 0)), 0, 5),
         "help":clampi(int(config.get_value("session", "help", week)), 1, week),
         "placements":placements, "buildings":buildings}
-
 
 func save_game(data: Dictionary) -> bool:
     var week: int = int(data.get("week", 0))
@@ -78,9 +147,17 @@ func save_game(data: Dictionary) -> bool:
     if week < 1 or week > MAX_WEEK or g < 0 or g > 1000000000:
         push_warning("Rejected invalid W52 progress.")
         return false
+    var phase: Variant = data.get("phase", null)
+    if not (phase is String) or phase not in ["dialogue", "prepare", "battle", "result"]:
+        push_warning("Rejected invalid W52 phase.")
+        return false
     var buildings: Variant = data.get("buildings", null)
     if not _valid_buildings(buildings, week):
         push_warning("Rejected invalid W52 building ownership.")
+        return false
+    var placements: Variant = data.get("placements", null)
+    if not _valid_placements(placements, week, buildings):
+        push_warning("Rejected invalid W52 unit placements.")
         return false
     var config := ConfigFile.new()
     config.set_value("session", "version", SAVE_VERSION)
@@ -91,7 +168,6 @@ func save_game(data: Dictionary) -> bool:
         push_warning("Unable to write game save (%s)." % error)
         return false
     return true
-
 
 func clear_save() -> bool:
     if not FileAccess.file_exists(SAVE_PATH):

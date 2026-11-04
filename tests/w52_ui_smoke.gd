@@ -85,10 +85,28 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         if not _has_readable_node(game, camera_during_dialogue):
             push_error("W52 smoke: dialogue covered all identifiable nodes at drag limit")
             return false
-    var popup: Rect2 = game.call("_popup_rect")
+    var popup: Rect2 = game.call("_info_panel_rect")
+    var panel: Control = game.get_node_or_null("NodeInfoLayer") as Control
     var deploy: Button = game.get("deploy_button")
-    if deploy.size != Vector2(160, 62) or deploy.custom_minimum_size != Vector2(160, 62):
-        push_error("W52 smoke: deploy control inherited menu button dimensions")
+    var scroll: ScrollContainer = game.get("info_scroll")
+    var secondary: Button = game.get("secondary_button")
+    if popup != Rect2(930, 170, 420, 560) or panel == null or panel.position != popup.position or panel.size != popup.size:
+        push_error("W52 smoke: fixed panel contract changed")
+        return false
+    if panel.mouse_filter != Control.MOUSE_FILTER_STOP or scroll == null or secondary == null:
+        push_error("W52 smoke: fixed panel must consume pointer and scroll input")
+        return false
+    if deploy.size != Vector2(184, 62) or deploy.custom_minimum_size != Vector2(184, 62):
+        push_error("W52 smoke: primary control dimensions invalid")
+        return false
+    if not popup.encloses(Rect2(panel.position + deploy.position, deploy.size)):
+        push_error("W52 smoke: primary action escaped fixed panel")
+        return false
+    if not popup.encloses(Rect2(panel.position + secondary.position, secondary.size)):
+        push_error("W52 smoke: secondary action escaped fixed panel")
+        return false
+    if popup.end.x >= 1376 or popup.end.y >= 778 or popup.position.y <= 84:
+        push_error("W52 smoke: fixed panel overlaps battlefield/dialogue/header")
         return false
     var speed_one: Button = game.get("speed_one")
     var speed_two: Button = game.get("speed_two")
@@ -99,16 +117,6 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         return false
     if prev.size != Vector2(72, 64) or next_help.size != Vector2(72, 64):
         push_error("W52 smoke: help arrows size invalid")
-        return false
-    if not popup.encloses(Rect2(deploy.position, deploy.size)):
-        push_error("W52 smoke: deploy button outside popup during dialogue: panel=%s btn=%s size=%s" % [str(popup), str(deploy.position), str(deploy.size)])
-        return false
-    var upgrades: Rect2 = game.call("_upgrade_rect")
-    if upgrades.size != Vector2(420, 256) or upgrades.intersects(popup) or upgrades.position.x < 0.0 or upgrades.end.x > 1376.0 or upgrades.end.y > 778.0:
-        push_error("W52 tech: independent upgrade panel is clipped or overlaps a blocking UI region")
-        return false
-    if popup.end.y > 754.0:
-        push_error("W52 smoke: popup collides with dialogue")
         return false
     # The popup surface cannot arm the background pan.
     game.call("_gui_input", _mouse_button(true, popup.position + Vector2(28, 28)))
@@ -121,9 +129,8 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         game.call("_advance_dialogue")
     game.call("_select_node", "rifle")
     game.call("_process", 1.0)
-    popup = game.call("_popup_rect")
-    if not popup.encloses(Rect2(deploy.position, deploy.size)):
-        push_error("W52 smoke: deploy button outside popup after dialogue: panel=%s btn=%s size=%s" % [str(popup), str(deploy.position), str(deploy.size)])
+    if game.call("_info_panel_rect") != popup or panel.position != popup.position:
+        push_error("W52 smoke: panel moved when selection/phase changed")
         return false
     # Drag from background; release must not change selection.
     var start := Vector2(90, 190)
@@ -282,6 +289,13 @@ func _check_integrated_tree(game: Control) -> bool:
         if parent != "" and not seen.has(parent):
             push_error("W52 tech: missing parent " + parent)
             return false
+    if str(game.get("selected_id")) != "hq" or str(game.get("selected_instance_id")) != "":
+        push_error("W52 smoke: first frame must select HQ")
+        return false
+    var initial_title: Label = game.get("info_title")
+    if initial_title == null or initial_title.text != "본부":
+        push_error("W52 smoke: HQ info not visible initially")
+        return false
     var owned: Array = game.get("owned_buildings")
     if owned.size() != 2 or "hq" not in owned or "robot_factory" not in owned:
         push_error("W52 tech: incorrect initial buildings")
@@ -379,6 +393,325 @@ func _check_integrated_tree(game: Control) -> bool:
 
 
 
+func _check_action_matrix(game: Control) -> bool:
+    game.call("restore_state", {"week":1, "g":160, "phase":"prepare", "dialogue":5,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    game.set("full_tree_view", true)
+    var nodes: Array = game.get_script().get_script_constant_map().get("NODES", [])
+    for node in nodes:
+        game.call("_select_node", str(node["id"]))
+        var context: Dictionary = game.call("_resolve_info_context")
+        var actions: Dictionary = game.call("_get_info_actions", context)
+        if str(node["kind"]) == "root":
+            if str(actions["primary"]) != "" or str(actions["secondary"]) != "":
+                push_error("W52 actions: HQ must be display-only")
+                return false
+        elif str(node["id"]) == "robot_factory":
+            if str(actions["primary"]) != "" or str(actions["secondary"]) != "관련 병종 보기":
+                push_error("W52 actions: starting owned factory action mismatch")
+                return false
+        elif str(node["kind"]) == "unit":
+            var available := str(node["id"]) == "rifle"
+            if bool(actions["enabled"]) != available or str(actions["primary"]) != ("배치" if available else "배치 불가"):
+                push_error("W52 actions: initial unit access mismatch: " + str(node["id"]))
+                return false
+        else:
+            if bool(actions["enabled"]) or str(actions["primary"]) != "건설 불가":
+                push_error("W52 actions: future-week building enabled too early: " + str(node["id"]))
+                return false
+    # Unlock all existing demonstration buildings in strict parent-first order.
+    game.set("week", 52)
+    var before_g: int = game.get("g")
+    for building_id in ["walker_factory", "radar", "reactor", "armory",
+                        "machine_shop", "drone_hangar"]:
+        game.call("_select_node", building_id)
+        game.call("_build_selected")
+        if building_id not in game.get("owned_buildings"):
+            push_error("W52 actions: permitted facility failed to build: " + building_id)
+            return false
+        var owned_count: int = game.get("owned_buildings").size()
+        game.call("_build_selected")
+        if game.get("owned_buildings").size() != owned_count:
+            push_error("W52 actions: duplicate construction changed ownership")
+            return false
+    if game.get("owned_buildings").size() != 8 or int(game.get("g")) != before_g:
+        push_error("W52 actions: demonstration building changed resources/ownership")
+        return false
+    var related := {
+        "robot_factory":["rifle","mg","mortar","anti_tank","artillery"],
+        "walker_factory":["car","tank","destroyer","heavy"],
+        "drone_hangar":["fighter","attacker","bomber"],
+        "armory":["anti_tank","artillery","attacker"],
+        "radar":["artillery","destroyer","fighter","attacker","bomber"],
+        "machine_shop":["tank","destroyer","heavy"],
+        "reactor":["heavy","bomber"]
+    }
+    for id in related:
+        var actual: Array = game.call("_related_unit_ids", id)
+        var expected: Array = related[id]
+        if actual != expected:
+            push_error("W52 actions: unrelated/missing production nodes for " + id)
+            return false
+    for node in nodes:
+        var id: String = str(node["id"])
+        game.call("_select_node", id)
+        var unlocked_actions: Dictionary = game.call("_get_info_actions", game.call("_resolve_info_context"))
+        if str(node["kind"]) == "unit":
+            if str(unlocked_actions["primary"]) != "배치" or not bool(unlocked_actions["enabled"]):
+                push_error("W52 actions: fully unlocked unit should deploy: " + id)
+                return false
+        elif str(node["kind"]) != "root":
+            if str(unlocked_actions["primary"]) != "" or str(unlocked_actions["secondary"]) != "관련 병종 보기":
+                push_error("W52 actions: owned facility still presents construction: " + id)
+                return false
+    game.call("_select_node", "rifle")
+    game.call("_begin_new_unit_placement", "rifle")
+    if not game.call("_confirm_pending_at", Vector2i(1, 9)):
+        push_error("W52 actions: valid late-week unit placement failed")
+        return false
+    var unit_id := str(game.get("selected_instance_id"))
+    if unit_id.is_empty():
+        push_error("W52 actions: no individual selection after placement")
+        return false
+    for readonly_phase in ["battle", "result"]:
+        game.set("phase", readonly_phase)
+        game.call("_select_field_instance", unit_id)
+        var context: Dictionary = game.call("_resolve_info_context")
+        var actions: Dictionary = game.call("_get_info_actions", context)
+        if str(context["kind"]) != "FIELD_INSTANCE" or not str(actions["primary"]).is_empty() or str(actions["secondary"]) != "트리 병종 보기":
+            push_error("W52 actions: combat phase permitted removal: " + readonly_phase)
+            return false
+        game.call("_remove_placed_instance", unit_id)
+        if game.get("placements").size() != 1:
+            push_error("W52 actions: combat phase removal bypassed policy")
+            return false
+    game.call("restore_state", {"week":1, "g":160, "phase":"dialogue", "dialogue":0,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    return true
+
+
+func _field_point(game: Control, cell: Vector2i) -> Vector2:
+    var origin: Vector2 = game.call("_grid_origin")
+    return origin + Vector2(cell) * 46.0 + Vector2(22, 22)
+
+
+func _check_field_placement(game: Control) -> bool:
+    game.call("restore_state", {"week":1, "g":160, "phase":"dialogue", "dialogue":0,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    game.call("_select_node", "robot_factory")
+    for i in range(3):
+        game.call("_advance_dialogue")
+    if str(game.get("selected_id")) != "robot_factory":
+        push_error("W52 intro: tutorial overrode explicit user selection")
+        return false
+    game.call("_set_week_intro")
+    game.call("_refresh_all")
+    var battle_control: Button = game.get("battle_button")
+    if battle_control == null or not battle_control.disabled:
+        push_error("W52 intro: battle button must not be a no-op during dialogue")
+        return false
+    if str(game.get("selected_id")) != "hq":
+        push_error("W52 intro: next entry did not restore HQ")
+        return false
+    for i in range(3):
+        game.call("_advance_dialogue")
+    if str(game.get("selected_id")) != "rifle":
+        push_error("W52 intro: W01 untouched HQ tutorial lost rifle focus")
+        return false
+    game.set("week", 2)
+    game.call("_set_week_intro")
+    for i in range(3):
+        game.call("_advance_dialogue")
+    if str(game.get("selected_id")) != "hq":
+        push_error("W52 intro: W02+ should never auto-select rifle")
+        return false
+    game.call("restore_state", {"week":1, "g":160, "phase":"prepare", "dialogue":5,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    # Exercise actual Button.pressed -> pending -> mouse press/release -> selected
+    # instance -> Button.pressed removal before direct model edge-case tests.
+    game.call("_select_node", "rifle")
+    var primary: Button = game.get("deploy_button")
+    if primary == null or primary.text != "배치" or primary.disabled:
+        push_error("W52 field: available unit must expose an enabled deploy action")
+        return false
+    primary.emit_signal("pressed")
+    if game.get("placements").size() != 0 or primary.text != "위치 지정 취소":
+        push_error("W52 field: deploy button bypassed pending location selection")
+        return false
+    primary.emit_signal("pressed")
+    if str(game.get("placement_mode")) != "NORMAL" or game.get("placements").size() != 0:
+        push_error("W52 field: cancel button removed or created a unit")
+        return false
+    primary.emit_signal("pressed")
+    var routed_cell := _field_point(game, Vector2i(1, 5))
+    game.call("_gui_input", _mouse_button(true, routed_cell))
+    game.call("_input", _mouse_button(false, routed_cell))
+    if game.get("placements").size() != 1 or primary.text != "배치 취소":
+        push_error("W52 field: root input and action button are not wired end-to-end")
+        return false
+    primary.emit_signal("pressed")
+    if game.get("placements").size() != 0 or str(game.get("selected_instance_id")) != "":
+        push_error("W52 field: individual remove button failed to remove one unit")
+        return false
+    game.call("_select_node", "robot_factory")
+    var secondary: Button = game.get("secondary_button")
+    if secondary == null or secondary.disabled or secondary.text != "관련 병종 보기":
+        push_error("W52 field: owned production facility lacks related-unit link")
+        return false
+    secondary.emit_signal("pressed")
+    var linked := false
+    var content: VBoxContainer = game.get("info_column")
+    for child in content.get_children():
+        if child is Button and (child as Button).text == "소총병":
+            (child as Button).emit_signal("pressed")
+            linked = true
+            break
+    if not linked or str(game.get("selected_id")) != "rifle":
+        push_error("W52 field: related unit link did not focus its tech node")
+        return false
+    game.call("_begin_new_unit_placement", "rifle")
+    if game.get("placements").size() != 0 or str(game.get("placement_mode")) != "PLACE_NEW":
+        push_error("W52 field: deploy button created a unit before selecting a cell")
+        return false
+    game.call("_begin_new_unit_placement", "rifle")
+    if game.get("placements").size() != 0 or str(game.get("placement_mode")) != "PLACE_NEW":
+        push_error("W52 field: duplicate placement request mutated pending state")
+        return false
+    game.call("_click_ally", _field_point(game, Vector2i(1, 0)))
+    if game.get("placements").size() != 0 or str(game.get("placement_mode")) != "PLACE_NEW":
+        push_error("W52 field: enemy cell was accepted or pending mode lost")
+        return false
+    game.call("_click_ally", _field_point(game, Vector2i(1, 5)))
+    var units: Array = game.get("placements")
+    if units.size() != 1 or str(game.get("placement_mode")) != "NORMAL":
+        push_error("W52 field: valid cell did not create exactly one unit")
+        return false
+    var first_id := str(units[0]["instance_id"])
+    if first_id.is_empty() or str(game.get("selected_instance_id")) != first_id:
+        push_error("W52 field: new unit was not uniquely selected")
+        return false
+    var title: Label = game.get("info_title")
+    var instance_action: Dictionary = game.call("_get_info_actions", game.call("_resolve_info_context"))
+    if title == null or not title.text.contains("개체") or str(instance_action["primary"]) != "배치 취소":
+        push_error("W52 field: selected instance did not own shared info/actions")
+        return false
+    game.call("_select_node", "robot_factory")
+    game.call("_click_ally", _field_point(game, Vector2i(1, 5)))
+    if str(game.get("selected_id")) != "robot_factory" or str(game.call("_active_tree_node_id")) != "rifle":
+        push_error("W52 field: field highlight overwrote last tree selection")
+        return false
+    game.call("_click_ally", _field_point(game, Vector2i(4, 5)))
+    if str(game.get("selected_instance_id")) != "" or str(game.get("selected_id")) != "robot_factory":
+        push_error("W52 field: empty cell did not return to last tree context")
+        return false
+    game.call("_select_node", "rifle")
+    game.call("_begin_new_unit_placement", "rifle")
+    game.call("_click_ally", _field_point(game, Vector2i(1, 5)))
+    if game.get("placements").size() != 1 or str(game.get("placement_mode")) != "PLACE_NEW":
+        push_error("W52 field: occupied cell duplicated a unit")
+        return false
+    game.call("_cancel_pending_placement")
+    if game.get("placements").size() != 1:
+        push_error("W52 field: pending cancel removed an existing unit")
+        return false
+    game.call("_begin_new_unit_placement", "rifle")
+    game.call("_click_ally", _field_point(game, Vector2i(2, 5)))
+    units = game.get("placements")
+    if units.size() != 2 or str(units[1]["instance_id"]) == first_id:
+        push_error("W52 field: same-type instances share identity")
+        return false
+    var other_id := str(units[1]["instance_id"])
+    var start := _field_point(game, Vector2i(1, 5))
+    game.call("_start_field_interaction", start)
+    game.call("_update_field_drag", start + Vector2(3, 2))
+    game.call("_finish_field_interaction", start + Vector2(3, 2))
+    units = game.get("placements")
+    if int(units[0]["col"]) != 1 or str(game.get("selected_instance_id")) != first_id:
+        push_error("W52 field: short click moved unit or failed selection")
+        return false
+    game.call("_start_field_interaction", start)
+    game.call("_update_field_drag", start + Vector2(18, 0))
+    game.call("_finish_field_interaction", _field_point(game, Vector2i(2, 5)))
+    units = game.get("placements")
+    if int(units[0]["col"]) != 1:
+        push_error("W52 field: occupied drop moved source")
+        return false
+    # Simulate lost motion notifications: release distance alone establishes dragging.
+    game.call("_start_field_interaction", start)
+    game.call("_finish_field_interaction", _field_point(game, Vector2i(3, 5)))
+    units = game.get("placements")
+    if int(units[0]["col"]) != 3 or str(units[0]["instance_id"]) != first_id or units.size() != 2:
+        push_error("W52 field: drag must preserve identity and count")
+        return false
+    var moved_start := _field_point(game, Vector2i(3, 5))
+    for illegal_drop in [_field_point(game, Vector2i(3, 0)), Vector2(1300, 100)]:
+        game.call("_start_field_interaction", moved_start)
+        game.call("_update_field_drag", moved_start + Vector2(15, 0))
+        game.call("_finish_field_interaction", illegal_drop)
+        units = game.get("placements")
+        if units.size() != 2 or int(units[0]["col"]) != 3 or int(units[0]["row"]) != 5:
+            push_error("W52 field: illegal drop changed unit count or position")
+            return false
+    game.call("_remove_placed_instance", first_id)
+    units = game.get("placements")
+    if units.size() != 1 or str(units[0]["instance_id"]) != other_id:
+        push_error("W52 field: remove canceled more than the selected instance")
+        return false
+    game.call("_select_node", "rifle")
+    # All grid-size boundaries preserve the same coordinate transform.
+    for boundary in [[13, Vector2i(6,6)], [14, Vector2i(8,8)],
+                    [26, Vector2i(8,8)], [27, Vector2i(10,8)],
+                    [39, Vector2i(10,8)], [40, Vector2i(10,10)]]:
+        game.set("week", boundary[0])
+        var size: Vector2i = game.call("_grid_size")
+        if size != boundary[1]:
+            push_error("W52 field: week grid-size boundary failed")
+            return false
+        var legal := Vector2i(size.x - 1, size.y - 1)
+        if game.call("_field_cell", _field_point(game, legal)) != legal:
+            push_error("W52 field: screen/cell conversion mismatch")
+            return false
+    game.call("restore_state", {"week":1, "g":160, "phase":"prepare", "dialogue":5,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    game.call("_select_node", "rifle")
+    for row in range(3, 6):
+        for col in range(6):
+            if game.get("placements").size() == 12:
+                break
+            # Every placed unit is now the active instance; the next production
+            # request must first explicitly select the unit type in the tree.
+            game.call("_select_node", "rifle")
+            game.call("_begin_new_unit_placement", "rifle")
+            game.call("_click_ally", _field_point(game, Vector2i(col, row)))
+    if game.get("placements").size() != 12:
+        push_error("W52 field: valid placements did not reach 12")
+        return false
+    game.call("_select_node", "rifle")
+    var actions: Dictionary = game.call("_get_info_actions", game.call("_resolve_info_context"))
+    if bool(actions["enabled"]) or str(actions["primary"]) != "배치 불가":
+        push_error("W52 field: 13th placement action not disabled")
+        return false
+    game.call("_begin_new_unit_placement", "rifle")
+    if game.get("placements").size() != 12 or str(game.get("placement_mode")) != "NORMAL":
+        push_error("W52 field: 13th unit bypassed guard")
+        return false
+    var one_id := str(game.get("placements")[0]["instance_id"])
+    game.set("phase", "battle")
+    game.call("_select_field_instance", one_id)
+    game.call("_remove_placed_instance", one_id)
+    var first_cell: int = game.get("placements")[0]["col"]
+    start = _field_point(game, Vector2i(first_cell, game.get("placements")[0]["row"]))
+    game.call("_start_field_interaction", start)
+    game.call("_update_field_drag", start + Vector2(20, 0))
+    game.call("_finish_field_interaction", _field_point(game, Vector2i(5, 5)))
+    if game.get("placements").size() != 12 or int(game.get("placements")[0]["col"]) != first_cell:
+        push_error("W52 field: battle phase permitted movement/removal")
+        return false
+    game.call("restore_state", {"week":1, "g":160, "phase":"dialogue", "dialogue":0,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    return true
+
+
 func _check_main_entry() -> bool:
     # The exported game starts at main.tscn, not directly at scenes/game.tscn.
     # Exercise title -> menu -> new game so an old alternate tree cannot slip through.
@@ -404,6 +737,9 @@ func _check_main_entry() -> bool:
             and live.get_node_or_null("TreeClip") != null
             and full_button != null
             and full_button.text == "전체 기술도"
+            and str(live.get("selected_id")) == "hq"
+            and (live.get("info_title") as Label).text == "본부"
+            and (live.get("placements") as Array).is_empty()
         )
     root.remove_child(app)
     app.queue_free()
@@ -431,7 +767,7 @@ func _run() -> void:
         quit(1)
         return
 
-    if not _check_integrated_tree(game) or not _assert_readable_tree(game) or not _check_tree_pan_and_popup(game):
+    if not _check_integrated_tree(game) or not _assert_readable_tree(game) or not _check_tree_pan_and_popup(game) or not _check_field_placement(game) or not _check_action_matrix(game):
         quit(1)
         return
 
@@ -462,9 +798,15 @@ func _run() -> void:
             quit(1)
             return
         game.call("_deploy_selected")
+        if game.get("placements").size() != 0 or str(game.get("placement_mode")) != "PLACE_NEW":
+            push_error("W52 smoke: deploy must wait for battlefield cell")
+            quit(1)
+            return
+        var sz: Vector2i = game.call("_grid_size")
+        game.call("_click_ally", _field_point(game, Vector2i(1, sz.y - 1)))
         var allies: Array = game.get("placements")
-        if allies.is_empty():
-            push_error("W52 smoke: deploy failed")
+        if allies.size() != 1 or str(game.get("placement_mode")) != "NORMAL":
+            push_error("W52 smoke: battlefield placement failed")
             quit(1)
             return
 
@@ -513,41 +855,127 @@ func _run() -> void:
     version2.set_value("session", "phase", "prepare")
     version2.set_value("session", "dialogue", 5)
     version2.set_value("session", "help", 24)
-    version2.set_value("session", "placements", ["guard"])
+    version2.set_value("session", "placements", ["guard", "rifle", "rifle"])
     if version2.save("user://game_save.cfg") != OK:
-        push_error("W52 tech: cannot create v2 fixture")
+        push_error("W52 save: cannot create v2 fixture")
         quit(1)
         return
     var migrated: Dictionary = store.load_game()
-    if int(migrated.get("week", 0)) != 24 or migrated.get("buildings", []).size() != 2:
-        push_error("W52 tech: v2 progression migration failed")
+    var legacy_units: Array = migrated.get("placements", [])
+    if int(migrated.get("week", 0)) != 24 or migrated.get("buildings", []).size() != 2 or legacy_units.size() != 2:
+        push_error("W52 save: v2 migration failed to filter unknown demo unit")
         quit(1)
         return
+    if int(legacy_units[0]["col"]) != 1 or int(legacy_units[1]["col"]) != 2 or int(legacy_units[0]["row"]) != 7:
+        push_error("W52 save: v2 ordered placement conversion mismatch")
+        quit(1)
+        return
+    var version3 := ConfigFile.new()
+    version3.set_value("session", "version", 3)
+    version3.set_value("session", "week", 24)
+    version3.set_value("session", "g", 230)
+    version3.set_value("session", "phase", "battle")
+    version3.set_value("session", "dialogue", 5)
+    version3.set_value("session", "help", 24)
+    version3.set_value("session", "buildings", ["hq", "robot_factory", "walker_factory", "machine_shop"])
+    version3.set_value("session", "placements", ["rifle", "car"])
+    if version3.save("user://game_save.cfg") != OK:
+        push_error("W52 save: cannot create v3 fixture")
+        quit(1)
+        return
+    var migrated3: Dictionary = store.load_game()
+    var v3_units: Array = migrated3.get("placements", [])
+    if v3_units.size() != 2 or str(v3_units[0]["unit_id"]) != "rifle" or str(v3_units[1]["unit_id"]) != "car":
+        push_error("W52 save: v3 unit conversion failed")
+        quit(1)
+        return
+    game.call("restore_state", migrated3)
+    if str(game.get("phase")) != "prepare" or game.get("placements") != v3_units:
+        push_error("W52 save: v3 battle restore did not preserve positions")
+        quit(1)
+        return
+    if not store.save_game(game.call("snapshot")):
+        push_error("W52 save: v3-to-v4 migration could not be saved")
+        quit(1)
+        return
+    var converted: Dictionary = store.load_game()
+    if converted.get("placements", []) != v3_units:
+        push_error("W52 save: v4 round trip lost instance IDs or positions")
+        quit(1)
+        return
+    var version_check := ConfigFile.new()
+    if version_check.load("user://game_save.cfg") != OK or int(version_check.get_value("session", "version", -1)) != 4:
+        push_error("W52 save: output version did not increment to v4")
+        quit(1)
+        return
+    # Preserve a complete week-52 snapshot with the last deployed rifle.
+    game.call("restore_state", {"week":52, "g":230, "phase":"result", "dialogue":5,
+        "help":52, "placements":[{"instance_id":"persist_1", "unit_id":"rifle", "col":1, "row":9}],
+        "buildings":["hq", "robot_factory"]})
     var saved: Dictionary = game.call("snapshot")
     if not store.save_game(saved):
-        push_error("W52 smoke: save failed")
+        push_error("W52 save: v4 save failed")
         quit(1)
         return
     var restored: Dictionary = store.load_game()
-    if int(restored.get("week", 0)) != 52 or int(restored.get("g", -1)) < 0 or not ("robot_factory" in restored.get("buildings", [])):
-        push_error("W52 smoke: restore invalid")
+    if int(restored.get("week", 0)) != 52 or int(restored.get("g", -1)) < 0 or restored.get("placements", []) != saved.get("placements", []):
+        push_error("W52 save: v4 instance restore changed identity or location")
         quit(1)
         return
     var bad: Dictionary = restored.duplicate(true)
     bad["buildings"] = ["hq", "robot_factory", "invalid_building"]
     if store.save_game(bad):
-        push_error("W52 tech: unknown building accepted by save writer")
+        push_error("W52 save: unknown building accepted by writer")
         quit(1)
         return
     bad["buildings"] = ["hq", "robot_factory", "machine_shop"]
     if store.save_game(bad):
-        push_error("W52 tech: orphaned machine shop accepted by save writer")
+        push_error("W52 save: orphaned machine shop accepted")
         quit(1)
         return
     bad["week"] = 1
     bad["buildings"] = ["hq", "robot_factory", "walker_factory"]
     if store.save_game(bad):
-        push_error("W52 tech: future-week building accepted by save writer")
+        push_error("W52 save: future-week building accepted")
+        quit(1)
+        return
+    var one: Dictionary = (restored["placements"] as Array)[0]
+    var another: Dictionary = one.duplicate(true)
+    another["instance_id"] = "different_id"
+    var enemy: Dictionary = one.duplicate(true)
+    enemy["row"] = 0
+    var outside: Dictionary = one.duplicate(true)
+    outside["col"] = 99
+    var unknown: Dictionary = one.duplicate(true)
+    unknown["unit_id"] = "unknown_unit"
+    var wrong_type: Dictionary = one.duplicate(true)
+    wrong_type["col"] = "1"
+    var unapproved_stat: Dictionary = one.duplicate(true)
+    unapproved_stat["hp_current"] = 100
+    var empty_id: Dictionary = one.duplicate(true)
+    empty_id["instance_id"] = "   "
+    for malformed in [[one, one.duplicate(true)], [one, another], [enemy], [outside],
+                    [unknown], [wrong_type], [unapproved_stat], [empty_id], [{"unit_id":"rifle"}]]:
+        bad = restored.duplicate(true)
+        bad["placements"] = malformed
+        if store.save_game(bad):
+            push_error("W52 save: invalid v4 unit schema or cell accepted")
+            quit(1)
+            return
+    bad = restored.duplicate(true)
+    bad["week"] = 1
+    bad["placements"] = [{"instance_id":"x", "unit_id":"bomber", "col":1, "row":5}]
+    if store.save_game(bad):
+        push_error("W52 save: future unit accepted")
+        quit(1)
+        return
+    var corrupted := ConfigFile.new()
+    corrupted.set_value("session", "version", 4)
+    for key in ["week", "g", "phase", "dialogue", "help", "buildings"]:
+        corrupted.set_value("session", key, restored[key])
+    corrupted.set_value("session", "placements", [one, another])
+    if corrupted.save("user://game_save.cfg") != OK or not store.load_game().is_empty():
+        push_error("W52 save: malformed v4 load was silently accepted")
         quit(1)
         return
     if not store.clear_save():
@@ -557,5 +985,5 @@ func _run() -> void:
     if not _check_main_entry():
         quit(1)
         return
-    print("W52_UI_SMOKE_OK: 20 nodes, 24 upgrades, facility prerequisites, 52 battles, save v2/v3, 1920x1080")
+    print("W52_UI_SMOKE_OK: fixed info, HQ default, 20 nodes, 24 upgrades, field placement, 52 battles, save v2/v3/v4, 1920x1080")
     quit(0)
