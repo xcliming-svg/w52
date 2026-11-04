@@ -789,7 +789,7 @@ func _run() -> void:
     var wrong_type: Dictionary = one.duplicate(true)
     wrong_type["col"] = "1"
     for malformed in [[one, one.duplicate(true)], [one, another], [enemy], [outside],
-                      [unknown], [wrong_type], [{"unit_id":"rifle"}]]:
+                    [unknown], [wrong_type], [{"unit_id":"rifle"}]]:
         bad = restored.duplicate(true)
         bad["placements"] = malformed
         if store.save_game(bad):
