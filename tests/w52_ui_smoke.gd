@@ -455,13 +455,13 @@ func _check_action_matrix(game: Control) -> bool:
     for node in nodes:
         var id: String = str(node["id"])
         game.call("_select_node", id)
-        var actions: Dictionary = game.call("_get_info_actions", game.call("_resolve_info_context"))
+        var unlocked_actions: Dictionary = game.call("_get_info_actions", game.call("_resolve_info_context"))
         if str(node["kind"]) == "unit":
-            if str(actions["primary"]) != "배치" or not bool(actions["enabled"]):
+            if str(unlocked_actions["primary"]) != "배치" or not bool(unlocked_actions["enabled"]):
                 push_error("W52 actions: fully unlocked unit should deploy: " + id)
                 return false
         elif str(node["kind"]) != "root":
-            if str(actions["primary"]) != "" or str(actions["secondary"]) != "관련 병종 보기":
+            if str(unlocked_actions["primary"]) != "" or str(unlocked_actions["secondary"]) != "관련 병종 보기":
                 push_error("W52 actions: owned facility still presents construction: " + id)
                 return false
     game.call("_select_node", "rifle")
