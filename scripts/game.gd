@@ -160,7 +160,10 @@ func restore_state(data: Dictionary) -> void:
     placement_mode = "NORMAL"
     pending_unit_type_id = ""
     field_drag_armed = false
+    field_dragging = false
+    field_hover_cell = Vector2i(-1, -1)
     user_selected_context = false
+    info_content_key = ""
     full_tree_view = false
     camera_offset = _clamp_pan(TREE_CENTER_LOCAL - _find_node("hq")["p"])
     camera_target = camera_offset
@@ -319,7 +322,10 @@ func _set_week_intro() -> void:
     placement_mode = "NORMAL"
     pending_unit_type_id = ""
     field_drag_armed = false
+    field_dragging = false
+    field_hover_cell = Vector2i(-1, -1)
     user_selected_context = false
+    info_content_key = ""
     show_related_links = false
     hover_id = ""
     # At the beginning of each week keep the HQ identifiable above the dialogue overlay.
@@ -625,7 +631,7 @@ func _render_info_content(context: Dictionary) -> void:
                 var names: Array[String] = []
                 for related_id in related:
                     names.append(str(_find_node(related_id)["name"]))
-                _add_info_line("연계 병종(별도 주차/시설 조건): " + ", ".join(names), 18)
+                _add_info_line("연계 병종(별도 주차/시설 조건): " + ", ".join(PackedStringArray(names)), 18)
                 if show_related_links:
                     for related_id in related:
                         _add_info_link(related_id, str(_find_node(related_id)["name"]))
@@ -918,11 +924,10 @@ func _gui_input(event: InputEvent) -> void:
         if found != hover_id:
             hover_id = found
             _queue_ui_redraw()
-        if FIELD_RECT.has_point(mouse):
-            var hovered := _field_cell(mouse)
-            if hovered != field_hover_cell:
-                field_hover_cell = hovered
-                _queue_ui_redraw()
+        var hovered := _field_cell(mouse) if FIELD_RECT.has_point(mouse) else Vector2i(-1, -1)
+        if hovered != field_hover_cell:
+            field_hover_cell = hovered
+            _queue_ui_redraw()
     elif event is InputEventMouseButton:
         var click := event as InputEventMouseButton
         if not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
@@ -1045,6 +1050,7 @@ func _instance_at_cell(cell: Vector2i) -> int:
 
 
 func _start_field_interaction(mouse: Vector2) -> void:
+    camera_target = camera_offset # A field drag must never continue an earlier tree focus.
     field_drag_armed = true
     field_dragging = false
     field_drag_start = mouse
@@ -1402,7 +1408,7 @@ func _draw_field() -> void:
         var valid := _instance_at_cell(field_hover_cell) < 0
         draw_rect(Rect2(candidate + Vector2.ONE * 2.0, Vector2.ONE * (GRID_CELL_SIZE - 4.0)),
             UI.GOLD if valid else UI.ENEMY, false, 4.0)
-    elif field_drag_armed and field_dragging and not field_drag_instance_id.is_empty() and _is_ally_cell(field_drag_cell):
+    elif phase in ["dialogue", "prepare"] and field_drag_armed and field_dragging and not field_drag_instance_id.is_empty() and _is_ally_cell(field_drag_cell):
         var destination := start + Vector2(field_drag_cell) * GRID_CELL_SIZE
         var occupant := _instance_at_cell(field_drag_cell)
         var valid := occupant < 0 or str(placements[occupant]["instance_id"]) == field_drag_instance_id
