@@ -430,7 +430,48 @@ func _check_field_placement(game: Control) -> bool:
         return false
     game.call("restore_state", {"week":1, "g":160, "phase":"prepare", "dialogue":5,
         "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
+    # Exercise actual Button.pressed -> pending -> mouse press/release -> selected
+    # instance -> Button.pressed removal before direct model edge-case tests.
     game.call("_select_node", "rifle")
+    var primary: Button = game.get("deploy_button")
+    if primary == null or primary.text != "배치" or primary.disabled:
+        push_error("W52 field: available unit must expose an enabled deploy action")
+        return false
+    primary.emit_signal("pressed")
+    if game.get("placements").size() != 0 or primary.text != "위치 지정 취소":
+        push_error("W52 field: deploy button bypassed pending location selection")
+        return false
+    primary.emit_signal("pressed")
+    if str(game.get("placement_mode")) != "NORMAL" or game.get("placements").size() != 0:
+        push_error("W52 field: cancel button removed or created a unit")
+        return false
+    primary.emit_signal("pressed")
+    var routed_cell := _field_point(game, Vector2i(1, 5))
+    game.call("_gui_input", _mouse_button(true, routed_cell))
+    game.call("_input", _mouse_button(false, routed_cell))
+    if game.get("placements").size() != 1 or primary.text != "배치 취소":
+        push_error("W52 field: root input and action button are not wired end-to-end")
+        return false
+    primary.emit_signal("pressed")
+    if game.get("placements").size() != 0 or str(game.get("selected_instance_id")) != "":
+        push_error("W52 field: individual remove button failed to remove one unit")
+        return false
+    game.call("_select_node", "robot_factory")
+    var secondary: Button = game.get("secondary_button")
+    if secondary == null or secondary.disabled or secondary.text != "관련 병종 보기":
+        push_error("W52 field: owned production facility lacks related-unit link")
+        return false
+    secondary.emit_signal("pressed")
+    var linked := false
+    var content: VBoxContainer = game.get("info_column")
+    for child in content.get_children():
+        if child is Button and (child as Button).text == "소총병":
+            (child as Button).emit_signal("pressed")
+            linked = true
+            break
+    if not linked or str(game.get("selected_id")) != "rifle":
+        push_error("W52 field: related unit link did not focus its tech node")
+        return false
     game.call("_begin_new_unit_placement", "rifle")
     if game.get("placements").size() != 0 or str(game.get("placement_mode")) != "PLACE_NEW":
         push_error("W52 field: deploy button created a unit before selecting a cell")
