@@ -18,7 +18,7 @@ func _mouse_motion(at: Vector2) -> InputEventMouseMotion:
     return event
 
 
-const TREE_NODE_IDS := ["root", "command", "guard", "scout", "mobility", "supply", "drone", "elite"]
+const TREE_NODE_IDS := ["hq","robot_factory","walker_factory","radar","reactor","armory","machine_shop","drone_hangar","rifle","mg","mortar","anti_tank","artillery","car","tank","destroyer","heavy","fighter","attacker","bomber"]
 
 
 func _has_readable_node(game: Control, camera: Vector2) -> bool:
@@ -27,6 +27,8 @@ func _has_readable_node(game: Control, camera: Vector2) -> bool:
     var visible: Rect2 = game.call("_readable_tree_area")
     for id in TREE_NODE_IDS:
         var node: Dictionary = game.call("_find_node", id)
+        if not game.call("_node_visible", node):
+            continue
         var bounds: Rect2 = game.call("_node_visual_rect", node)
         var on_screen := Rect2(bounds.position + camera, bounds.size)
         if visible.encloses(on_screen):
@@ -43,6 +45,7 @@ func _assert_readable_tree(game: Control) -> bool:
 
 
 func _check_tree_pan_and_popup(game: Control) -> bool:
+    game.set("full_tree_view", true)
     # The tree must be a child canvas of a bounded clipping Control.
     var clip := game.get_node_or_null("TreeClip") as Control
     if clip == null or not clip.clip_contents:
@@ -63,10 +66,10 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         push_error("W52 smoke: popup/dialogue overlay layer missing")
         return false
     # The same popup rectangle must position its painted panel and actual Button.
-    game.call("_select_node", "guard")
+    game.call("_select_node", "rifle")
     game.call("_process", 1.0)
     # Selected unit remains centered; other branches can extend offscreen.
-    var guard: Dictionary = game.call("_find_node", "guard")
+    var guard: Dictionary = game.call("_find_node", "rifle")
     var focus_offset: Vector2 = game.get("camera_offset")
     var expected_focus: Vector2 = game.call("_clamp_pan", Vector2(688, 446) - guard["p"])
     if focus_offset.distance_to(expected_focus) > 0.1:
@@ -112,7 +115,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     game.call("_refresh_all")
     for i in range(5):
         game.call("_advance_dialogue")
-    game.call("_select_node", "guard")
+    game.call("_select_node", "rifle")
     game.call("_process", 1.0)
     popup = game.call("_popup_rect")
     if not popup.encloses(Rect2(deploy.position, deploy.size)):
@@ -135,7 +138,7 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         push_error("W52 smoke: background drag did not pan tree")
         return false
     game.call("_input", _mouse_button(false, start + Vector2(96, 82)))
-    if bool(game.get("pan_armed")) or str(game.get("selected_id")) != "guard":
+    if bool(game.get("pan_armed")) or str(game.get("selected_id")) != "rifle":
         push_error("W52 smoke: releasing drag did not end pan cleanly")
         return false
     # Large drags in all four diagonal directions may clip most of the tree,
@@ -198,9 +201,9 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         if not _assert_readable_tree(game):
             return false
     # Edge node focus may clip distant branches, but keeps the selected node centered.
-    game.call("_select_node", "mobility")
+    game.call("_select_node", "bomber")
     game.call("_process", 1.0)
-    var mobility: Dictionary = game.call("_find_node", "mobility")
+    var mobility: Dictionary = game.call("_find_node", "bomber")
     expected_focus = game.call("_clamp_pan", Vector2(688, 446) - mobility["p"])
     focus_offset = game.get("camera_offset")
     if focus_offset.distance_to(expected_focus) > 0.1:
@@ -209,9 +212,9 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if not _assert_readable_tree(game):
         return false
     # A focused center node remains centered even when branches are clipped.
-    game.call("_select_node", "root")
+    game.call("_select_node", "hq")
     game.call("_process", 1.0)
-    var root_node: Dictionary = game.call("_find_node", "root")
+    var root_node: Dictionary = game.call("_find_node", "hq")
     var root_screen: Vector2 = game.call("_node_screen", root_node)
     if root_screen.distance_to(Vector2(688, 530)) > 0.1:
         push_error("W52 smoke: central focus not centered")
@@ -219,22 +222,126 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if not _assert_readable_tree(game):
         return false
     # A short click on a visible node still selects it; dragging that node does not.
-    var command_pos: Vector2 = game.call("_node_screen", game.call("_find_node", "command"))
+    var command_pos: Vector2 = game.call("_node_screen", game.call("_find_node", "robot_factory"))
     game.call("_gui_input", _mouse_button(true, command_pos))
     game.call("_input", _mouse_motion(command_pos + Vector2(3, 0)))
     game.call("_input", _mouse_button(false, command_pos + Vector2(3, 0)))
-    if str(game.get("selected_id")) != "command":
+    if str(game.get("selected_id")) != "robot_factory":
         push_error("W52 smoke: short node click failed after panning")
         return false
-    var scout_pos: Vector2 = game.call("_node_screen", game.call("_find_node", "scout"))
+    var scout_pos: Vector2 = game.call("_node_screen", game.call("_find_node", "armory"))
     game.call("_gui_input", _mouse_button(true, scout_pos))
     game.call("_input", _mouse_motion(scout_pos + Vector2(-45, -22)))
     game.call("_input", _mouse_button(false, scout_pos + Vector2(-45, -22)))
-    if str(game.get("selected_id")) != "command":
+    if str(game.get("selected_id")) != "robot_factory":
         push_error("W52 smoke: dragging a node unexpectedly changed selection")
         return false
     game.call("_set_week_intro")
     game.call("_refresh_all")
+    return true
+
+
+func _check_integrated_tree(game: Control) -> bool:
+    var constants: Dictionary = game.get_script().get_script_constant_map()
+    var nodes: Array = constants.get("NODES", [])
+    var upgrades: Dictionary = constants.get("UPGRADES", {})
+    if nodes.size() != 20 or upgrades.size() != 12:
+        push_error("W52 tech: expected 20 nodes and 12 unit upgrade sets")
+        return false
+    var seen: Dictionary = {}
+    var counts := {"root":0, "production":0, "tech":0, "unit":0}
+    var parents: int = 0
+    for node in nodes:
+        var id: String = str(node["id"])
+        var kind: String = str(node["kind"])
+        if seen.has(id) or not counts.has(kind):
+            push_error("W52 tech: duplicate or unknown node")
+            return false
+        seen[id] = true
+        counts[kind] += 1
+        if str(node["parent"]) != "":
+            parents += 1
+        if kind == "unit":
+            if not upgrades.has(id) or (upgrades[id] as Array).size() != 2:
+                push_error("W52 tech: missing A/B for " + id)
+                return false
+            for req in node["requires"]:
+                var building: Dictionary = game.call("_find_node", str(req))
+                if building.is_empty() or str(building["kind"]) == "unit":
+                    push_error("W52 tech: invalid building prerequisite")
+                    return false
+    if counts != {"root":1, "production":3, "tech":4, "unit":12} or parents != 19:
+        push_error("W52 tech: node shapes or parent count mismatch")
+        return false
+    for node in nodes:
+        var parent := str(node["parent"])
+        if parent != "" and not seen.has(parent):
+            push_error("W52 tech: missing parent " + parent)
+            return false
+    var owned: Array = game.get("owned_buildings")
+    if owned.size() != 2 or "hq" not in owned or "robot_factory" not in owned:
+        push_error("W52 tech: incorrect initial buildings")
+        return false
+    var fighter: Dictionary = game.call("_find_node", "fighter")
+    if game.call("_node_visible", fighter):
+        push_error("W52 tech: hidden child revealed before hangar")
+        return false
+    game.call("_toggle_tree_view")
+    for node in nodes:
+        if not game.call("_node_visible", node):
+            push_error("W52 tech: full tree did not reveal every node")
+            return false
+    game.call("_toggle_tree_view")
+    var g_before: int = game.get("g")
+    game.call("_select_node", "walker_factory")
+    game.call("_build_selected")
+    if "walker_factory" in game.get("owned_buildings"):
+        push_error("W52 tech: walker factory built before W09")
+        return false
+    game.set("week", 9)
+    game.call("_build_selected")
+    if "walker_factory" not in game.get("owned_buildings"):
+        push_error("W52 tech: walker factory did not build instantly at W09")
+        return false
+    game.set("week", 18)
+    game.call("_select_node", "machine_shop")
+    game.call("_build_selected")
+    if "machine_shop" not in game.get("owned_buildings"):
+        push_error("W52 tech: machine shop requirement failed")
+        return false
+    var tank: Dictionary = game.call("_find_node", "tank")
+    if not game.call("_is_node_unlocked", tank):
+        push_error("W52 tech: tank not unlocked by machine shop")
+        return false
+    game.set("week", 21)
+    var artillery: Dictionary = game.call("_find_node", "artillery")
+    if game.call("_is_node_unlocked", artillery):
+        push_error("W52 tech: artillery bypassed shared facilities")
+        return false
+    game.call("_select_node", "armory")
+    game.call("_build_selected")
+    if game.call("_is_node_unlocked", artillery):
+        push_error("W52 tech: artillery bypassed radar requirement")
+        return false
+    game.call("_select_node", "radar")
+    game.call("_build_selected")
+    if not game.call("_is_node_unlocked", artillery):
+        push_error("W52 tech: artillery remained locked after armory + radar")
+        return false
+    game.set("week", 40)
+    game.call("_select_node", "drone_hangar")
+    game.call("_build_selected")
+    game.call("_select_node", "reactor")
+    game.call("_build_selected")
+    var bomber: Dictionary = game.call("_find_node", "bomber")
+    if not game.call("_is_node_unlocked", bomber):
+        push_error("W52 tech: bomber failed hangar + reactor requirements")
+        return false
+    if int(game.get("g")) != g_before:
+        push_error("W52 tech: unapproved building prices changed G")
+        return false
+    game.call("restore_state", {"week":1, "g":g_before, "phase":"dialogue", "dialogue":0,
+        "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
     return true
 
 
@@ -257,10 +364,12 @@ func _run() -> void:
         quit(1)
         return
 
-    if not _assert_readable_tree(game) or not _check_tree_pan_and_popup(game):
+    if not _check_integrated_tree(game) or not _assert_readable_tree(game) or not _check_tree_pan_and_popup(game):
         quit(1)
         return
 
+    game.set("full_tree_view", false)
+    game.call("_refresh_all")
     var battles := 0
     for expected_week in range(1, 53):
         if int(game.get("week")) != expected_week:
@@ -280,8 +389,8 @@ func _run() -> void:
             quit(1)
             return
 
-        game.call("_select_node", "guard")
-        if str(game.get("selected_id")) != "guard":
+        game.call("_select_node", "rifle")
+        if str(game.get("selected_id")) != "rifle":
             push_error("W52 smoke: tree node selection failed")
             quit(1)
             return
@@ -330,16 +439,39 @@ func _run() -> void:
         push_error("W52 smoke: legacy movement-demo save was incorrectly accepted")
         quit(1)
         return
+    var version2 := ConfigFile.new()
+    version2.set_value("session", "version", 2)
+    version2.set_value("session", "week", 24)
+    version2.set_value("session", "g", 230)
+    version2.set_value("session", "phase", "prepare")
+    version2.set_value("session", "dialogue", 5)
+    version2.set_value("session", "help", 24)
+    version2.set_value("session", "placements", ["guard"])
+    if version2.save("user://game_save.cfg") != OK:
+        push_error("W52 tech: cannot create v2 fixture")
+        quit(1)
+        return
+    var migrated: Dictionary = store.load_game()
+    if int(migrated.get("week", 0)) != 24 or migrated.get("buildings", []).size() != 2:
+        push_error("W52 tech: v2 progression migration failed")
+        quit(1)
+        return
     var saved: Dictionary = game.call("snapshot")
     if not store.save_game(saved):
         push_error("W52 smoke: save failed")
         quit(1)
         return
     var restored: Dictionary = store.load_game()
-    if int(restored.get("week", 0)) != 52 or int(restored.get("g", -1)) < 0:
+    if int(restored.get("week", 0)) != 52 or int(restored.get("g", -1)) < 0 or not ("robot_factory" in restored.get("buildings", [])):
         push_error("W52 smoke: restore invalid")
         quit(1)
         return
+    var bad: Dictionary = restored.duplicate(true)
+    bad["buildings"] = ["hq", "robot_factory", "invalid_building"]
+    if store.save_game(bad):
+        push_error("W52 tech: unknown building accepted by save writer")
+        quit(1)
+        return
     store.clear_save()
-    print("W52_UI_SMOKE_OK: 52 battles, dialogues, help gating, deployment, save/restore, 1920x1080")
+    print("W52_UI_SMOKE_OK: 20 nodes, 24 upgrades, facility prerequisites, 52 battles, save v2/v3, 1920x1080")
     quit(0)

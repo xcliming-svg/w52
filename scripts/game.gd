@@ -16,15 +16,42 @@ const POPUP_SIZE := Vector2(390, 274)
 const POPUP_BUTTON_OFFSET := Vector2(205, 194)
 const DIALOGUE_RECT := Rect2(28, 778, 1320, 171)
 const NODES := [
-    {"id":"root", "name":"지휘 본부", "kind":"root", "parent":"", "p":Vector2(670, 744), "week":1, "symbol":"◆", "detail":"전략의 시작 노드입니다."},
-    {"id":"command", "name":"초기 전술", "kind":"branch", "parent":"root", "p":Vector2(670, 612), "week":1, "symbol":"◇", "detail":"기본 지휘 분기입니다."},
-    {"id":"guard", "name":"방패병", "kind":"unit", "parent":"command", "p":Vector2(895, 454), "week":1, "symbol":"■", "detail":"전선 유지에 특화된|아군 전투 유닛입니다."},
-    {"id":"scout", "name":"정찰병", "kind":"unit", "parent":"command", "p":Vector2(430, 454), "week":8, "symbol":"◆", "detail":"전방 이동을 담당하는|아군 전투 유닛입니다."},
-    {"id":"mobility", "name":"기동 전술", "kind":"upgrade", "parent":"scout", "p":Vector2(244, 292), "week":17, "symbol":"↗", "detail":"기동 연구 경로입니다."},
-    {"id":"supply", "name":"보급 체계", "kind":"branch", "parent":"command", "p":Vector2(674, 292), "week":26, "symbol":"◇", "detail":"전력 운용 연구 분기입니다."},
-    {"id":"drone", "name":"포격 드론", "kind":"unit", "parent":"guard", "p":Vector2(1095, 292), "week":29, "symbol":"◎", "detail":"후방 지원을 담당하는|아군 전투 유닛입니다."},
-    {"id":"elite", "name":"전술 분대", "kind":"unit", "parent":"supply", "p":Vector2(841, 133), "week":44, "symbol":"■", "detail":"후반 확장 전투 유닛입니다."}
+    {"id":"hq", "name":"본부", "kind":"root", "parent":"", "p":Vector2(920, 825), "week":1, "requires":[], "symbol":"HQ", "detail":"기술트리의 뿌리"},
+    {"id":"robot_factory", "name":"로봇 공장", "kind":"production", "parent":"hq", "p":Vector2(350, 630), "week":1, "requires":[], "symbol":"R", "detail":"로봇 5종의 생산시설"},
+    {"id":"walker_factory", "name":"워커 공장", "kind":"production", "parent":"hq", "p":Vector2(1050, 630), "week":9, "requires":[], "symbol":"W", "detail":"워커 4종의 생산시설"},
+    {"id":"radar", "name":"레이더 기지", "kind":"tech", "parent":"hq", "p":Vector2(1730, 630), "week":15, "requires":[], "symbol":"T", "detail":"드론 관제·장거리 정밀 조준"},
+    {"id":"reactor", "name":"동력로", "kind":"tech", "parent":"hq", "p":Vector2(2190, 630), "week":32, "requires":[], "symbol":"P", "detail":"중전차·폭격기 고출력 동력"},
+    {"id":"armory", "name":"무기고", "kind":"tech", "parent":"robot_factory", "p":Vector2(490, 405), "week":10, "requires":[], "symbol":"A", "detail":"로켓·포격·공격기 무장 기술"},
+    {"id":"machine_shop", "name":"기계 공작소", "kind":"tech", "parent":"walker_factory", "p":Vector2(1150, 405), "week":18, "requires":[], "symbol":"M", "detail":"고급 차체·워커 플랫폼"},
+    {"id":"drone_hangar", "name":"드론 격납고", "kind":"production", "parent":"radar", "p":Vector2(1820, 405), "week":15, "requires":[], "symbol":"D", "detail":"드론 3종의 생산시설"},
+    {"id":"rifle", "name":"소총병", "kind":"unit", "parent":"robot_factory", "p":Vector2(70, 165), "week":1, "requires":["robot_factory"], "symbol":"1", "detail":"저비용 범용 사격·기본 대공 보조"},
+    {"id":"mg", "name":"기관총병", "kind":"unit", "parent":"robot_factory", "p":Vector2(270, 165), "week":2, "requires":["robot_factory"], "symbol":"2", "detail":"연사와 경량 표적 처리"},
+    {"id":"mortar", "name":"박격포", "kind":"unit", "parent":"robot_factory", "p":Vector2(470, 165), "week":4, "requires":["robot_factory"], "symbol":"3", "detail":"저비용 간접포격"},
+    {"id":"anti_tank", "name":"대전차병", "kind":"unit", "parent":"robot_factory", "p":Vector2(670, 165), "week":10, "requires":["robot_factory","armory"], "symbol":"4", "detail":"저비용 대장갑 특화"},
+    {"id":"artillery", "name":"야포", "kind":"unit", "parent":"robot_factory", "p":Vector2(870, 165), "week":21, "requires":["robot_factory","armory","radar"], "symbol":"5", "detail":"장거리 후열 화력"},
+    {"id":"car", "name":"장갑차", "kind":"unit", "parent":"walker_factory", "p":Vector2(990, 165), "week":9, "requires":["walker_factory"], "symbol":"6", "detail":"경량 워커 전열·빠른 연사"},
+    {"id":"tank", "name":"전차", "kind":"unit", "parent":"walker_factory", "p":Vector2(1180, 165), "week":18, "requires":["walker_factory","machine_shop"], "symbol":"7", "detail":"범용 장갑 전열"},
+    {"id":"destroyer", "name":"구축전차", "kind":"unit", "parent":"walker_factory", "p":Vector2(1370, 165), "week":29, "requires":["walker_factory","machine_shop","radar"], "symbol":"8", "detail":"단일 대전차 플랫폼"},
+    {"id":"heavy", "name":"중전차", "kind":"unit", "parent":"walker_factory", "p":Vector2(1560, 165), "week":36, "requires":["walker_factory","machine_shop","reactor"], "symbol":"9", "detail":"고내구 전열"},
+    {"id":"fighter", "name":"전투기", "kind":"unit", "parent":"drone_hangar", "p":Vector2(1760, 165), "week":15, "requires":["drone_hangar"], "symbol":"F", "detail":"공중 요격"},
+    {"id":"attacker", "name":"공격기", "kind":"unit", "parent":"drone_hangar", "p":Vector2(1960, 165), "week":24, "requires":["drone_hangar","armory"], "symbol":"G", "detail":"지상 지원·범위 공격"},
+    {"id":"bomber", "name":"폭격기", "kind":"unit", "parent":"drone_hangar", "p":Vector2(2160, 165), "week":40, "requires":["drone_hangar","reactor"], "symbol":"B", "detail":"대규모 폭격"}
 ]
+
+const UPGRADES := {
+    "rifle": [["고속 장전","연사 개선"],["대공 추적","공중 대응 개선"]],
+    "mg": [["연사 강화","지속 화력"],["표적 전환","경량 다수 대응"]],
+    "mortar": [["확산 포탄","광역 지원"],["자동 장전","발사 속도"]],
+    "anti_tank": [["관통탄","장갑 피해"],["유도 조준","표적 추적"]],
+    "artillery": [["장포신","사거리"],["고폭 포탄","포격 범위"]],
+    "car": [["추가 장갑","생존력"],["속사 포탑","경량 표적 대응"]],
+    "tank": [["복합 장갑","생존력"],["고폭탄","소형 광역"]],
+    "destroyer": [["관통 포탄","대장갑 화력"],["정밀 조준","표적 추적"]],
+    "heavy": [["강화 장갑","생존력"],["중포탄","일격 피해"]],
+    "fighter": [["요격 레이더","공중 탐지"],["속사 기관포","연사"]],
+    "attacker": [["확산 로켓","광역"],["정밀 유도탄","장갑 대응"]],
+    "bomber": [["확산 폭탄","타격 범위"],["중량 폭탄","일격 피해"]]
+}
 
 var week: int = 1
 var g: int = 160
@@ -34,6 +61,8 @@ var help_index: int = 1
 var selected_id: String = ""
 var hover_id: String = ""
 var placements: Array[String] = []
+var owned_buildings: Array[String] = ["hq", "robot_factory"]
+var full_tree_view: bool = false
 var log_items: Array[String] = []
 var speed: int = 1
 var battle_seconds: float = 0.0
@@ -45,6 +74,7 @@ var pan_start_mouse: Vector2 = Vector2.ZERO
 var pan_start_camera: Vector2 = Vector2.ZERO
 var pan_press_node_id: String = ""
 
+var full_view_button: Button
 var deploy_button: Button
 var battle_button: Button
 var prev_button: Button
@@ -72,19 +102,31 @@ func restore_state(data: Dictionary) -> void:
     var requested: String = str(data.get("phase", "dialogue"))
     phase = requested if requested in ["dialogue", "prepare", "battle", "result"] else "dialogue"
     if phase == "battle":
-        phase = "prepare" # A paused-in-battle snapshot resumes from preparation, not a half simulated fight.
+        phase = "prepare"
     dialogue_index = clampi(int(data.get("dialogue", 0)), 0, DIALOGUE_COUNT)
     help_index = clampi(int(data.get("help", week)), 1, week)
+    owned_buildings = ["hq", "robot_factory"]
+    var stored: Variant = data.get("buildings", [])
+    if stored is Array:
+        # Reconstruct only valid building paths, regardless of serialized order.
+        for pass_index in range(stored.size()):
+            for item in stored:
+                var node := _find_node(str(item))
+                if node.is_empty() or str(node["kind"]) == "unit" or str(item) in owned_buildings:
+                    continue
+                if _has_building(str(node["parent"])):
+                    owned_buildings.append(str(item))
     placements.clear()
     var saved_placements: Variant = data.get("placements", [])
     if saved_placements is Array:
         for item in saved_placements:
             var node := _find_node(str(item))
-            if not node.is_empty() and str(node["kind"]) == "unit" and int(node["week"]) <= week and placements.size() < 12:
+            if not node.is_empty() and str(node["kind"]) == "unit" and _is_node_unlocked(node) and placements.size() < 12:
                 placements.append(str(item))
     if phase == "dialogue" and dialogue_index >= DIALOGUE_COUNT:
         phase = "prepare"
     selected_id = ""
+    full_tree_view = false
     camera_offset = Vector2.ZERO
     camera_target = Vector2.ZERO
     log_items = ["%d주차 전투 준비 중입니다." % week]
@@ -95,8 +137,8 @@ func restore_state(data: Dictionary) -> void:
 
 func snapshot() -> Dictionary:
     return {"week":week, "g":g, "phase":phase, "dialogue":dialogue_index,
-        "help":help_index, "placements":placements.duplicate()}
-
+        "help":help_index, "placements":placements.duplicate(),
+        "buildings":owned_buildings.duplicate()}
 
 func _create_controls() -> void:
     # Only the tree surface is clipped. Panels and interactive Controls remain
@@ -132,11 +174,18 @@ func _create_controls() -> void:
     dialogue_surface.draw.connect(_draw_dialogue_overlay)
     add_child(dialogue_surface)
 
+    full_view_button = UI.make_button("전체 기술도", Vector2(188, 52))
+    full_view_button.position = Vector2(22, 100)
+    full_view_button.size = Vector2(188, 52)
+    full_view_button.add_theme_font_size_override("font_size", 22)
+    full_view_button.pressed.connect(_toggle_tree_view)
+    add_child(full_view_button)
+
     deploy_button = UI.make_button("배치", Vector2(160, 62))
     deploy_button.position = Vector2(-500, -500)
     deploy_button.size = Vector2(160, 62)
     deploy_button.add_theme_font_size_override("font_size", 26)
-    deploy_button.pressed.connect(_deploy_selected)
+    deploy_button.pressed.connect(_action_selected)
     add_child(deploy_button)
 
     prev_button = UI.make_button("〈", Vector2(72, 64))
@@ -209,6 +258,63 @@ func _find_node(id: String) -> Dictionary:
     return {}
 
 
+func _has_building(id: String) -> bool:
+    return id in owned_buildings
+
+
+func _node_visible(node: Dictionary) -> bool:
+    if full_tree_view or _has_building(str(node["id"])):
+        return true
+    return _has_building(str(node["parent"]))
+
+
+func _is_node_unlocked(node: Dictionary) -> bool:
+    if week < int(node["week"]):
+        return false
+    if str(node["kind"]) == "unit":
+        for requirement in node["requires"]:
+            if not _has_building(str(requirement)):
+                return false
+        return true
+    return _has_building(str(node["parent"]))
+
+
+func _node_half_size(node: Dictionary) -> float:
+    match str(node["kind"]):
+        "root":
+            return 52.0
+        "production":
+            return 44.0
+        "tech":
+            return 40.0
+        _:
+            return 36.0
+
+
+func _toggle_tree_view() -> void:
+    full_tree_view = not full_tree_view
+    full_view_button.text = "기본 트리" if full_tree_view else "전체 기술도"
+    if not selected_id.is_empty() and not _node_visible(_find_node(selected_id)):
+        selected_id = ""
+    camera_offset = _clamp_pan(camera_offset)
+    camera_target = camera_offset
+    _refresh_all()
+
+
+func _build_selected() -> void:
+    var node := _find_node(selected_id)
+    if node.is_empty() or str(node["kind"]) == "unit" or str(node["kind"]) == "root":
+        return
+    if phase not in ["dialogue", "prepare"] or not _node_visible(node) or not _is_node_unlocked(node):
+        return
+    var id := str(node["id"])
+    if _has_building(id):
+        return
+    # No approved construction price: this is an instant, zero-cost UI demonstration.
+    owned_buildings.append(id)
+    _append_log("%s 즉시 건설 (비용 미정·시연)" % str(node["name"]))
+    _refresh_all()
+
 func _node_tree_local(node: Dictionary) -> Vector2:
     return node["p"] + camera_offset
 
@@ -219,28 +325,32 @@ func _node_screen(node: Dictionary) -> Vector2:
 
 func _selected_ancestors() -> Array[String]:
     var result: Array[String] = []
-    var current: String = selected_id
-    while not current.is_empty():
-        result.append(current)
-        var node := _find_node(current)
-        if node.is_empty():
-            break
-        current = str(node["parent"])
+    var starts: Array[String] = [selected_id]
+    var selected := _find_node(selected_id)
+    if not selected.is_empty() and str(selected["kind"]) == "unit":
+        for req in selected["requires"]:
+            starts.append(str(req))
+    for start in starts:
+        var current: String = start
+        while not current.is_empty():
+            if current not in result:
+                result.append(current)
+            var node := _find_node(current)
+            if node.is_empty():
+                break
+            current = str(node["parent"])
     return result
 
 
 func _node_visual_rect(node: Dictionary) -> Rect2:
-    # A recognizable unit of the tree is one entire node plus its name label.
-    # Use its largest hover/selection icon size and the measured label width.
+    # Entire shape and measured label, with the single 112% focus scale.
     var p: Vector2 = node["p"]
-    var radius := 38.0 * 1.12
-    var label_width := FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
-    var left := minf(p.x - radius, p.x - 40.0)
-    var right := maxf(p.x + radius, p.x - 40.0 + label_width)
-    var top := p.y - radius
-    var bottom := p.y + radius + 7.0 + 22.0 + FONT.get_descent(22)
-    return Rect2(Vector2(left, top), Vector2(right - left, bottom - top))
-
+    var half: float = _node_half_size(node) * 1.12
+    var label_width: float = FONT.get_string_size(str(node["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
+    var left := minf(p.x - half, p.x - label_width * 0.5)
+    var right := maxf(p.x + half, p.x + label_width * 0.5)
+    var bottom := p.y + half + 7.0 + 22.0 + FONT.get_descent(22)
+    return Rect2(Vector2(left, p.y - half), Vector2(right - left, bottom - (p.y - half)))
 
 func _readable_tree_area() -> Rect2:
     # Avoid counting a node completely hidden by the dialogue overlay.
@@ -257,6 +367,8 @@ func _clamp_pan(candidate: Vector2) -> Vector2:
     var nearest := candidate
     var nearest_distance := INF
     for node in NODES:
+        if not _node_visible(node):
+            continue
         var artwork := _node_visual_rect(node)
         var min_offset := visible.position - artwork.position
         var max_offset := visible.end - artwork.end
@@ -270,7 +382,7 @@ func _clamp_pan(candidate: Vector2) -> Vector2:
 
 func _select_node(id: String) -> void:
     var node := _find_node(id)
-    if node.is_empty():
+    if node.is_empty() or not _node_visible(node):
         return
     selected_id = id
     camera_target = _clamp_pan(TREE_CENTER_LOCAL - node["p"])
@@ -291,6 +403,19 @@ func _popup_rect() -> Rect2:
     return Rect2(Vector2(panel_x, panel_y), POPUP_SIZE)
 
 
+func _upgrade_rect() -> Rect2:
+    if selected_id.is_empty():
+        return Rect2()
+    var node := _find_node(selected_id)
+    if node.is_empty() or str(node["kind"]) != "unit":
+        return Rect2()
+    var panel := _popup_rect()
+    var x := panel.end.x + 12.0
+    if x + 420.0 > TREE_RECT.size.x - 12.0:
+        x = panel.position.x - 432.0
+    return Rect2(Vector2(x, panel.position.y), Vector2(420, 256))
+
+
 func _update_popup() -> void:
     if selected_id.is_empty():
         deploy_button.visible = false
@@ -301,10 +426,23 @@ func _update_popup() -> void:
         return
     var panel := _popup_rect()
     deploy_button.position = panel.position + POPUP_BUTTON_OFFSET
-    deploy_button.visible = str(node["kind"]) == "unit"
-    deploy_button.disabled = int(node["week"]) > week or phase == "battle" or phase == "result"
-    deploy_button.text = "배치" if not deploy_button.disabled else "배치 불가"
+    var kind := str(node["kind"])
+    deploy_button.visible = kind != "root" and (kind == "unit" or not _has_building(str(node["id"])))
+    deploy_button.disabled = phase not in ["dialogue", "prepare"] or not _is_node_unlocked(node)
+    if kind == "unit":
+        deploy_button.text = "배치" if not deploy_button.disabled else "배치 불가"
+    else:
+        deploy_button.text = "시연 건설" if not deploy_button.disabled else "건설 불가"
 
+
+func _action_selected() -> void:
+    var node := _find_node(selected_id)
+    if node.is_empty():
+        return
+    if str(node["kind"]) == "unit":
+        _deploy_selected()
+    else:
+        _build_selected()
 
 func _process(delta: float) -> void:
     if camera_offset.distance_squared_to(camera_target) > 0.5:
@@ -331,13 +469,19 @@ func _node_at(mouse: Vector2) -> String:
         return ""
     if phase == "dialogue" and DIALOGUE_RECT.has_point(mouse):
         return ""
-    if not selected_id.is_empty() and _popup_rect().has_point(mouse):
+    if not selected_id.is_empty():
+        if _popup_rect().has_point(mouse) or _upgrade_rect().has_point(mouse):
+            return ""
+    if Rect2(Vector2(22, 100), Vector2(188, 52)).has_point(mouse):
         return ""
     for node in NODES:
-        if _node_screen(node).distance_to(mouse) <= 49.0:
+        if not _node_visible(node):
+            continue
+        var half: float = _node_half_size(node) * 1.12
+        var center := _node_screen(node)
+        if Rect2(center - Vector2.ONE * half, Vector2.ONE * half * 2.0).has_point(mouse):
             return str(node["id"])
     return ""
-
 
 func _start_pan(mouse: Vector2) -> void:
     pan_armed = true
@@ -413,7 +557,9 @@ func _gui_input(event: InputEvent) -> void:
             _advance_dialogue()
             return
         if TREE_RECT.has_point(click.position):
-            if not selected_id.is_empty() and _popup_rect().has_point(click.position):
+            if not selected_id.is_empty() and (_popup_rect().has_point(click.position) or _upgrade_rect().has_point(click.position)):
+                return
+            if Rect2(Vector2(22, 100), Vector2(188, 52)).has_point(click.position):
                 return
             _start_pan(click.position)
         elif Rect2(1376, 84, 544, 652).has_point(click.position):
@@ -425,7 +571,7 @@ func _advance_dialogue() -> void:
         return
     dialogue_index += 1
     if dialogue_index == 3:
-        _select_node("guard") # Dialogue completion can select/focus tree nodes.
+        _select_node("rifle") # First unit on the integrated tree.
     elif dialogue_index >= DIALOGUE_COUNT:
         phase = "prepare"
     _refresh_all()
@@ -436,7 +582,7 @@ func _dialogue_content() -> Array[String]:
         return [
             "52주 동안 주마다 한 차례 전투를 준비합니다.",
             "왼쪽의 노드에서 사용할 전략을 살펴보세요.",
-            "방패병 경로가 선택되었습니다.",
+            "소총병 경로가 선택되었습니다.",
             "유닛 정보를 열고 배치 버튼을 사용하세요.",
             "물자 G와 배치를 확인한 뒤 전투를 시작하세요."
         ]
@@ -463,7 +609,7 @@ func _deploy_selected() -> void:
     if phase == "battle" or phase == "result":
         return
     var node := _find_node(selected_id)
-    if node.is_empty() or str(node["kind"]) != "unit" or int(node["week"]) > week:
+    if node.is_empty() or str(node["kind"]) != "unit" or not _is_node_unlocked(node) or phase not in ["dialogue", "prepare"]:
         return
     if placements.size() >= 12:
         _append_log("현재 시연 배치 슬롯이 가득 찼습니다.")
@@ -550,6 +696,7 @@ func _scroll_log_to_end() -> void:
 
 
 func _refresh_all() -> void:
+    full_view_button.text = "기본 트리" if full_tree_view else "전체 기술도"
     prev_button.disabled = help_index <= 1
     next_button.disabled = help_index >= week
     speed_one.button_pressed = speed == 1
@@ -651,44 +798,72 @@ func _help_text() -> String:
 
 
 func _draw_tree() -> void:
-    # Local coordinates, rendered exclusively inside TreeClip.clip_contents.
+    # Only the 20 structural nodes render here. The 24 upgrades are drawn
+    # in the independent _draw_popup detail panel, never on the tree.
     var path := _selected_ancestors()
     for node in NODES:
+        if not _node_visible(node):
+            continue
         var parent_id := str(node["parent"])
         if parent_id.is_empty():
             continue
         var parent := _find_node(parent_id)
+        if not _node_visible(parent):
+            continue
         var a := _node_tree_local(parent)
         var b := _node_tree_local(node)
         var middle_y := (a.y + b.y) * 0.5
         var highlight := str(node["id"]) in path and parent_id in path
-        var tint := UI.TEAL if highlight else UI.TREE_LINE
-        tree_canvas.draw_polyline(PackedVector2Array([a - Vector2(0, 35), Vector2(a.x, middle_y),
-            Vector2(b.x, middle_y), b + Vector2(0, 35)]), tint, 5.0 if highlight else 3.5, true)
+        var owned := _has_building(str(node["id"]))
+        var tint: Color = UI.TEAL if highlight or owned else (UI.TREE_LINE if _is_node_unlocked(node) else UI.TREE_LINE.darkened(0.4))
+        tree_canvas.draw_polyline(PackedVector2Array([
+            a - Vector2(0, _node_half_size(parent)),
+            Vector2(a.x, middle_y),
+            Vector2(b.x, middle_y),
+            b + Vector2(0, _node_half_size(node))]), tint, 5.0 if highlight else 3.5, true)
     for node in NODES:
+        if not _node_visible(node):
+            continue
         var p := _node_tree_local(node)
-        if p.y < -100 or p.y > TREE_RECT.size.y + 100 or p.x < -100 or p.x > TREE_RECT.size.x + 100:
+        if p.y < -120 or p.y > TREE_RECT.size.y + 120 or p.x < -120 or p.x > TREE_RECT.size.x + 120:
             continue
         var id := str(node["id"])
-        var locked := int(node["week"]) > week
+        var unlocked := _is_node_unlocked(node)
         var focused := id == selected_id
         var hovered := id == hover_id
-        var radius := 38.0 * (1.12 if focused or hovered else 1.0)
+        var half: float = _node_half_size(node) * (1.12 if focused or hovered else 1.0)
         var kind := str(node["kind"])
-        var fill := UI.LOCKED if locked else UI.NODE_FILL
-        var border := UI.TREE_LINE if locked else (UI.GOLD if focused else UI.TEAL)
-        if kind == "branch":
-            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), fill)
-            tree_canvas.draw_rect(Rect2(p - Vector2.ONE * radius * 0.75, Vector2.ONE * radius * 1.5), border, false, 3.0)
-        elif kind == "root":
-            tree_canvas.draw_colored_polygon(PackedVector2Array([p+Vector2(0,-radius),p+Vector2(radius,0),
-                p+Vector2(0,radius),p+Vector2(-radius,0)]), fill)
+        var fill: Color = UI.NODE_FILL if unlocked or _has_building(id) else UI.LOCKED
+        var border: Color = UI.GOLD if focused else (UI.TEAL if unlocked or _has_building(id) else UI.TREE_LINE)
+        if kind == "root":
+            var hex := PackedVector2Array([
+                p + Vector2(-half, 0), p + Vector2(-half * 0.5, -half * 0.866),
+                p + Vector2(half * 0.5, -half * 0.866), p + Vector2(half, 0),
+                p + Vector2(half * 0.5, half * 0.866), p + Vector2(-half * 0.5, half * 0.866)])
+            tree_canvas.draw_colored_polygon(hex, fill)
+            hex.append(hex[0])
+            tree_canvas.draw_polyline(hex, border, 4.0, true)
+        elif kind == "production":
+            var square := Rect2(p - Vector2.ONE * half, Vector2.ONE * half * 2.0)
+            tree_canvas.draw_rect(square, fill)
+            tree_canvas.draw_rect(square, border, false, 4.0)
+        elif kind == "tech":
+            var diamond := PackedVector2Array([
+                p + Vector2(0, -half), p + Vector2(half, 0),
+                p + Vector2(0, half), p + Vector2(-half, 0)])
+            tree_canvas.draw_colored_polygon(diamond, fill)
+            diamond.append(diamond[0])
+            tree_canvas.draw_polyline(diamond, border, 4.0, true)
         else:
-            tree_canvas.draw_circle(p, radius, fill)
-            tree_canvas.draw_arc(p, radius, 0.0, TAU, 48, border, 4.0, true)
+            tree_canvas.draw_circle(p, half, fill)
+            tree_canvas.draw_arc(p, half, 0.0, TAU, 48, border, 4.0, true)
         var symbol: String = str(node["symbol"])
-        _layer_text(tree_canvas, symbol, p + Vector2(-13, -22), 31, border)
-        _layer_text(tree_canvas, str(node["name"]), p + Vector2(-40, radius + 7), 22, UI.MUTED if locked else UI.TEXT)
+        var symbol_width: float = FONT.get_string_size(symbol, HORIZONTAL_ALIGNMENT_LEFT, -1, 26).x
+        _layer_text(tree_canvas, symbol, p + Vector2(-symbol_width * 0.5, -17), 26, border)
+        var name: String = str(node["name"])
+        var label_width: float = FONT.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
+        _layer_text(tree_canvas, name, p + Vector2(-label_width * 0.5, half + 7.0), 22,
+            UI.TEXT if unlocked or _has_building(id) else UI.MUTED)
 
 
 func _draw_popup() -> void:
@@ -699,11 +874,50 @@ func _draw_popup() -> void:
         return
     var panel := _popup_rect()
     _layer_box(popup_surface, panel, UI.PANEL, UI.TEAL)
-    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(25, 20), 32)
-    var details := str(node["detail"]).split("|")
-    for i in range(details.size()):
-        _layer_text(popup_surface, str(details[i]), panel.position + Vector2(25, 75 + i * 37), 25, UI.MUTED)
+    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(24, 15), 30)
+    var status := "보유" if _has_building(selected_id) else ("조건 충족" if _is_node_unlocked(node) else "잠금")
+    if str(node["kind"]) == "unit":
+        status = "배치 가능" if _is_node_unlocked(node) else "배치 잠금"
+    _layer_text(popup_surface, "최소 W%02d · %s (후보)" % [int(node["week"]), status],
+        panel.position + Vector2(24, 64), 20, UI.GOLD)
+    if str(node["kind"]) == "unit":
+        var requirements: Array[String] = []
+        for req in node["requires"]:
+            var required_node := _find_node(str(req))
+            var mark := "보유" if _has_building(str(req)) else "미보유"
+            requirements.append("%s(%s)" % [str(required_node["name"]), mark])
+        _layer_text(popup_surface, "필수: " + " · ".join(requirements),
+            panel.position + Vector2(24, 101), 18, UI.MUTED)
+        _layer_text(popup_surface, str(node["detail"]), panel.position + Vector2(24, 143), 21, UI.TEXT)
+        _draw_upgrade_panel()
+    else:
+        var parent := _find_node(str(node["parent"]))
+        if not parent.is_empty():
+            _layer_text(popup_surface, "선행: %s (%s)" % [
+                str(parent["name"]), "보유" if _has_building(str(parent["id"])) else "미보유"],
+                panel.position + Vector2(24, 101), 21, UI.MUTED)
+        _layer_text(popup_surface, str(node["detail"]), panel.position + Vector2(24, 138), 21, UI.TEXT)
+        if str(node["kind"]) != "root":
+            _layer_text(popup_surface, "즉시 완공 · 건설 비용 미정(시연)",
+                panel.position + Vector2(24, 173), 18, UI.GOLD)
 
+
+func _draw_upgrade_panel() -> void:
+    var content: Array = UPGRADES.get(selected_id, [])
+    if content.size() != 2:
+        return
+    var panel := _upgrade_rect()
+    _layer_box(popup_surface, panel, UI.PANEL, UI.GOLD)
+    _layer_text(popup_surface, "고유 강화 · 조회 전용", panel.position + Vector2(18, 12), 24, UI.GOLD)
+    for i in range(2):
+        var pair: Array = content[i]
+        var y: float = 62.0 + i * 78.0
+        _layer_text(popup_surface, "%s  %s" % ["A" if i == 0 else "B", str(pair[0])],
+            panel.position + Vector2(22, y), 23, UI.TEXT)
+        _layer_text(popup_surface, str(pair[1]) + " (제안)",
+            panel.position + Vector2(52, y + 30), 19, UI.MUTED)
+    _layer_text(popup_surface, "비용·구매·전투 효과 미확정",
+        panel.position + Vector2(20, 222), 18, UI.GOLD)
 
 func _draw_field() -> void:
     var sz := _grid_size()
