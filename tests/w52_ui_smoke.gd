@@ -286,16 +286,44 @@ func _check_integrated_tree(game: Control) -> bool:
     if owned.size() != 2 or "hq" not in owned or "robot_factory" not in owned:
         push_error("W52 tech: incorrect initial buildings")
         return false
+    if bool(game.get("full_tree_view")):
+        push_error("W52 tech: default view must preview only the next step")
+        return false
+    # Verify the first visible frame shows the new HQ above the dialogue mask.
+    var hq: Dictionary = game.call("_find_node", "hq")
+    var hq_bounds: Rect2 = game.call("_node_visual_rect", hq)
+    var viewport: Rect2 = game.call("_readable_tree_area")
+    var hq_camera: Vector2 = game.get("camera_offset")
+    if not viewport.encloses(Rect2(hq_bounds.position + hq_camera, hq_bounds.size)):
+        push_error("W52 tech: HQ is hidden by dialogue on the initial camera")
+        return false
+    for node in nodes:
+        var node_id: String = str(node["id"])
+        var parent_id: String = str(node["parent"])
+        var expected_visible: bool = node_id in owned or parent_id in owned
+        if bool(game.call("_node_visible", node)) != expected_visible:
+            push_error("W52 tech: default one-level reveal differs for %s" % node_id)
+            return false
     var fighter: Dictionary = game.call("_find_node", "fighter")
     if game.call("_node_visible", fighter):
         push_error("W52 tech: hidden child revealed before hangar")
         return false
-    game.call("_toggle_tree_view")
+    var view_button: Button = game.get("full_view_button") as Button
+    if view_button == null or view_button.text != "전체 기술도":
+        push_error("W52 tech: missing discoverable full-tree button")
+        return false
+    view_button.emit_signal("pressed")
+    if not bool(game.get("full_tree_view")) or view_button.text != "기본 트리":
+        push_error("W52 tech: full-tree button did not enter overview mode")
+        return false
     for node in nodes:
         if not game.call("_node_visible", node):
             push_error("W52 tech: full tree did not reveal every node")
             return false
-    game.call("_toggle_tree_view")
+    view_button.emit_signal("pressed")
+    if bool(game.get("full_tree_view")) or view_button.text != "전체 기술도":
+        push_error("W52 tech: full-tree button did not return to default")
+        return false
     var g_before: int = game.get("g")
     game.call("_select_node", "walker_factory")
     game.call("_build_selected")
@@ -347,6 +375,37 @@ func _check_integrated_tree(game: Control) -> bool:
     game.call("restore_state", {"week":1, "g":g_before, "phase":"dialogue", "dialogue":0,
         "help":1, "placements":[], "buildings":["hq", "robot_factory"]})
     return true
+
+
+
+
+func _check_main_entry() -> bool:
+    # The exported game starts at main.tscn, not directly at scenes/game.tscn.
+    # Exercise title -> menu -> new game so an old alternate tree cannot slip through.
+    var entry_scene: PackedScene = load("res://main.tscn")
+    if entry_scene == null:
+        push_error("W52 tech: missing exported entry scene")
+        return false
+    var app: Control = entry_scene.instantiate() as Control
+    if app == null:
+        push_error("W52 tech: root entry scene is not a Control")
+        return false
+    root.add_child(app)
+    app.call("_show_main_menu")
+    app.call("_start_new_game")
+    var live: Control = app.get("game_scene") as Control
+    var valid: bool = live != null
+    if valid:
+        var live_nodes: Array = live.get_script().get_script_constant_map().get("NODES", [])
+        var full_button: Button = live.get("full_view_button") as Button
+        valid = live.get_parent() == app and live_nodes.size() == 20 and \
+            live.get_node_or_null("TreeClip") != null and \
+            full_button != null and full_button.text == "전체 기술도"
+    root.remove_child(app)
+    app.queue_free()
+    if not valid:
+        push_error("W52 tech: main menu opens an outdated or incomplete game tree")
+    return valid
 
 
 func _run() -> void:
@@ -487,6 +546,12 @@ func _run() -> void:
         push_error("W52 tech: future-week building accepted by save writer")
         quit(1)
         return
-    store.clear_save()
+    if not store.clear_save():
+        push_error("W52 tech: could not clean up test save")
+        quit(1)
+        return
+    if not _check_main_entry():
+        quit(1)
+        return
     print("W52_UI_SMOKE_OK: 20 nodes, 24 upgrades, facility prerequisites, 52 battles, save v2/v3, 1920x1080")
     quit(0)
