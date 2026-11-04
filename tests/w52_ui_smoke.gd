@@ -398,9 +398,13 @@ func _check_main_entry() -> bool:
     if valid:
         var live_nodes: Array = live.get_script().get_script_constant_map().get("NODES", [])
         var full_button: Button = live.get("full_view_button") as Button
-        valid = live.get_parent() == app and live_nodes.size() == 20 and \
-            live.get_node_or_null("TreeClip") != null and \
-            full_button != null and full_button.text == "전체 기술도"
+        valid = (
+            live.get_parent() == app
+            and live_nodes.size() == 20
+            and live.get_node_or_null("TreeClip") != null
+            and full_button != null
+            and full_button.text == "전체 기술도"
+        )
     root.remove_child(app)
     app.queue_free()
     if not valid:
