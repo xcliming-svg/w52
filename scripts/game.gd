@@ -560,6 +560,8 @@ func _get_info_actions(context: Dictionary) -> Dictionary:
     var missing := _missing_requirement(node)
     if not missing.is_empty():
         actions["secondary"] = "필요 시설 찾기"
+    elif str(node["kind"]) != "unit" and not _related_unit_ids(str(node["id"])).is_empty():
+        actions["secondary"] = "관련 병종 보기"
     if not ready:
         actions["reason"] = "전투/결과 단계에서는 변경할 수 없습니다."
     elif week < int(node["week"]):
