@@ -127,8 +127,8 @@ func restore_state(data: Dictionary) -> void:
         phase = "prepare"
     selected_id = ""
     full_tree_view = false
-    camera_offset = Vector2.ZERO
-    camera_target = Vector2.ZERO
+    camera_offset = _clamp_pan(TREE_CENTER_LOCAL - _find_node("hq")["p"])
+    camera_target = camera_offset
     log_items = ["%d주차 전투 준비 중입니다." % week]
     for id in placements:
         log_items.append("%s 배치됨" % str(_find_node(id)["name"]))
@@ -243,8 +243,9 @@ func _set_week_intro() -> void:
     placements.clear()
     selected_id = ""
     hover_id = ""
-    camera_target = Vector2.ZERO
-    camera_offset = Vector2.ZERO
+    # At the beginning of each week keep the HQ identifiable above the dialogue overlay.
+    camera_offset = _clamp_pan(TREE_CENTER_LOCAL - _find_node("hq")["p"])
+    camera_target = camera_offset
     pan_armed = false
     pan_dragging = false
     battle_seconds = 0.0
@@ -790,7 +791,7 @@ func _group_digits(value: int) -> String:
 
 func _help_text() -> String:
     if help_index == 1:
-        return "노드를 선택하고 유닛을 배치하세요."
+        return "본부에서 위로 확장합니다. 전체 기술도로 20노드를 확인하세요."
     if help_index == 18:
         return "아군을 클릭하면 연결된 트리 노드로 포커스됩니다."
     if help_index == 35:
