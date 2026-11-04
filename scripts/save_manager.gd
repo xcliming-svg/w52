@@ -61,6 +61,8 @@ func _valid_placements(items: Variant, at_week: int, buildings: Array) -> bool:
         if not (raw is Dictionary):
             return false
         var entry: Dictionary = raw
+        if entry.size() != 4:
+            return false
         for key in ["instance_id", "unit_id", "col", "row"]:
             if not entry.has(key):
                 return false
@@ -108,8 +110,8 @@ func load_game() -> Dictionary:
     var stored_g: Variant = config.get_value("session", "g", null)
     if not (at_week is int) or not (stored_g is int):
         return {}
-    var week: int = at_week
-    var g: int = stored_g
+    var week: int = int(at_week)
+    var g: int = int(stored_g)
     if week < 1 or week > MAX_WEEK or g < 0 or g > 1000000000:
         return {}
     var phase: String = str(config.get_value("session", "phase", "dialogue"))
