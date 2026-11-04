@@ -1293,7 +1293,7 @@ func _help_text() -> String:
     if help_index == 1:
         return "본부에서 위로 확장합니다. 전체 기술도로 20노드를 확인하세요."
     if help_index == 18:
-        return "아군을 클릭하면 연결된 트리 노드로 포커스됩니다."
+        return "아군을 클릭해 개별 정보를 보고, 준비 중 드래그로 이동하세요."
     if help_index == 35:
         return "전투 속도는 1× 또는 2×로 변경할 수 있습니다."
     if help_index == 52:
@@ -1333,7 +1333,7 @@ func _draw_tree() -> void:
             continue
         var id := str(node["id"])
         var unlocked := _is_node_unlocked(node)
-        var focused := id == selected_id
+        var focused := id == _active_tree_node_id()
         var hovered := id == hover_id
         var half: float = _node_half_size(node) * (1.12 if focused or hovered else 1.0)
         var kind := str(node["kind"])
@@ -1370,81 +1370,44 @@ func _draw_tree() -> void:
             UI.TEXT if unlocked or _has_building(id) else UI.MUTED)
 
 
-func _draw_popup() -> void:
-    if selected_id.is_empty():
-        return
-    var node := _find_node(selected_id)
-    if node.is_empty():
-        return
-    var panel := _popup_rect()
-    _layer_box(popup_surface, panel, UI.PANEL, UI.TEAL)
-    _layer_text(popup_surface, str(node["name"]), panel.position + Vector2(24, 15), 30)
-    var status := "보유" if _has_building(selected_id) else ("조건 충족" if _is_node_unlocked(node) else "잠금")
-    if str(node["kind"]) == "unit":
-        status = "배치 가능" if _is_node_unlocked(node) else "배치 잠금"
-    _layer_text(popup_surface, "최소 W%02d · %s (후보)" % [int(node["week"]), status],
-        panel.position + Vector2(24, 64), 20, UI.GOLD)
-    if str(node["kind"]) == "unit":
-        _layer_text(popup_surface, "필수 시설", panel.position + Vector2(24, 91), 18, UI.GOLD)
-        for i in range(node["requires"].size()):
-            var req_id: String = str(node["requires"][i])
-            var required_node := _find_node(req_id)
-            var mark := "보유" if _has_building(req_id) else "미보유"
-            _layer_text(popup_surface, "• %s [%s]" % [str(required_node["name"]), mark],
-                panel.position + Vector2(24, 118 + i * 23), 19, UI.TEXT if _has_building(req_id) else UI.MUTED)
-        _draw_upgrade_panel()
-    else:
-        var parent := _find_node(str(node["parent"]))
-        if not parent.is_empty():
-            _layer_text(popup_surface, "선행: %s (%s)" % [
-                str(parent["name"]), "보유" if _has_building(str(parent["id"])) else "미보유"],
-                panel.position + Vector2(24, 101), 21, UI.MUTED)
-        _layer_text(popup_surface, str(node["detail"]), panel.position + Vector2(24, 138), 21, UI.TEXT)
-        if str(node["kind"]) != "root":
-            _layer_text(popup_surface, "즉시 완공 · 건설 비용 미정(시연)",
-                panel.position + Vector2(24, 173), 18, UI.GOLD)
-
-
-func _draw_upgrade_panel() -> void:
-    var content: Array = UPGRADES.get(selected_id, [])
-    if content.size() != 2:
-        return
-    var panel := _upgrade_rect()
-    _layer_box(popup_surface, panel, UI.PANEL, UI.GOLD)
-    _layer_text(popup_surface, "고유 강화 · 조회 전용", panel.position + Vector2(18, 12), 24, UI.GOLD)
-    _layer_text(popup_surface, str(_find_node(selected_id)["detail"]), panel.position + Vector2(20, 44), 18, UI.MUTED)
-    for i in range(2):
-        var pair: Array = content[i]
-        var y: float = 70.0 + i * 72.0
-        _layer_text(popup_surface, "%s  %s" % ["A" if i == 0 else "B", str(pair[0])],
-            panel.position + Vector2(22, y), 23, UI.TEXT)
-        _layer_text(popup_surface, str(pair[1]) + " (제안)",
-            panel.position + Vector2(52, y + 30), 19, UI.MUTED)
-    _layer_text(popup_surface, "비용·구매·전투 효과 미확정",
-        panel.position + Vector2(20, 222), 18, UI.GOLD)
-
 func _draw_field() -> void:
     var sz := _grid_size()
     var cols: int = sz.x
     var rows: int = sz.y
-    var start := Vector2(1376 + (544 - cols * 46) * 0.5, 84 + (652 - rows * 46) * 0.5)
+    var start := _grid_origin()
     for r in range(rows):
         for c in range(cols):
-            var pos := start + Vector2(c * 46, r * 46)
-            _box(Rect2(pos, Vector2(46, 46)), UI.ENEMY_CELL if r < rows / 2 else UI.ALLY_CELL, UI.GRID_BORDER)
-    var mid_y: float = start.y + float(rows / 2) * 46.0
-    draw_line(Vector2(start.x, mid_y), Vector2(start.x + cols * 46, mid_y), UI.TEXT, 2.0)
+            var pos := start + Vector2(c, r) * GRID_CELL_SIZE
+            var cell := Vector2i(c, r)
+            var fill: Color = UI.ENEMY_CELL if r < int(rows / 2) else UI.ALLY_CELL
+            _box(Rect2(pos, Vector2.ONE * GRID_CELL_SIZE), fill, UI.GRID_BORDER)
+            if placement_mode == "PLACE_NEW" and _is_ally_cell(cell) and _instance_at_cell(cell) < 0:
+                draw_rect(Rect2(pos + Vector2.ONE * 3.0, Vector2.ONE * (GRID_CELL_SIZE - 6.0)),
+                    UI.TEAL, false, 2.0)
+    var mid_y: float = start.y + float(rows / 2) * GRID_CELL_SIZE
+    draw_line(Vector2(start.x, mid_y), Vector2(start.x + cols * GRID_CELL_SIZE, mid_y), UI.TEXT, 2.0)
     for i in range(3):
-        var enemy_p := start + Vector2((1 + i * 2) * 46 + 8, (0 if i < 2 else 1) * 46 + 8)
+        var enemy_p := start + Vector2((1 + i * 2) * GRID_CELL_SIZE + 8, (0 if i < 2 else 1) * GRID_CELL_SIZE + 8)
         draw_rect(Rect2(enemy_p, Vector2(30, 30)), UI.ENEMY)
         _text("×", enemy_p + Vector2(6, -4), 28)
-    for i in range(placements.size()):
-        var col: int = 1 + i % (cols - 2)
-        var row: int = rows - 1 - int(i / (cols - 2))
-        var ally_p := start + Vector2(col * 46 + 8, row * 46 + 8)
+    for entry in placements:
+        var cell := Vector2i(int(entry["col"]), int(entry["row"]))
+        var ally_p := start + Vector2(cell) * GRID_CELL_SIZE + Vector2(8, 8)
         draw_rect(Rect2(ally_p, Vector2(30, 30)), UI.TEAL)
         _text("■", ally_p + Vector2(3, -2), 25, UI.BACKGROUND)
-
+        if str(entry["instance_id"]) == selected_instance_id:
+            draw_rect(Rect2(ally_p - Vector2.ONE * 5.0, Vector2(40, 40)), UI.GOLD, false, 3.0)
+    if placement_mode == "PLACE_NEW" and _is_ally_cell(field_hover_cell):
+        var candidate := start + Vector2(field_hover_cell) * GRID_CELL_SIZE
+        var valid := _instance_at_cell(field_hover_cell) < 0
+        draw_rect(Rect2(candidate + Vector2.ONE * 2.0, Vector2.ONE * (GRID_CELL_SIZE - 4.0)),
+            UI.GOLD if valid else UI.ENEMY, false, 4.0)
+    elif field_drag_armed and field_dragging and not field_drag_instance_id.is_empty() and _is_ally_cell(field_drag_cell):
+        var destination := start + Vector2(field_drag_cell) * GRID_CELL_SIZE
+        var occupant := _instance_at_cell(field_drag_cell)
+        var valid := occupant < 0 or str(placements[occupant]["instance_id"]) == field_drag_instance_id
+        draw_rect(Rect2(destination + Vector2.ONE * 2.0, Vector2.ONE * (GRID_CELL_SIZE - 4.0)),
+            UI.GOLD if valid else UI.ENEMY, false, 4.0)
 
 func _draw_dialogue_overlay() -> void:
     if phase != "dialogue":
