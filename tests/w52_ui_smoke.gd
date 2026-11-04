@@ -430,6 +430,10 @@ func _check_field_placement(game: Control) -> bool:
     if game.get("placements").size() != 0 or str(game.get("placement_mode")) != "PLACE_NEW":
         push_error("W52 field: deploy button created a unit before selecting a cell")
         return false
+    game.call("_begin_new_unit_placement", "rifle")
+    if game.get("placements").size() != 0 or str(game.get("placement_mode")) != "PLACE_NEW":
+        push_error("W52 field: duplicate placement request mutated pending state")
+        return false
     game.call("_click_ally", _field_point(game, Vector2i(1, 0)))
     if game.get("placements").size() != 0 or str(game.get("placement_mode")) != "PLACE_NEW":
         push_error("W52 field: enemy cell was accepted or pending mode lost")
@@ -496,6 +500,15 @@ func _check_field_placement(game: Control) -> bool:
     if int(units[0]["col"]) != 3 or str(units[0]["instance_id"]) != first_id or units.size() != 2:
         push_error("W52 field: drag must preserve identity and count")
         return false
+    var moved_start := _field_point(game, Vector2i(3, 5))
+    for illegal_drop in [_field_point(game, Vector2i(3, 0)), Vector2(1300, 100)]:
+        game.call("_start_field_interaction", moved_start)
+        game.call("_update_field_drag", moved_start + Vector2(15, 0))
+        game.call("_finish_field_interaction", illegal_drop)
+        units = game.get("placements")
+        if units.size() != 2 or int(units[0]["col"]) != 3 or int(units[0]["row"]) != 5:
+            push_error("W52 field: illegal drop changed unit count or position")
+            return false
     game.call("_remove_placed_instance", first_id)
     units = game.get("placements")
     if units.size() != 1 or str(units[0]["instance_id"]) != other_id:
@@ -788,8 +801,10 @@ func _run() -> void:
     unknown["unit_id"] = "unknown_unit"
     var wrong_type: Dictionary = one.duplicate(true)
     wrong_type["col"] = "1"
+    var unapproved_stat: Dictionary = one.duplicate(true)
+    unapproved_stat["hp_current"] = 100
     for malformed in [[one, one.duplicate(true)], [one, another], [enemy], [outside],
-                    [unknown], [wrong_type], [{"unit_id":"rifle"}]]:
+                    [unknown], [wrong_type], [unapproved_stat], [{"unit_id":"rifle"}]]:
         bad = restored.duplicate(true)
         bad["placements"] = malformed
         if store.save_game(bad):
