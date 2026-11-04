@@ -85,10 +85,28 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         if not _has_readable_node(game, camera_during_dialogue):
             push_error("W52 smoke: dialogue covered all identifiable nodes at drag limit")
             return false
-    var popup: Rect2 = game.call("_popup_rect")
+    var popup: Rect2 = game.call("_info_panel_rect")
+    var panel: Control = game.get_node_or_null("NodeInfoLayer") as Control
     var deploy: Button = game.get("deploy_button")
-    if deploy.size != Vector2(160, 62) or deploy.custom_minimum_size != Vector2(160, 62):
-        push_error("W52 smoke: deploy control inherited menu button dimensions")
+    var scroll: ScrollContainer = game.get("info_scroll")
+    var secondary: Button = game.get("secondary_button")
+    if popup != Rect2(930, 170, 420, 560) or panel == null or panel.position != popup.position or panel.size != popup.size:
+        push_error("W52 smoke: fixed panel contract changed")
+        return false
+    if panel.mouse_filter != Control.MOUSE_FILTER_STOP or scroll == null or secondary == null:
+        push_error("W52 smoke: fixed panel must consume pointer and scroll input")
+        return false
+    if deploy.size != Vector2(184, 62) or deploy.custom_minimum_size != Vector2(184, 62):
+        push_error("W52 smoke: primary control dimensions invalid")
+        return false
+    if not popup.encloses(Rect2(panel.position + deploy.position, deploy.size)):
+        push_error("W52 smoke: primary action escaped fixed panel")
+        return false
+    if not popup.encloses(Rect2(panel.position + secondary.position, secondary.size)):
+        push_error("W52 smoke: secondary action escaped fixed panel")
+        return false
+    if popup.end.x >= 1376 or popup.end.y >= 778 or popup.position.y <= 84:
+        push_error("W52 smoke: fixed panel overlaps battlefield/dialogue/header")
         return false
     var speed_one: Button = game.get("speed_one")
     var speed_two: Button = game.get("speed_two")
@@ -99,16 +117,6 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         return false
     if prev.size != Vector2(72, 64) or next_help.size != Vector2(72, 64):
         push_error("W52 smoke: help arrows size invalid")
-        return false
-    if not popup.encloses(Rect2(deploy.position, deploy.size)):
-        push_error("W52 smoke: deploy button outside popup during dialogue: panel=%s btn=%s size=%s" % [str(popup), str(deploy.position), str(deploy.size)])
-        return false
-    var upgrades: Rect2 = game.call("_upgrade_rect")
-    if upgrades.size != Vector2(420, 256) or upgrades.intersects(popup) or upgrades.position.x < 0.0 or upgrades.end.x > 1376.0 or upgrades.end.y > 778.0:
-        push_error("W52 tech: independent upgrade panel is clipped or overlaps a blocking UI region")
-        return false
-    if popup.end.y > 754.0:
-        push_error("W52 smoke: popup collides with dialogue")
         return false
     # The popup surface cannot arm the background pan.
     game.call("_gui_input", _mouse_button(true, popup.position + Vector2(28, 28)))
@@ -121,9 +129,8 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
         game.call("_advance_dialogue")
     game.call("_select_node", "rifle")
     game.call("_process", 1.0)
-    popup = game.call("_popup_rect")
-    if not popup.encloses(Rect2(deploy.position, deploy.size)):
-        push_error("W52 smoke: deploy button outside popup after dialogue: panel=%s btn=%s size=%s" % [str(popup), str(deploy.position), str(deploy.size)])
+    if game.call("_info_panel_rect") != popup or panel.position != popup.position:
+        push_error("W52 smoke: panel moved when selection/phase changed")
         return false
     # Drag from background; release must not change selection.
     var start := Vector2(90, 190)
@@ -282,6 +289,13 @@ func _check_integrated_tree(game: Control) -> bool:
         if parent != "" and not seen.has(parent):
             push_error("W52 tech: missing parent " + parent)
             return false
+    if str(game.get("selected_id")) != "hq" or str(game.get("selected_instance_id")) != "":
+        push_error("W52 smoke: first frame must select HQ")
+        return false
+    var initial_title: Label = game.get("info_title")
+    if initial_title == null or initial_title.text != "본부":
+        push_error("W52 smoke: HQ info not visible initially")
+        return false
     var owned: Array = game.get("owned_buildings")
     if owned.size() != 2 or "hq" not in owned or "robot_factory" not in owned:
         push_error("W52 tech: incorrect initial buildings")
