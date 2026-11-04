@@ -103,6 +103,10 @@ func _check_tree_pan_and_popup(game: Control) -> bool:
     if not popup.encloses(Rect2(deploy.position, deploy.size)):
         push_error("W52 smoke: deploy button outside popup during dialogue: panel=%s btn=%s size=%s" % [str(popup), str(deploy.position), str(deploy.size)])
         return false
+    var upgrades: Rect2 = game.call("_upgrade_rect")
+    if upgrades.size != Vector2(420, 256) or upgrades.intersects(popup) or upgrades.position.x < 0.0 or upgrades.end.x > 1376.0 or upgrades.end.y > 778.0:
+        push_error("W52 tech: independent upgrade panel is clipped or overlaps a blocking UI region")
+        return false
     if popup.end.y > 754.0:
         push_error("W52 smoke: popup collides with dialogue")
         return false
@@ -470,6 +474,17 @@ func _run() -> void:
     bad["buildings"] = ["hq", "robot_factory", "invalid_building"]
     if store.save_game(bad):
         push_error("W52 tech: unknown building accepted by save writer")
+        quit(1)
+        return
+    bad["buildings"] = ["hq", "robot_factory", "machine_shop"]
+    if store.save_game(bad):
+        push_error("W52 tech: orphaned machine shop accepted by save writer")
+        quit(1)
+        return
+    bad["week"] = 1
+    bad["buildings"] = ["hq", "robot_factory", "walker_factory"]
+    if store.save_game(bad):
+        push_error("W52 tech: future-week building accepted by save writer")
         quit(1)
         return
     store.clear_save()
