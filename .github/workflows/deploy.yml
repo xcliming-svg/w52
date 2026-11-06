@@ -74,6 +74,12 @@ jobs:
             godot --headless --path preview --script res://tests/w52_ui_smoke.gd
           fi
 
+      - name: Headless smoke-test development W52 story
+        run: |
+          if [[ -f preview/tests/w52_story_smoke.gd ]]; then
+            godot --headless --path preview --script res://tests/w52_story_smoke.gd
+          fi
+
       - name: Export stable and development web builds
         run: |
           mkdir -p site/devel
