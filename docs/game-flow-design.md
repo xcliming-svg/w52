@@ -21,8 +21,8 @@
 
 - **새 게임**: 유효한 메뉴/일시정지/패배 상태에서 기존 진행 저장을 삭제하고 W52 1주차·160G·대화 인덱스 0부터 생성한다.
 - **저장 시점**: 게임 중 ESC → 일시정지 → 메인 메뉴로 돌아갈 때 `game.snapshot()`으로 저장한다. 단순 게임 진입만으로 저장하지 않는다.
-- **저장 버전 2**: `user://game_save.cfg`의 `session`에는 `version=2`, `week`, `g`, `phase`, `dialogue`, `help`, `placements`를 사용한다. 범위·타입을 확인하고 잘못된 저장은 무시한다.
-- **이어하기**: 유효한 버전 2 저장이 있으면 버튼을 활성화하며 `restore_state()`로 주차·G·대화 진행·도움말·배치 목록을 복구한다. 저장된 전투 중 상태는 안전하게 준비 단계로 재개한다.
+- **현재 저장 버전 5**: `user://game_save.cfg`의 `session`에는 `version=5`, `week`, `g`, `phase`, `dialogue`, `help`, `placements`, `buildings`, `story`를 사용한다. `story`에는 연속 확인된 단서·카드 인덱스·처리된 전투 ID·엔딩 플래그를 저장하며 검증에 실패하면 복구하지 않는다. 상세 계약은 `W52_V9_STORY_PREIMPLEMENTATION_DESIGN_2026-11-06.md`를 따른다.
+- **이어하기**: 유효한 v2·v3·v4·v5 저장을 지원한다. 구 버전은 건물·배치 정보를 기존 규칙대로 변환하지만 실제 승리·단서를 추정하지 않는다. `restore_state()`는 주차·G·대화·배치·서사를 복구하며 전투 중 저장은 준비 단계에서 재개한다.
 - **레거시 지원 없음**: 이전 이동 데모의 저장 버전 1(좌표 x/y)은 호환·변환하지 않는다. 이런 저장만 있으면 이어하기가 비활성화되며 새 게임으로 시작한다.
 - **재시작**: 이전 저장을 삭제하고 1주차에서 다시 시작한다. **패배** 진입 시에도 해당 진행 저장을 삭제한다.
 - **실패 시 동작**: 유효하지 않은 저장은 이어하기에서 제외하고, 저장/삭제 실패는 경고한다. 파일 시스템 실패를 성공으로 표시하지 않는다.
@@ -46,7 +46,7 @@
 | `scenes/pause_menu.tscn`, `scripts/pause_menu.gd` | 재개·다시 시작·설정·메인 메뉴 |
 | `scenes/settings_menu.tscn`, `scripts/settings_menu.gd` | 음량·전체화면 및 설정 복귀 |
 | `scenes/defeat_screen.tscn`, `scripts/defeat_screen.gd` | 향후 패배 판정에 연결할 패배 화면 |
-| `scripts/save_manager.gd`, `scripts/settings_manager.gd` | 버전 2 진행 저장과 별도 환경설정 저장 |
+| `scripts/save_manager.gd`, `scripts/settings_manager.gd` | v5 진행 저장(v2·v3·v4 읽기 호환)과 별도 환경설정 저장 |
 | `scripts/ui_style.gd`, `assets/fonts/` | 공통 팔레트/버튼/패널 규격 및 Nanum Gothic OFL 글꼴 fallback |
 
 타이틀/메인 메뉴의 `BackgroundArt`는 향후 텍스처 연결 슬롯이다. `main.tscn`의 `MenuMusic`·`GameMusic`·`UISound`는 비어 있는 AudioStreamPlayer로 정식 오디오를 포함하지 않는다. 게임 배경 및 노드는 현재 `Control` 캔버스에서 그린다.
@@ -54,6 +54,6 @@
 ## 5. 검증·승격 계약
 
 - `docs/UI_LAYOUT_DESIGN.md`와 본 문서가 코드·씬·저장 포맷과 일치하는지 교차검증하고 불일치는 코드/문서 수정 후 재검증한다.
-- Godot 헤드리스 임포트·게임 시나리오 52주·드래그/포커스/가시성·버전 2 저장/구 버전 차단·Web Export를 검사한다.
+- Godot 헤드리스 임포트·게임 시나리오 52주·드래그/포커스/가시성·v2·v3·v4→v5 저장 변환/손상 차단·Web Export를 검사한다.
 - 메인 승격은 사용자 승인 후 **기능 브랜치의 검증된 변경만** 반영한다. `devel` 전체를 `main`에 병합하지 않는다.
 - 실제 브라우저/PC 플레이, 픽셀 기반 UI·폰트 렌더링, 웹 저장 지속성·전체화면은 별도의 수동 검수 항목이다.

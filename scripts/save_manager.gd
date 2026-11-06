@@ -1,7 +1,9 @@
 extends RefCounted
 
 const SAVE_PATH := "user://game_save.cfg"
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
+const StoryFlow = preload("res://scripts/story_flow.gd")
+const StoryData = preload("res://scripts/story_data.gd")
 const MAX_WEEK := 52
 const GameRules = preload("res://scripts/game.gd")
 
@@ -97,15 +99,36 @@ func _migrate_legacy_placements(items: Array, at_week: int, buildings: Array) ->
     return converted
 
 
+func _valid_story_placements(story: Dictionary, at_week: int, phase: String,
+        placements: Array, buildings: Array) -> bool:
+    var completed: int = StoryFlow.completed_weeks(story)
+    if completed > 0 and not _valid_placements(
+            story["previous_deployment_snapshot"], completed, buildings):
+        return false
+    if phase == "post_story":
+        if story["pending_placement_snapshot"] != placements:
+            return false
+        if not _valid_placements(story["pending_placement_snapshot"], at_week, buildings):
+            return false
+    return true
+
+
 func load_game() -> Dictionary:
     if not FileAccess.file_exists(SAVE_PATH):
         return {}
     var config := ConfigFile.new()
     if config.load(SAVE_PATH) != OK:
         return {}
-    var version: int = int(config.get_value("session", "version", -1))
-    if version not in [2, 3, SAVE_VERSION]:
+    var raw_version: Variant = config.get_value("session", "version", null)
+    if not (raw_version is int):
         return {}
+    var version: int = int(raw_version)
+    if version not in [2, 3, 4, SAVE_VERSION]:
+        return {}
+    if version == SAVE_VERSION:
+        for key in ["week", "g", "phase", "dialogue", "help", "placements", "buildings", "story"]:
+            if not config.has_section_key("session", key):
+                return {}
     var at_week: Variant = config.get_value("session", "week", null)
     var stored_g: Variant = config.get_value("session", "g", null)
     if not (at_week is int) or not (stored_g is int):
@@ -115,7 +138,7 @@ func load_game() -> Dictionary:
     if week < 1 or week > MAX_WEEK or g < 0 or g > 1000000000:
         return {}
     var phase: String = str(config.get_value("session", "phase", "dialogue"))
-    if phase not in ["dialogue", "prepare", "battle", "result"]:
+    if phase not in (["dialogue", "prepare", "battle", "result", "post_story", "ending"] if version == 5 else ["dialogue", "prepare", "battle", "result"]):
         return {}
     var raw_placements: Variant = config.get_value("session", "placements", [])
     if not (raw_placements is Array) or raw_placements.size() > 12:
@@ -126,7 +149,7 @@ func load_game() -> Dictionary:
         if not _valid_buildings(buildings, week):
             return {}
     var placements: Array[Dictionary] = []
-    if version == SAVE_VERSION:
+    if version >= 4:
         if not _valid_placements(raw_placements, week, buildings):
             return {}
         for entry in raw_placements:
@@ -136,19 +159,56 @@ func load_game() -> Dictionary:
             if not (id is String):
                 return {}
         placements = _migrate_legacy_placements(raw_placements, week, buildings)
+    var raw_dialogue: Variant = config.get_value("session", "dialogue", 0)
+    var raw_help: Variant = config.get_value("session", "help", week)
+    if version == SAVE_VERSION and (not (raw_help is int) or raw_help < 1 or raw_help > week):
+        return {}
+    var dialogue: int = 0
+    var story: Dictionary
+    if version == SAVE_VERSION:
+        if not (raw_dialogue is int) or raw_dialogue < 0:
+            return {}
+        dialogue = int(raw_dialogue)
+        if phase in ["prepare", "battle", "result"] and dialogue > 5:
+            return {}
+        var raw_story: Variant = config.get_value("session", "story", null)
+        var compatible_story: Variant = StoryFlow.upgrade_early_v5(raw_story)
+        if not StoryFlow.validate_state(compatible_story, week, phase):
+            return {}
+        story = (compatible_story as Dictionary).duplicate(true)
+        if not _valid_story_placements(story, week, phase, placements, buildings):
+            return {}
+        if phase in ["dialogue", "post_story", "ending"] and dialogue != int(story["card_index"]):
+            return {}
+    else:
+        # Old index belongs to the five-card demonstration, not to v9 dialogue.
+        dialogue = clampi(int(raw_dialogue), 0, 5)
+        story = StoryFlow.fresh_state()
+        if phase == "result":
+            story["last_outcome"] = "DEMO_RESULT"
+        elif phase == "dialogue":
+            if dialogue >= 5:
+                phase = "prepare"
+            else:
+                story["legacy_demo_intro"] = true
+                story["card_index"] = dialogue
+        if not StoryFlow.validate_state(story, week, phase):
+            return {}
     return {"week":week, "g":g, "phase":phase,
-        "dialogue":clampi(int(config.get_value("session", "dialogue", 0)), 0, 5),
+        "dialogue":int(story["card_index"]) if phase in ["dialogue", "post_story", "ending"] else dialogue,
         "help":clampi(int(config.get_value("session", "help", week)), 1, week),
-        "placements":placements, "buildings":buildings}
+        "placements":placements, "buildings":buildings, "story":story}
 
 func save_game(data: Dictionary) -> bool:
-    var week: int = int(data.get("week", 0))
-    var g: int = int(data.get("g", -1))
+    if not (data.get("week", null) is int) or not (data.get("g", null) is int):
+        return false
+    var week: int = int(data["week"])
+    var g: int = int(data["g"])
     if week < 1 or week > MAX_WEEK or g < 0 or g > 1000000000:
         push_warning("Rejected invalid W52 progress.")
         return false
     var phase: Variant = data.get("phase", null)
-    if not (phase is String) or phase not in ["dialogue", "prepare", "battle", "result"]:
+    if not (phase is String) or phase not in ["dialogue", "prepare", "battle", "result", "post_story", "ending"]:
         push_warning("Rejected invalid W52 phase.")
         return false
     var buildings: Variant = data.get("buildings", null)
@@ -159,9 +219,21 @@ func save_game(data: Dictionary) -> bool:
     if not _valid_placements(placements, week, buildings):
         push_warning("Rejected invalid W52 unit placements.")
         return false
+    var story: Variant = data.get("story", null)
+    if not StoryFlow.validate_state(story, week, phase) or not _valid_story_placements(story, week, phase, placements, buildings):
+        push_warning("Rejected invalid W52 canonical story state.")
+        return false
+    if not (data.get("dialogue", null) is int) or data["dialogue"] < 0:
+        return false
+    if not (data.get("help", null) is int) or data["help"] < 1 or data["help"] > week:
+        return false
+    if phase in ["dialogue", "post_story", "ending"] and int(data["dialogue"]) != int(story["card_index"]):
+        return false
+    if phase in ["prepare", "battle", "result"] and data["dialogue"] > 5:
+        return false
     var config := ConfigFile.new()
     config.set_value("session", "version", SAVE_VERSION)
-    for key in ["week", "g", "phase", "dialogue", "help", "placements", "buildings"]:
+    for key in ["week", "g", "phase", "dialogue", "help", "placements", "buildings", "story"]:
         config.set_value("session", key, data.get(key))
     var error := config.save(SAVE_PATH)
     if error != OK:

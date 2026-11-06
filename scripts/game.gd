@@ -8,7 +8,8 @@ const FONT: Font = preload("res://assets/fonts/ui_ko_subset.woff2")
 const MAX_WEEK := 52
 const DEMO_BATTLE_COST := 40
 const DEMO_WEEK_REWARD := 70
-const DIALOGUE_COUNT := 5
+const StoryData = preload("res://scripts/story_data.gd")
+const StoryFlow = preload("res://scripts/story_flow.gd")
 const TREE_RECT := Rect2(0, 84, 1376, 892)
 const TREE_CENTER_LOCAL := Vector2(688, 446)
 const DRAG_THRESHOLD := 8.0
@@ -58,6 +59,9 @@ var week: int = 1
 var g: int = 160
 var phase: String = "dialogue" # dialogue, prepare, battle, result
 var dialogue_index: int = 0
+var last_dialogue_input_frame: int = -1
+var story_flow = StoryFlow.new()
+var battle_placement_snapshot: Array[Dictionary] = []
 var help_index: int = 1
 var selected_id: String = "hq" # Last explicit tree selection (HQ fallback).
 var selected_instance_id: String = ""
@@ -120,10 +124,19 @@ func restore_state(data: Dictionary) -> void:
     week = clampi(int(data.get("week", 1)), 1, MAX_WEEK)
     g = maxi(0, int(data.get("g", 160)))
     var requested: String = str(data.get("phase", "dialogue"))
-    phase = requested if requested in ["dialogue", "prepare", "battle", "result"] else "dialogue"
+    phase = requested if requested in ["dialogue", "prepare", "battle", "result", "post_story", "ending"] else "dialogue"
     if phase == "battle":
         phase = "prepare"
-    dialogue_index = clampi(int(data.get("dialogue", 0)), 0, DIALOGUE_COUNT)
+    story_flow.clear()
+    var stored_story: Variant = data.get("story", null)
+    var has_story := story_flow.restore(stored_story, week, phase)
+    if not has_story:
+        if phase in ["post_story", "ending"]:
+            phase = "prepare"
+        if phase == "result":
+            story_flow.state["last_outcome"] = "DEMO_RESULT"
+    dialogue_index = int(story_flow.state["card_index"]) if has_story else clampi(int(data.get("dialogue", 0)), 0, 5)
+    battle_placement_snapshot.clear()
     help_index = clampi(int(data.get("help", week)), 1, week)
     owned_buildings = ["hq", "robot_factory"]
     var stored: Variant = data.get("buildings", [])
@@ -153,8 +166,10 @@ func restore_state(data: Dictionary) -> void:
             var serial_part := instance_id.trim_prefix("unit_")
             if serial_part.is_valid_int():
                 next_instance_serial = maxi(next_instance_serial, int(serial_part) + 1)
-    if phase == "dialogue" and dialogue_index >= DIALOGUE_COUNT:
+    if phase == "dialogue" and dialogue_index >= _active_story_cards().size():
         phase = "prepare"
+        dialogue_index = 0
+    story_flow.state["card_index"] = dialogue_index if phase in ["dialogue", "post_story", "ending"] else 0
     selected_id = "hq"
     selected_instance_id = ""
     placement_mode = "NORMAL"
@@ -178,9 +193,10 @@ func restore_state(data: Dictionary) -> void:
 
 
 func snapshot() -> Dictionary:
+    story_flow.state["card_index"] = dialogue_index if phase in ["dialogue", "post_story", "ending"] else 0
     return {"week":week, "g":g, "phase":phase, "dialogue":dialogue_index,
         "help":help_index, "placements":placements.duplicate(true),
-        "buildings":owned_buildings.duplicate()}
+        "buildings":owned_buildings.duplicate(), "story":story_flow.export_state()}
 
 func _create_controls() -> void:
     # Only the tree surface is clipped. Panels and interactive Controls remain
@@ -318,6 +334,9 @@ func _create_controls() -> void:
 func _set_week_intro() -> void:
     phase = "dialogue"
     dialogue_index = 0
+    story_flow.state["card_index"] = 0
+    story_flow.state["last_outcome"] = ""
+    story_flow.state["legacy_demo_intro"] = false
     help_index = week
     placements.clear()
     next_instance_serial = 1
@@ -338,6 +357,7 @@ func _set_week_intro() -> void:
     pan_armed = false
     pan_dragging = false
     battle_seconds = 0.0
+    battle_placement_snapshot.clear()
     log_items = ["%d주차 전투 준비 중입니다." % week]
 
 
@@ -845,8 +865,9 @@ func _process(delta: float) -> void:
         if battle_seconds >= 18.0:
             battle_seconds = 18.0
             phase = "result"
+            story_flow.state["last_outcome"] = "DEMO_RESULT"
             g += DEMO_WEEK_REWARD
-            _append_log("전투 종료 — 시연 결과 표시")
+            _append_log("시연 결과 — 실제 승리 및 단서 미확정")
             _refresh_all()
         else:
             _queue_ui_redraw()
@@ -855,7 +876,7 @@ func _process(delta: float) -> void:
 func _node_at(mouse: Vector2) -> String:
     if not TREE_RECT.has_point(mouse):
         return ""
-    if phase == "dialogue" and DIALOGUE_RECT.has_point(mouse):
+    if phase in ["dialogue", "post_story", "ending"] and DIALOGUE_RECT.has_point(mouse):
         return ""
     if INFO_PANEL_RECT.has_point(mouse):
         return ""
@@ -932,11 +953,11 @@ func _input(event: InputEvent) -> void:
             _finish_pan(release.position)
             get_viewport().set_input_as_handled()
             return
-    if phase != "dialogue" or not (event is InputEventKey):
+    if phase not in ["dialogue", "post_story", "ending"] or not (event is InputEventKey):
         return
     var key_event := event as InputEventKey
     if key_event.pressed and not key_event.echo and key_event.keycode == KEY_SPACE:
-        _advance_dialogue()
+        _request_advance_dialogue()
         get_viewport().set_input_as_handled()
 
 
@@ -957,8 +978,9 @@ func _gui_input(event: InputEvent) -> void:
             return
         if INFO_PANEL_RECT.has_point(click.position):
             return
-        if phase == "dialogue" and DIALOGUE_RECT.has_point(click.position):
-            _advance_dialogue()
+        if phase in ["dialogue", "post_story", "ending"] and DIALOGUE_RECT.has_point(click.position):
+            _request_advance_dialogue()
+            get_viewport().set_input_as_handled()
             return
         if TREE_RECT.has_point(click.position):
             if Rect2(Vector2(22, 100), Vector2(188, 52)).has_point(click.position):
@@ -967,33 +989,109 @@ func _gui_input(event: InputEvent) -> void:
         elif FIELD_RECT.has_point(click.position):
             _start_field_interaction(click.position)
 
-func _advance_dialogue() -> void:
+func _story_context() -> Dictionary:
+    var context := {
+        "walker_owned": "walker_factory" in owned_buildings,
+        "hangar_owned": "drone_hangar" in owned_buildings
+    }
+    for key in story_flow.state["pending_observations"]:
+        context[key] = story_flow.state["pending_observations"][key]
+    return context
+
+
+func _active_story_cards() -> Array[Dictionary]:
+    if phase == "dialogue" and story_flow.state["legacy_demo_intro"]:
+        return StoryData.legacy_demo_cards(week)
+    if phase == "ending":
+        if story_flow.state["ending_stage"] == "w53":
+            return StoryData.epilogue_cards()
+        return StoryData.ending_cards()
+    if phase == "post_story":
+        return StoryData.cards(week, "post", _story_context())
     if phase != "dialogue":
+        return []
+    if not story_flow.can_show_intro(week):
+        var locked: Array[Dictionary] = [{"speaker":"narrator",
+            "text":"스토리 진행 대기 — 전투 시연만 이용 가능합니다. 승리 및 단서는 미확정입니다."}]
+        return locked
+    return StoryData.cards(week, "intro", _story_context())
+
+
+func _request_advance_dialogue() -> void:
+    # A keyboard event and a click on the same rendered frame advance only once.
+    var frame: int = Engine.get_process_frames()
+    if frame == last_dialogue_input_frame:
         return
+    last_dialogue_input_frame = frame
+    _advance_dialogue()
+
+
+func _advance_dialogue() -> void:
+    if phase not in ["dialogue", "post_story", "ending"]:
+        return
+    var cards := _active_story_cards()
+    if dialogue_index >= cards.size():
+        return
+    var acknowledged: Dictionary = cards[dialogue_index]
     dialogue_index += 1
-    if week == 1 and dialogue_index == 3 and not user_selected_context and selected_id == "hq" and selected_instance_id.is_empty():
-        _select_node("rifle", false) # Tutorial only; never overrides explicit user selection.
-    elif dialogue_index >= DIALOGUE_COUNT:
+    story_flow.state["card_index"] = dialogue_index
+    if phase == "dialogue" and acknowledged.get("event_id", "") == "w01_rifle_focus":
+        if week == 1 and not user_selected_context and selected_id == "hq" and selected_instance_id.is_empty():
+            _select_node("rifle", false)
+    if dialogue_index < cards.size():
+        _refresh_all()
+        return
+    if phase == "dialogue":
+        if story_flow.state["legacy_demo_intro"]:
+            story_flow.state["legacy_demo_intro"] = false
+        elif story_flow.can_show_intro(week):
+            story_flow.mark_intro_seen(week)
         phase = "prepare"
+    elif phase == "post_story":
+        if not story_flow.finish_post(week):
+            push_error("Post-story acknowledgement without verified battle.")
+            return
+        if week == MAX_WEEK:
+            phase = "ending"
+            story_flow.state["ending_stage"] = "w52"
+        else:
+            phase = "result"
+    elif story_flow.state["ending_stage"] == "w52":
+        story_flow.state["ending_stage"] = "w53"
+    elif story_flow.finish_epilogue():
+        phase = "result"
+    else:
+        push_error("Epilogue completion without 52 verified victories.")
+        return
+    dialogue_index = 0
+    story_flow.state["card_index"] = 0
     _refresh_all()
 
 
 func _dialogue_content() -> Array[String]:
-    if week == 1:
-        return [
-            "52주 동안 주마다 한 차례 전투를 준비합니다.",
-            "왼쪽의 노드에서 사용할 전략을 살펴보세요.",
-            "소총병 경로가 선택되었습니다.",
-            "유닛 정보를 열고 배치 버튼을 사용하세요.",
-            "물자 G와 배치를 확인한 뒤 전투를 시작하세요."
-        ]
-    return [
-        "%d주차 작전 브리핑을 시작합니다." % week,
-        "앞선 전투 기록을 바탕으로 빌드를 점검하세요.",
-        "이번 주 사용할 유닛 노드를 확인하세요.",
-        "전장 하단은 아군, 상단은 적군입니다.",
-        "준비를 마치면 전투를 시작할 수 있습니다."
-    ]
+    var lines: Array[String] = []
+    for card in _active_story_cards():
+        lines.append(str(card["text"]))
+    return lines
+
+
+func accept_battle_report(report: Dictionary) -> Dictionary:
+    # No runtime caller during 18-second demo; future genuine combat only.
+    if phase != "battle":
+        return {"ok": false, "error": "not_in_verified_battle"}
+    var response: Dictionary = story_flow.accept_report(report, week, battle_placement_snapshot)
+    if not response.get("ok", false):
+        push_warning("Rejected BattleReport: %s" % response.get("error", "unknown"))
+        return response
+    if response["result"] == "WIN":
+        phase = "post_story"
+        dialogue_index = 0
+        _append_log("검증된 전투 승리 — 증거 대조 및 조사")
+    else:
+        phase = "result"
+        _append_log("전투 %s — 승리 단서 없음, 재도전 가능" % response["result"])
+    _refresh_all()
+    return response
 
 
 func _change_help(step: int) -> void:
@@ -1011,10 +1109,20 @@ func _deploy_selected() -> void:
 
 
 func _battle_action() -> void:
-    if phase == "result" and week < MAX_WEEK:
-        week += 1
-        _set_week_intro()
-        _refresh_all()
+    if phase == "result":
+        var outcome: String = str(story_flow.state["last_outcome"])
+        if outcome in ["LOSE", "DRAW"]:
+            phase = "prepare"
+            story_flow.state["last_outcome"] = ""
+            _append_log("재도전 준비 — 증거 및 보상 없음")
+            _refresh_all()
+            return
+        if outcome == "WIN" and StoryFlow.completed_weeks(story_flow.state) != week:
+            return
+        if week < MAX_WEEK:
+            week += 1
+            _set_week_intro()
+            _refresh_all()
         return
     if phase != "prepare":
         return
@@ -1026,6 +1134,7 @@ func _battle_action() -> void:
         return
     if placement_mode == "PLACE_NEW":
         _cancel_pending_placement()
+    battle_placement_snapshot = placements.duplicate(true)
     g -= DEMO_BATTLE_COST
     phase = "battle"
     battle_seconds = 0
@@ -1241,13 +1350,18 @@ func _refresh_all() -> void:
     speed_two.add_theme_color_override("font_color", UI.BACKGROUND if speed == 2 else UI.TEXT)
     speed_two.add_theme_stylebox_override("normal", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
     speed_two.add_theme_stylebox_override("pressed", UI._button_style(UI.GOLD if speed == 2 else UI.PANEL))
-    battle_button.disabled = phase == "dialogue" or phase == "battle" or (phase == "result" and week == MAX_WEEK)
+    battle_button.disabled = phase in ["dialogue", "post_story", "ending", "battle"] or (phase == "result" and week == MAX_WEEK)
     if phase == "battle":
         battle_button.text = "전투 진행 중"
+    elif phase in ["dialogue", "post_story", "ending"]:
+        battle_button.text = "대사 확인 중"
+    elif phase == "result" and story_flow.state["last_outcome"] in ["LOSE", "DRAW"]:
+        battle_button.disabled = false
+        battle_button.text = "재도전"
     elif phase == "result" and week == MAX_WEEK:
-        battle_button.text = "52주 완료"
+        battle_button.text = "시연 종료" if story_flow.state["last_outcome"] == "DEMO_RESULT" else "이야기 완료"
     elif phase == "result":
-        battle_button.text = "다음 주"
+        battle_button.text = "시연: 다음 주" if story_flow.state["last_outcome"] == "DEMO_RESULT" else "다음 주"
     else:
         battle_button.text = "전투 시작"
     _update_popup()
@@ -1298,13 +1412,13 @@ func _draw() -> void:
     _box(Rect2(1376, 84, 544, 652), UI.GAME_BACKGROUND)
     _box(Rect2(1376, 736, 544, 240), UI.PANEL)
     _box(Rect2(1376, 976, 544, 104), UI.PANEL)
-    _text("%02d주차" % week, Vector2(44, 16), 38)
+    _text("W53" if phase == "ending" and story_flow.state["ending_stage"] == "w53" else "%02d주차" % week, Vector2(44, 16), 34)
     draw_line(Vector2(233, 17), Vector2(233, 67), UI.BORDER, 2)
     _text("%s G" % _group_digits(g), Vector2(271, 17), 37, UI.GOLD)
     var secs := int(battle_seconds)
     _text("%02d:%02d" % [secs / 60, secs % 60], Vector2(1410, 16), 36)
     _draw_field()
-    _text("전투 정보", Vector2(1400, 747), 28)
+    _text("시연 결과 · 승리/단서 미확정" if phase == "result" and story_flow.state["last_outcome"] == "DEMO_RESULT" else "전투 정보", Vector2(1400, 747), 25)
     draw_line(Vector2(1400, 790), Vector2(1896, 790), UI.BORDER, 2)
     _text("도움말", Vector2(115, 992), 23, UI.GOLD)
     _text(_help_text(), Vector2(240, 992), 25)
@@ -1439,14 +1553,34 @@ func _draw_field() -> void:
         draw_rect(Rect2(destination + Vector2.ONE * 2.0, Vector2.ONE * (GRID_CELL_SIZE - 4.0)),
             UI.GOLD if valid else UI.ENEMY, false, 4.0)
 
+func _wrap_dialogue(value: String, width: float, font_size: int) -> Array[String]:
+    var result: Array[String] = []
+    for paragraph in value.split("\n"):
+        var line := ""
+        for character in paragraph:
+            var candidate := line + character
+            if not line.is_empty() and FONT.get_string_size(candidate, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > width:
+                result.append(line)
+                line = character
+            else:
+                line = candidate
+        result.append(line)
+    return result
+
+
 func _draw_dialogue_overlay() -> void:
-    if phase != "dialogue":
+    if phase not in ["dialogue", "post_story", "ending"]:
         return
+    var cards := _active_story_cards()
+    if cards.is_empty() or dialogue_index >= cards.size():
+        return
+    var current: Dictionary = cards[dialogue_index]
+    var speaker: String = str(StoryData.SPEAKERS.get(str(current["speaker"]), "기지 기록"))
     _layer_box(dialogue_surface, DIALOGUE_RECT, UI.DIALOGUE_PANEL, UI.GOLD)
     _layer_box(dialogue_surface, Rect2(52, 800, 112, 125), UI.NODE_FILL, UI.GOLD)
-    var speaker := "해설" if dialogue_index == 0 or dialogue_index == 2 or dialogue_index == 4 else "작전 참모"
-    _layer_text(dialogue_surface, "≡" if speaker == "해설" else "◆", Vector2(83, 815), 48, UI.GOLD)
+    _layer_text(dialogue_surface, "≡" if current["speaker"] == "narrator" else "◆", Vector2(83, 815), 48, UI.GOLD)
     _layer_text(dialogue_surface, speaker, Vector2(196, 793), 26, UI.GOLD)
-    var text_lines := _dialogue_content()
-    _layer_text(dialogue_surface, text_lines[min(dialogue_index, DIALOGUE_COUNT - 1)], Vector2(196, 845), 28)
+    var lines := _wrap_dialogue(str(current["text"]), 900.0, 25)
+    for i in range(mini(lines.size(), 3)):
+        _layer_text(dialogue_surface, lines[i], Vector2(196, 836 + i * 31), 25)
     _layer_text(dialogue_surface, "Space  다음 ›", Vector2(1137, 905), 21, UI.MUTED)
