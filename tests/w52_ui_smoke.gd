@@ -513,8 +513,15 @@ func _check_field_placement(game: Control) -> bool:
     if str(game.get("selected_id")) != "hq":
         push_error("W52 intro: next entry did not restore HQ")
         return false
-    for i in range(3):
+    var intro_cards: Array = game.call("_active_story_cards")
+    for i in range(intro_cards.size()):
         game.call("_advance_dialogue")
+        if i == 1 and str(game.get("selected_id")) != "hq":
+            push_error("W52 intro: W01 rifle focus ran before named tutorial event")
+            return false
+        if i == 2 and str(game.get("selected_id")) != "rifle":
+            push_error("W52 intro: W01 named tutorial event did not focus rifle")
+            return false
     if str(game.get("selected_id")) != "rifle":
         push_error("W52 intro: W01 untouched HQ tutorial lost rifle focus")
         return false
@@ -829,6 +836,11 @@ func _run() -> void:
         if expected_week < 52:
             game.call("_battle_action")
 
+    var demo_story: Dictionary = (game.call("snapshot") as Dictionary).get("story", {})
+    if not demo_story.get("evidence_flags", []).is_empty() or not demo_story.get("post_win_seen_weeks", []).is_empty() or demo_story.get("ending_seen", false):
+        push_error("W52 story: 52 simulated battles illegally granted canon evidence or ending")
+        quit(1)
+        return
     if battles != 52 or int(game.get("week")) != 52:
         push_error("W52 smoke: expected 52 battles")
         quit(1)
@@ -895,31 +907,57 @@ func _run() -> void:
         quit(1)
         return
     if not store.save_game(game.call("snapshot")):
-        push_error("W52 save: v3-to-v4 migration could not be saved")
+        push_error("W52 save: v3-to-v5 migration could not be saved")
         quit(1)
         return
     var converted: Dictionary = store.load_game()
     if converted.get("placements", []) != v3_units:
-        push_error("W52 save: v4 round trip lost instance IDs or positions")
+        push_error("W52 save: v5 round trip lost instance IDs or positions")
         quit(1)
         return
     var version_check := ConfigFile.new()
-    if version_check.load("user://game_save.cfg") != OK or int(version_check.get_value("session", "version", -1)) != 4:
-        push_error("W52 save: output version did not increment to v4")
+    if version_check.load("user://game_save.cfg") != OK or int(version_check.get_value("session", "version", -1)) != 5:
+        push_error("W52 save: output version did not increment to v5")
         quit(1)
         return
+    # A mid-dialogue v4 demonstration must resume on its old card, not v9 canon.
+    var legacy_dialogue := ConfigFile.new()
+    legacy_dialogue.set_value("session", "version", 4)
+    legacy_dialogue.set_value("session", "week", 1)
+    legacy_dialogue.set_value("session", "g", 160)
+    legacy_dialogue.set_value("session", "phase", "dialogue")
+    legacy_dialogue.set_value("session", "dialogue", 4)
+    legacy_dialogue.set_value("session", "help", 1)
+    legacy_dialogue.set_value("session", "placements", [])
+    legacy_dialogue.set_value("session", "buildings", ["hq", "robot_factory"])
+    if legacy_dialogue.save("user://game_save.cfg") != OK:
+        push_error("W52 save: could not create mid-dialogue v4 fixture")
+        quit(1)
+        return
+    game.call("restore_state", store.load_game())
+    if int(game.get("dialogue_index")) != 4 or game.call("_active_story_cards").size() != 5:
+        push_error("W52 save: legacy five-card dialogue was not resumed")
+        quit(1)
+        return
+    game.call("_advance_dialogue")
+    var legacy_story: Dictionary = (game.call("snapshot") as Dictionary)["story"]
+    if str(game.get("phase")) != "prepare" or not legacy_story["intro_seen_weeks"].is_empty():
+        push_error("W52 save: legacy demo dialogue unlocked canonical intro")
+        quit(1)
+        return
+
     # Preserve a complete week-52 snapshot with the last deployed rifle.
     game.call("restore_state", {"week":52, "g":230, "phase":"result", "dialogue":5,
         "help":52, "placements":[{"instance_id":"persist_1", "unit_id":"rifle", "col":1, "row":9}],
         "buildings":["hq", "robot_factory"]})
     var saved: Dictionary = game.call("snapshot")
     if not store.save_game(saved):
-        push_error("W52 save: v4 save failed")
+        push_error("W52 save: v5 save failed")
         quit(1)
         return
     var restored: Dictionary = store.load_game()
     if int(restored.get("week", 0)) != 52 or int(restored.get("g", -1)) < 0 or restored.get("placements", []) != saved.get("placements", []):
-        push_error("W52 save: v4 instance restore changed identity or location")
+        push_error("W52 save: v5 instance restore changed identity or location")
         quit(1)
         return
     var bad: Dictionary = restored.duplicate(true)
@@ -959,7 +997,7 @@ func _run() -> void:
         bad = restored.duplicate(true)
         bad["placements"] = malformed
         if store.save_game(bad):
-            push_error("W52 save: invalid v4 unit schema or cell accepted")
+            push_error("W52 save: invalid v5 unit schema or cell accepted")
             quit(1)
             return
     bad = restored.duplicate(true)
@@ -985,5 +1023,5 @@ func _run() -> void:
     if not _check_main_entry():
         quit(1)
         return
-    print("W52_UI_SMOKE_OK: fixed info, HQ default, 20 nodes, 24 upgrades, field placement, 52 battles, save v2/v3/v4, 1920x1080")
+    print("W52_UI_SMOKE_OK: fixed info, HQ default, 20 nodes, 24 upgrades, field placement, 52 DEMO battles, v2/v3/v4 to v5 saves, no canon evidence, 1920x1080")
     quit(0)
