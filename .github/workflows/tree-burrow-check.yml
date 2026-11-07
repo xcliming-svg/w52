@@ -1,0 +1,52 @@
+name: Tree Burrow 10-hour Regression
+
+on:
+  push:
+    branches: [feature/tree-burrow-10h-20261107]
+  pull_request:
+    branches: [devel]
+    paths:
+      - 'tree/**'
+      - '.github/workflows/tree-burrow-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test-burrow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature
+        uses: actions/checkout@v4
+      - name: Install Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: '4.7.2'
+          use-dotnet: false
+          include-templates: true
+      - name: Prepare official open-license Korean font
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tree/src/assets
+          curl -fL --retry 3 --retry-delay 2 \
+            'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf' \
+            -o tree/src/assets/NotoSansKR-Regular.ttf
+          test "$(stat -c%s tree/src/assets/NotoSansKR-Regular.ttf)" -ge 10000000
+          grep -q "SIL Open Font License" tree/src/assets/NotoSansKR-LICENSE.txt
+      - name: 15 implementation and 15 scenario checks
+        run: node tree/src/tests/burrow_contract_check.mjs
+      - name: Godot parser and startup
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path tree/src --import 2>&1 | tee import.log
+          godot --headless --path tree/src --quit-after 2 2>&1 | tee scene.log
+          if grep -E '(SCRIPT ERROR:|ERROR:|Parse Error:|Compile Error:)' import.log scene.log; then exit 1; fi
+      - name: Twelve seeded Godot regression cycles
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path tree/src --script res://tests/contract_runtime_qa.gd -- --repeat=12 2>&1 | tee contract.log
+          grep -q 'RAIL_QA_SUMMARY repeats=12' contract.log
+          if grep -E '(RAIL_QA_FAIL|SCRIPT ERROR:|ERROR:|Parse Error:|Compile Error:)' contract.log; then exit 1; fi
