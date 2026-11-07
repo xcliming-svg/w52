@@ -86,6 +86,26 @@ jobs:
           godot --headless --path stable --export-release "Web" "$GITHUB_WORKSPACE/site/index.html"
           godot --headless --path preview --export-release "Web" "$GITHUB_WORKSPACE/site/devel/index.html"
 
+      - name: Install licensed Korean font for independent tree preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f preview/tree/src/project.godot ]]; then
+            mkdir -p preview/tree/src/assets
+            curl --fail --location --retry 3 --retry-delay 2 \
+              --output preview/tree/src/assets/NotoSansKR-Regular.ttf \
+              "https://raw.githubusercontent.com/google/fonts/main/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf"
+            test "$(stat -c%s preview/tree/src/assets/NotoSansKR-Regular.ttf)" -ge 10000000
+            test -s preview/tree/src/assets/NotoSansKR-LICENSE.txt
+            grep -q "SIL Open Font License" preview/tree/src/assets/NotoSansKR-LICENSE.txt
+          fi
+
+      - name: Run burrow game data and implementation checks
+        run: |
+          if [[ -f preview/tree/src/tests/burrow_contract_check.mjs ]]; then
+            node preview/tree/src/tests/burrow_contract_check.mjs
+          fi
+
       - name: Import and export RAIL SURVIVOR development preview
         shell: bash
         run: |
