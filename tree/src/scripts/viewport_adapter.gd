@@ -10,7 +10,7 @@ static func fit_world(available: Vector2) -> Dictionary:
 	return {"scale":factor,"offset":offset,"world_size":RBalance.WORLD_SIZE}
 
 static func panel_split(width: float, ratio: float) -> Dictionary:
-	var left: float=maxf(1.0,width)*clampf(ratio,0.25,0.45)
+	var left: float=maxf(1.0,width)*0.50
 	return {"tree":left,"battle":maxf(1.0,width)-left}
 
 static func is_supported_aspect(width: float, height: float) -> bool:

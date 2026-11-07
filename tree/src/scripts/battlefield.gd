@@ -8,7 +8,7 @@ var default_font: Font
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
-	default_font = ThemeDB.fallback_font
+	default_font = RFontRegistry.bundled_font()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
@@ -42,13 +42,17 @@ func _draw() -> void:
 		var pos: Vector2 = e.pos
 		var radius: float = maxf(6.0,float(e.size)*0.48)
 		var color := RAccessibility.translate_color(Color(str(e.color)),int(session.options.get("color_mode",0)),bool(session.options.get("high_contrast",false)))
+		color.a *= float(e.get("opacity",1.0))
 		if float(e.phase_time)>0.0:
-			color.a = 0.35
+			color.a *= 0.35
 		match str(e.shape):
 			"circle": draw_circle(pos,radius,color)
 			"square": draw_rect(Rect2(pos-Vector2.ONE*radius,Vector2.ONE*radius*2.0),color)
 			"diamond": draw_colored_polygon(PackedVector2Array([pos+Vector2(0,-radius),pos+Vector2(radius,0),pos+Vector2(0,radius),pos+Vector2(-radius,0)]),color)
 			_: draw_colored_polygon(_polygon(pos,radius,_sides(str(e.shape))),color)
+		var feeler: Vector2 = Vector2(radius*0.65,-radius*0.95)
+		draw_line(pos,pos+feeler,color,1.5,true)
+		draw_line(pos,pos+Vector2(-feeler.x,feeler.y),color,1.5,true)
 		RVfxStatus.paint(self,e)
 	for hostile in session.field.hostile_projectiles:
 		var pos: Vector2 = hostile.pos
@@ -63,8 +67,15 @@ func _draw() -> void:
 		if float(car.hp)<=0:
 			col = Color("#4e5360")
 		draw_set_transform(offset_world + pos*world_scale,facing,Vector2.ONE*world_scale)
-		draw_rect(Rect2(-size_car*0.5,size_car),col)
-		draw_rect(Rect2(-size_car*0.5,size_car),Color("#14202b"),false,1.2)
+		if slot==0:
+			# Capsule hunter: rectangular center and two round end caps.
+			draw_rect(Rect2(Vector2(-9.0,-10.0),Vector2(18.0,20.0)),col)
+			draw_circle(Vector2(-9,0),10.0,col)
+			draw_circle(Vector2(9,0),10.0,col)
+			draw_circle(Vector2(8,-3),2.5,Color("#102729"))
+		else:
+			draw_circle(Vector2.ZERO,10.0,col)
+			draw_arc(Vector2.ZERO,10.0,0.0,TAU,24,Color("#14202b"),1.2,true)
 		draw_set_transform(offset_world,0.0,Vector2.ONE*world_scale)
 	RVfxProjectiles.paint(self,session.weapons.projectiles)
 	session.visuals.draw(self)

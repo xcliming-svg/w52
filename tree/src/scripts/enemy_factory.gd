@@ -6,9 +6,10 @@ static func create(spec: Dictionary, id: int, elapsed: float, where: Vector2, co
 	var hp: float = RSpawnScaling.max_health(elapsed,float(spec.get("hpMultiplier",1.0)))
 	var enemy: Dictionary = {
 		"uid":id, "kind":str(spec.id), "ai":str(spec.ai), "shape":str(spec.shape),
-		"color":str(spec.color), "size":float(spec.get("sizePx",14.0)),
+		"color":str(spec.color), "size":float(spec.get("sizePx",14.0))*RSpawnScaling.size_scale(elapsed),
+		"opacity":RSpawnScaling.opacity(elapsed),
 		"pos":where, "target":corner, "hp":hp, "max_hp":hp,
-		"speed":RBalance.ENEMY_SPEED*float(spec.get("speedMultiplier",1.0)),
+		"speed":RSpawnScaling.base_speed(elapsed)*float(spec.get("speedMultiplier",1.0)),
 		"state":"alive", "shield":0.0, "armor":0.0,
 		"slow":0.0, "slow_time":0.0, "frozen_time":0.0,
 		"burn":[], "phase":0.0, "phase_time":0.0, "elapsed":0.0,

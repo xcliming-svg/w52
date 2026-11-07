@@ -87,12 +87,14 @@ func one_cycle(cycle: int, data: RData) -> void:
 	var duplicate_refund: bool = tree.cancel_same_tick("W01",cycle)
 	check(cycle,"NO_DOUBLE_REFUND","cancel W01 again","false",duplicate_refund,not duplicate_refund)
 	var bought_all: bool = true
-	for depth in range(1,11):
+	for depth in [1,2,3,5,7,9,4,6,8,10]:
 		if not tree.purchase("W%02d" % depth,cycle):
 			bought_all = false
 		if depth == 4:
 			var high_tier_refund: bool = tree.cancel_same_tick("W04",cycle)
 			check(cycle,"REJECT_TIER_4_REFUND","buy W04 and try same-tick refund before W05","false",high_tier_refund,not high_tier_refund and tree.purchased.has("W04"))
+	var branching_ok: bool = tree.is_visible("W03") and tree.is_visible("W04") and tree.purchased.has("W10") and tree.depth("W")==10
+	check(cycle,"FORKED_BRANCH_PURCHASE","purchase two branches W03/05/07/09 and W04/06/08/10","all 10 upgrades, 2 branches",branching_ok,branching_ok)
 	var cap: int = tree.capacity()
 	check(cycle,"W10_CAPACITY","purchase W01-W10, W10 gives +4","50",cap,bought_all and cap==50)
 	economy.scrap = 100000.0

@@ -2,36 +2,39 @@ class_name RTreeRenderer
 extends RefCounted
 
 static func render(canvas: CanvasItem, session, area: Vector2, pan: Vector2, zoom: float, selected_id: String, filter_text: String, font: Font) -> void:
-	canvas.draw_rect(Rect2(Vector2.ZERO,area),Color("#0c1529"))
-	if session==null:
+	canvas.draw_rect(Rect2(Vector2.ZERO,area),Color("#0b1820"))
+	if session == null:
 		return
 	for row in session.registry.ordered_nodes:
-		var from: Vector2=RTreeCamera.to_screen(row,area,pan,zoom)
+		var node_id: String = str(row.id)
+		if not session.tree.is_visible(node_id):
+			continue
+		var destination: Vector2 = RTreeCamera.to_screen(row,area,pan,zoom)
 		for parent_id in row.get("requires",[]):
-			var parent: Dictionary=session.registry.nodes.get(parent_id,{})
+			if not session.tree.is_visible(str(parent_id)):
+				continue
+			var parent: Dictionary = session.registry.nodes.get(str(parent_id),{})
 			if parent.is_empty():
 				continue
-			var to: Vector2=RTreeCamera.to_screen(parent,area,pan,zoom)
-			var tint: Color=Color("#637592") if session.tree.purchased.has(str(parent_id)) else Color("#25334e")
-			canvas.draw_line(from,to,tint,1.6,true)
+			var origin: Vector2 = RTreeCamera.to_screen(parent,area,pan,zoom)
+			canvas.draw_line(origin,destination,Color("#6cb49d") if session.tree.purchased.has(node_id) else Color("#536d66"),3.0,true)
 	for row in session.registry.ordered_nodes:
-		var id: String=str(row.id)
-		var loc: Vector2=RTreeCamera.to_screen(row,area,pan,zoom)
-		var state: String=RTreePurchaseUI.state(session.tree,id)
-		var color: Color=Color(str(row.get("color","#f0f5ff"))) if state in ["purchased","available"] else Color("#45536e")
+		var node_id: String = str(row.id)
+		if not session.tree.is_visible(node_id):
+			continue
+		var pos: Vector2 = RTreeCamera.to_screen(row,area,pan,zoom)
+		var state: String = RTreePurchaseUI.state(session.tree,node_id)
+		var tint: Color = Color(str(row.get("color","#e8f6eb")))
+		if state == "unaffordable":
+			tint = tint.darkened(0.35)
+		elif state == "purchased":
+			tint = tint.lightened(0.15)
 		if not RTreeSearch.contains(row,filter_text):
-			color=color.darkened(0.75)
-		var radius: float=18.0 if id=="C000" else 14.0
-		canvas.draw_circle(loc,radius,color)
-		var outline: Color=Color("#f8ffff") if id==selected_id else (Color("#86e8ad") if state=="purchased" else Color("#33465c"))
-		canvas.draw_arc(loc,radius+3.5,0.0,TAU,20,outline,2.1,true)
-		if zoom>=0.35 or id==selected_id:
-			canvas.draw_string(font,loc+Vector2(-17.0,27.0),id,HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color("#e2ebf9"))
-	var tooltip: String=RTreeTooltip.text_for(session.registry,session.tree,session.economy,selected_id)
-	var rows: PackedStringArray=tooltip.split("\n")
-	var ypos: float=26.0
-	for text in rows:
-		if ypos>area.y-12.0:
-			break
-		canvas.draw_string(font,Vector2(14.0,ypos),text,HORIZONTAL_ALIGNMENT_LEFT,maxi(0,int(area.x)-20),14,Color("#e4ebf7"))
-		ypos+=23.0
+			tint = tint.darkened(0.45)
+		var radius: float = 18.0 if node_id == "C000" else 14.0
+		canvas.draw_circle(pos,radius+2.0,Color("#172f2e"))
+		canvas.draw_circle(pos,radius,tint)
+		canvas.draw_arc(pos,radius+4.0,0.0,TAU,32,Color("#ffffff") if node_id==selected_id else (Color("#99e3ae") if state=="purchased" else Color("#2c5554")),2.2,true)
+		if zoom >= 0.45 or node_id == selected_id:
+			canvas.draw_string(font,pos+Vector2(-13.0,28.0),node_id,HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color("#e4f1ef"))
+	canvas.draw_string(font,Vector2(16.0,27.0),"굴의 뿌리 · 연구할 가지를 누르세요",HORIZONTAL_ALIGNMENT_LEFT,maxi(0,int(area.x)-25),16,Color("#d5e4d9"))
