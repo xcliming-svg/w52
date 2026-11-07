@@ -42,7 +42,7 @@ func modify_car_damage(tree: RTreeRules, train: RTrain, index: int) -> float:
 	var car: Dictionary = train.cars[index]
 	var neighbours: Array[Dictionary] = []
 	for offset in [-1,1]:
-		var other := index+offset
+		var other: int = index + int(offset)
 		if other>=1 and other<train.cars.size():
 			neighbours.append(train.cars[other])
 	if tree.has_milestone("W",4):

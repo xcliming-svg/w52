@@ -92,9 +92,13 @@ jobs:
           set -euo pipefail
           if [[ -f preview/tree/src/project.godot ]]; then
             mkdir -p site/tree-devel
-            godot --headless --path preview/tree/src --import
-            godot --headless --path preview/tree/src --quit-after 2
-            godot --headless --path preview/tree/src --export-release "Web" "$GITHUB_WORKSPACE/site/tree-devel/index.html"
+            godot --headless --path preview/tree/src --import 2>&1 | tee /tmp/rail-import.log
+            godot --headless --path preview/tree/src --quit-after 2 2>&1 | tee /tmp/rail-smoke.log
+            godot --headless --path preview/tree/src --export-release "Web" "$GITHUB_WORKSPACE/site/tree-devel/index.html" 2>&1 | tee /tmp/rail-export.log
+            if grep -E '(SCRIPT ERROR:|ERROR:|Parse Error:|Compile Error:)' /tmp/rail-{import,smoke,export}.log; then
+              echo "::error::RAIL SURVIVOR emitted engine errors"
+              exit 1
+            fi
           fi
 
       - name: Verify both web builds

@@ -222,7 +222,7 @@ func _shockwave(origin: Vector2, damage: float, field: REnemyField, tree: RTreeR
 
 func _support(train: RTrain, slot: int, car: Dictionary) -> void:
 	for offset in [-1, 1]:
-		var other := slot + offset
+		var other: int = slot + int(offset)
 		if other >= 0 and other < train.cars.size() and other != slot and str(train.cars[other].family) != "support":
 			train.cars[other].shield = minf(20.0, float(train.cars[other].get("shield",0.0)) + 4.0)
 			train.cars[other].cd = maxf(0.0, float(train.cars[other].cd) - 0.05)

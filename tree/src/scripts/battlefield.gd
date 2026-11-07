@@ -56,7 +56,7 @@ func _draw() -> void:
 		draw_colored_polygon(_polygon(pos,5.0,3),tint)
 	for slot in session.train.cars.size():
 		var car: Dictionary = session.train.cars[slot]
-		var pos := session.train.position_for(slot)
+		var pos: Vector2 = session.train.position_for(slot)
 		var facing := RCoachFormation.visual_facing(session.train.distance,slot,RBalance.START_SPEED*float(session.tree.stats().speed))
 		var size_car := Vector2(30.0,20.0)
 		var col := RAccessibility.translate_color(Color(str(car.get("color","#f8f9fa"))),int(session.options.get("color_mode",0)),bool(session.options.get("high_contrast",false)))
