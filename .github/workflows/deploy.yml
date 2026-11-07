@@ -86,6 +86,17 @@ jobs:
           godot --headless --path stable --export-release "Web" "$GITHUB_WORKSPACE/site/index.html"
           godot --headless --path preview --export-release "Web" "$GITHUB_WORKSPACE/site/devel/index.html"
 
+      - name: Import and export RAIL SURVIVOR development preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f preview/tree/src/project.godot ]]; then
+            mkdir -p site/tree-devel
+            godot --headless --path preview/tree/src --import
+            godot --headless --path preview/tree/src --quit-after 2
+            godot --headless --path preview/tree/src --export-release "Web" "$GITHUB_WORKSPACE/site/tree-devel/index.html"
+          fi
+
       - name: Verify both web builds
         run: |
           for prefix in site/index site/devel/index; do
@@ -93,6 +104,9 @@ jobs:
             test -s "${prefix}.wasm"
             test -s "${prefix}.pck"
           done
+          if [[ -f preview/tree/src/project.godot ]]; then
+            for ext in html wasm pck; do test -s "site/tree-devel/index.${ext}"; done
+          fi
           touch site/.nojekyll
 
       - name: Upload tested web builds

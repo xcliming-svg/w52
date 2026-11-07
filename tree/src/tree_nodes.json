@@ -1,0 +1,2791 @@
+{
+  "schemaVersion": 1,
+  "branchCount": 12,
+  "nodeCount": 121,
+  "centerId": "C000",
+  "branchOrder": [
+    {
+      "id": "W",
+      "name": "편성·객차",
+      "key": "slots",
+      "effect": "최대 편성 +5량",
+      "stat": "wagon_capacity",
+      "value": 5,
+      "color": "#ffd166"
+    },
+    {
+      "id": "R",
+      "name": "속사·연사",
+      "key": "rapid",
+      "effect": "사격 계수 +10.4%",
+      "stat": "fire_multiplier",
+      "value": 0.104,
+      "color": "#ef476f"
+    },
+    {
+      "id": "S",
+      "name": "연계·시너지",
+      "key": "synergy",
+      "effect": "공격 계수 +9%",
+      "stat": "synergy_multiplier",
+      "value": 0.09,
+      "color": "#a8dadc"
+    },
+    {
+      "id": "H",
+      "name": "화염·열",
+      "key": "fire",
+      "effect": "공격 계수 +6.5%",
+      "stat": "fire_multiplier",
+      "value": 0.065,
+      "color": "#ff7b54"
+    },
+    {
+      "id": "C",
+      "name": "아크·전류",
+      "key": "chain",
+      "effect": "공격 계수 +2.8%, 범위 보정",
+      "stat": "chain_power",
+      "value": 0.028,
+      "color": "#65d6e7"
+    },
+    {
+      "id": "X",
+      "name": "폭발·파쇄",
+      "key": "blast",
+      "effect": "공격 계수 +2.8%, 폭발 영역",
+      "stat": "blast_power",
+      "value": 0.028,
+      "color": "#f8a45d"
+    },
+    {
+      "id": "A",
+      "name": "장갑·생존",
+      "key": "armor",
+      "effect": "탈출 피해 완화 +3.5%p(분모형)",
+      "stat": "leak_mitigation",
+      "value": 0.035,
+      "color": "#92a6bf"
+    },
+    {
+      "id": "E",
+      "name": "회수·경제",
+      "key": "economy",
+      "effect": "시간 +3%, XP +4%, 고철 +4.5%",
+      "stat": "economy_tier",
+      "value": 1,
+      "color": "#80ed99"
+    },
+    {
+      "id": "F",
+      "name": "냉각·제어",
+      "key": "slow",
+      "effect": "적 탈출 지연 +0.65초",
+      "stat": "enemy_travel_bonus_sec",
+      "value": 0.65,
+      "color": "#8ecae6"
+    },
+    {
+      "id": "L",
+      "name": "견인·속도",
+      "key": "speed",
+      "effect": "사각 레일 순환·커버리지 +2.5%p",
+      "stat": "coverage_bonus",
+      "value": 0.025,
+      "color": "#cdb4db"
+    },
+    {
+      "id": "U",
+      "name": "극대화·치명",
+      "key": "crit",
+      "effect": "화력 계수 +6.5%",
+      "stat": "crit_multiplier",
+      "value": 0.065,
+      "color": "#e3b23c"
+    },
+    {
+      "id": "P",
+      "name": "관통·투사",
+      "key": "pierce",
+      "effect": "공격 계수 +2.8%, 관통",
+      "stat": "pierce_multiplier",
+      "value": 0.028,
+      "color": "#b8f2e6"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "C000",
+      "branch": "CORE",
+      "depth": 0,
+      "name": "영구기관 / 중앙점",
+      "requires": [],
+      "x": 0,
+      "y": 0,
+      "unlocked": true,
+      "tpBase": 0,
+      "xpCost": 0,
+      "summary": "초기 기관차 1량, 자동 발사, 시간·킬 기반 성장"
+    },
+    {
+      "id": "W01",
+      "branch": "W",
+      "branchName": "편성·객차",
+      "depth": 1,
+      "name": "편성·객차 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": 174,
+      "y": 5,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "wagon_capacity",
+      "value": 5,
+      "color": "#ffd166",
+      "rarity": "common",
+      "summary": "최대 편성 +5량"
+    },
+    {
+      "id": "W02",
+      "branch": "W",
+      "branchName": "편성·객차",
+      "depth": 2,
+      "name": "편성·객차 2단",
+      "requires": [
+        "W01"
+      ],
+      "x": 248,
+      "y": 8,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "wagon_capacity",
+      "value": 5,
+      "color": "#ffd166",
+      "rarity": "common",
+      "summary": "최대 편성 +5량"
+    },
+    {
+      "id": "W03",
+      "branch": "W",
+      "branchName": "편성·객차",
+      "depth": 3,
+      "name": "편성·객차 3단",
+      "requires": [
+        "W02"
+      ],
+      "x": 322,
+      "y": 5,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "wagon_capacity",
+      "value": 5,
+      "color": "#ffd166",
+      "rarity": "common",
+      "summary": "최대 편성 +5량"
+    },
+    {
+      "id": "W04",
+      "branch": "W",
+      "branchName": "편성·객차",
+      "depth": 4,
+      "name": "편성·객차 4단",
+      "requires": [
+        "W03"
+      ],
+      "x": 396,
+      "y": -6,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "wagon_capacity",
+      "value": 5,
+      "color": "#ffd166",
+      "rarity": "rare",
+      "summary": "최대 편성 +5량",
+      "milestone": {
+        "effectId": "milestone_W_4",
+        "description": "편성 순서 보너스: 이웃 객차 동종 2량 시 특성 +3%",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "W05",
+      "branch": "W",
+      "branchName": "편성·객차",
+      "depth": 5,
+      "name": "편성·객차 5단",
+      "requires": [
+        "W04"
+      ],
+      "x": 470,
+      "y": -16,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "wagon_capacity",
+      "value": 5,
+      "color": "#ffd166",
+      "rarity": "rare",
+      "summary": "최대 편성 +5량"
+    },
+    {
+      "id": "W06",
+      "branch": "W",
+      "branchName": "편성·객차",
+      "depth": 6,
+      "name": "편성·객차 6단",
+      "requires": [
+        "W05"
+      ],
+      "x": 544,
+      "y": -15,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "wagon_capacity",
+      "value": 5,
+      "color": "#ffd166",
+      "rarity": "rare",
+      "summary": "최대 편성 +5량"
+    },
+    {
+      "id": "W07",
+      "branch": "W",
+      "branchName": "편성·객차",
+      "depth": 7,
+      "name": "편성·객차 7단",
+      "requires": [
+        "W06"
+      ],
+      "x": 618,
+      "y": 0,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "wagon_capacity",
+      "value": 5,
+      "color": "#ffd166",
+      "rarity": "epic",
+      "summary": "최대 편성 +5량",
+      "milestone": {
+        "effectId": "milestone_W_7",
+        "description": "전열/후열 분할: 2개 사격 우선순위 그룹 사용",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "W08",
+      "branch": "W",
+      "branchName": "편성·객차",
+      "depth": 8,
+      "name": "편성·객차 8단",
+      "requires": [
+        "W07"
+      ],
+      "x": 692,
+      "y": 19,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "wagon_capacity",
+      "value": 5,
+      "color": "#ffd166",
+      "rarity": "epic",
+      "summary": "최대 편성 +5량"
+    },
+    {
+      "id": "W09",
+      "branch": "W",
+      "branchName": "편성·객차",
+      "depth": 9,
+      "name": "편성·객차 9단",
+      "requires": [
+        "W08"
+      ],
+      "x": 766,
+      "y": 26,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "wagon_capacity",
+      "value": 5,
+      "color": "#ffd166",
+      "rarity": "epic",
+      "summary": "최대 편성 +5량"
+    },
+    {
+      "id": "W10",
+      "branch": "W",
+      "branchName": "편성·객차",
+      "depth": 10,
+      "name": "편성·객차 10단",
+      "requires": [
+        "W09"
+      ],
+      "x": 840,
+      "y": 12,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "wagon_capacity",
+      "value": 4,
+      "color": "#ffd166",
+      "rarity": "capstone",
+      "summary": "마지막 편성 +4량(총 50량 상한)",
+      "milestone": {
+        "effectId": "milestone_W_10",
+        "description": "50번째 객차 확보(마지막 슬롯 +4); 전체 50량 제한 유지",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "R01",
+      "branch": "R",
+      "branchName": "속사·연사",
+      "depth": 1,
+      "name": "속사·연사 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": 148,
+      "y": 92,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.104,
+      "color": "#ef476f",
+      "rarity": "common",
+      "summary": "사격 계수 +10.4%"
+    },
+    {
+      "id": "R02",
+      "branch": "R",
+      "branchName": "속사·연사",
+      "depth": 2,
+      "name": "속사·연사 2단",
+      "requires": [
+        "R01"
+      ],
+      "x": 213,
+      "y": 127,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.104,
+      "color": "#ef476f",
+      "rarity": "common",
+      "summary": "사격 계수 +10.4%"
+    },
+    {
+      "id": "R03",
+      "branch": "R",
+      "branchName": "속사·연사",
+      "depth": 3,
+      "name": "속사·연사 3단",
+      "requires": [
+        "R02"
+      ],
+      "x": 282,
+      "y": 156,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.104,
+      "color": "#ef476f",
+      "rarity": "common",
+      "summary": "사격 계수 +10.4%"
+    },
+    {
+      "id": "R04",
+      "branch": "R",
+      "branchName": "속사·연사",
+      "depth": 4,
+      "name": "속사·연사 4단",
+      "requires": [
+        "R03"
+      ],
+      "x": 350,
+      "y": 186,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.104,
+      "color": "#ef476f",
+      "rarity": "rare",
+      "summary": "사격 계수 +10.4%",
+      "milestone": {
+        "effectId": "milestone_R_4",
+        "description": "3발 짧은 점사: 평균 DPS 유지, 탄막 형태 변경",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "R05",
+      "branch": "R",
+      "branchName": "속사·연사",
+      "depth": 5,
+      "name": "속사·연사 5단",
+      "requires": [
+        "R04"
+      ],
+      "x": 413,
+      "y": 225,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.104,
+      "color": "#ef476f",
+      "rarity": "rare",
+      "summary": "사격 계수 +10.4%"
+    },
+    {
+      "id": "R06",
+      "branch": "R",
+      "branchName": "속사·연사",
+      "depth": 6,
+      "name": "속사·연사 6단",
+      "requires": [
+        "R05"
+      ],
+      "x": 470,
+      "y": 274,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.104,
+      "color": "#ef476f",
+      "rarity": "rare",
+      "summary": "사격 계수 +10.4%"
+    },
+    {
+      "id": "R07",
+      "branch": "R",
+      "branchName": "속사·연사",
+      "depth": 7,
+      "name": "속사·연사 7단",
+      "requires": [
+        "R06"
+      ],
+      "x": 526,
+      "y": 325,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.104,
+      "color": "#ef476f",
+      "rarity": "epic",
+      "summary": "사격 계수 +10.4%",
+      "milestone": {
+        "effectId": "milestone_R_7",
+        "description": "열폭주 관리: 연속 사격 8초 이후 발열 하향",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "R08",
+      "branch": "R",
+      "branchName": "속사·연사",
+      "depth": 8,
+      "name": "속사·연사 8단",
+      "requires": [
+        "R07"
+      ],
+      "x": 588,
+      "y": 366,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.104,
+      "color": "#ef476f",
+      "rarity": "epic",
+      "summary": "사격 계수 +10.4%"
+    },
+    {
+      "id": "R09",
+      "branch": "R",
+      "branchName": "속사·연사",
+      "depth": 9,
+      "name": "속사·연사 9단",
+      "requires": [
+        "R08"
+      ],
+      "x": 659,
+      "y": 390,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.104,
+      "color": "#ef476f",
+      "rarity": "epic",
+      "summary": "사격 계수 +10.4%"
+    },
+    {
+      "id": "R10",
+      "branch": "R",
+      "branchName": "속사·연사",
+      "depth": 10,
+      "name": "속사·연사 10단",
+      "requires": [
+        "R09"
+      ],
+      "x": 735,
+      "y": 406,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.104,
+      "color": "#ef476f",
+      "rarity": "capstone",
+      "summary": "사격 계수 +10.4%",
+      "milestone": {
+        "effectId": "milestone_R_10",
+        "description": "위기 속사: 모서리 위험 적에 +20% 발사 속도, 지속 2초·쿨 12초",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "S01",
+      "branch": "S",
+      "branchName": "연계·시너지",
+      "depth": 1,
+      "name": "연계·시너지 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": 86,
+      "y": 151,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "synergy_multiplier",
+      "value": 0.09,
+      "color": "#a8dadc",
+      "rarity": "common",
+      "summary": "공격 계수 +9%"
+    },
+    {
+      "id": "S02",
+      "branch": "S",
+      "branchName": "연계·시너지",
+      "depth": 2,
+      "name": "연계·시너지 2단",
+      "requires": [
+        "S01"
+      ],
+      "x": 129,
+      "y": 212,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "synergy_multiplier",
+      "value": 0.09,
+      "color": "#a8dadc",
+      "rarity": "common",
+      "summary": "공격 계수 +9%"
+    },
+    {
+      "id": "S03",
+      "branch": "S",
+      "branchName": "연계·시너지",
+      "depth": 3,
+      "name": "연계·시너지 3단",
+      "requires": [
+        "S02"
+      ],
+      "x": 171,
+      "y": 273,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "synergy_multiplier",
+      "value": 0.09,
+      "color": "#a8dadc",
+      "rarity": "common",
+      "summary": "공격 계수 +9%"
+    },
+    {
+      "id": "S04",
+      "branch": "S",
+      "branchName": "연계·시너지",
+      "depth": 4,
+      "name": "연계·시너지 4단",
+      "requires": [
+        "S03"
+      ],
+      "x": 206,
+      "y": 338,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "synergy_multiplier",
+      "value": 0.09,
+      "color": "#a8dadc",
+      "rarity": "rare",
+      "summary": "공격 계수 +9%",
+      "milestone": {
+        "effectId": "milestone_S_4",
+        "description": "인접 2량 역할 연계: 시너지 +3%, 중복 제한",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "S05",
+      "branch": "S",
+      "branchName": "연계·시너지",
+      "depth": 5,
+      "name": "연계·시너지 5단",
+      "requires": [
+        "S04"
+      ],
+      "x": 232,
+      "y": 409,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "synergy_multiplier",
+      "value": 0.09,
+      "color": "#a8dadc",
+      "rarity": "rare",
+      "summary": "공격 계수 +9%"
+    },
+    {
+      "id": "S06",
+      "branch": "S",
+      "branchName": "연계·시너지",
+      "depth": 6,
+      "name": "연계·시너지 6단",
+      "requires": [
+        "S05"
+      ],
+      "x": 257,
+      "y": 479,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "synergy_multiplier",
+      "value": 0.09,
+      "color": "#a8dadc",
+      "rarity": "rare",
+      "summary": "공격 계수 +9%"
+    },
+    {
+      "id": "S07",
+      "branch": "S",
+      "branchName": "연계·시너지",
+      "depth": 7,
+      "name": "연계·시너지 7단",
+      "requires": [
+        "S06"
+      ],
+      "x": 292,
+      "y": 545,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "synergy_multiplier",
+      "value": 0.09,
+      "color": "#a8dadc",
+      "rarity": "epic",
+      "summary": "공격 계수 +9%",
+      "milestone": {
+        "effectId": "milestone_S_7",
+        "description": "3역할 연결 시 추가 조합 효과(하나만 활성)",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "S08",
+      "branch": "S",
+      "branchName": "연계·시너지",
+      "depth": 8,
+      "name": "연계·시너지 8단",
+      "requires": [
+        "S07"
+      ],
+      "x": 341,
+      "y": 602,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "synergy_multiplier",
+      "value": 0.09,
+      "color": "#a8dadc",
+      "rarity": "epic",
+      "summary": "공격 계수 +9%"
+    },
+    {
+      "id": "S09",
+      "branch": "S",
+      "branchName": "연계·시너지",
+      "depth": 9,
+      "name": "연계·시너지 9단",
+      "requires": [
+        "S08"
+      ],
+      "x": 397,
+      "y": 655,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "synergy_multiplier",
+      "value": 0.09,
+      "color": "#a8dadc",
+      "rarity": "epic",
+      "summary": "공격 계수 +9%"
+    },
+    {
+      "id": "S10",
+      "branch": "S",
+      "branchName": "연계·시너지",
+      "depth": 10,
+      "name": "연계·시너지 10단",
+      "requires": [
+        "S09"
+      ],
+      "x": 445,
+      "y": 712,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "synergy_multiplier",
+      "value": 0.09,
+      "color": "#a8dadc",
+      "rarity": "capstone",
+      "summary": "공격 계수 +9%",
+      "milestone": {
+        "effectId": "milestone_S_10",
+        "description": "장대 편성 +72% 시너지 총상한 확인 및 과열 패널티",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "H01",
+      "branch": "H",
+      "branchName": "화염·열",
+      "depth": 1,
+      "name": "화염·열 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": 4,
+      "y": 174,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.065,
+      "color": "#ff7b54",
+      "rarity": "common",
+      "summary": "공격 계수 +6.5%"
+    },
+    {
+      "id": "H02",
+      "branch": "H",
+      "branchName": "화염·열",
+      "depth": 2,
+      "name": "화염·열 2단",
+      "requires": [
+        "H01"
+      ],
+      "x": 9,
+      "y": 248,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.065,
+      "color": "#ff7b54",
+      "rarity": "common",
+      "summary": "공격 계수 +6.5%"
+    },
+    {
+      "id": "H03",
+      "branch": "H",
+      "branchName": "화염·열",
+      "depth": 3,
+      "name": "화염·열 3단",
+      "requires": [
+        "H02"
+      ],
+      "x": 6,
+      "y": 322,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.065,
+      "color": "#ff7b54",
+      "rarity": "common",
+      "summary": "공격 계수 +6.5%"
+    },
+    {
+      "id": "H04",
+      "branch": "H",
+      "branchName": "화염·열",
+      "depth": 4,
+      "name": "화염·열 4단",
+      "requires": [
+        "H03"
+      ],
+      "x": -4,
+      "y": 396,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.065,
+      "color": "#ff7b54",
+      "rarity": "rare",
+      "summary": "공격 계수 +6.5%",
+      "milestone": {
+        "effectId": "milestone_H_4",
+        "description": "화상 DOT: 동일 적 최대 3중첩",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "H05",
+      "branch": "H",
+      "branchName": "화염·열",
+      "depth": 5,
+      "name": "화염·열 5단",
+      "requires": [
+        "H04"
+      ],
+      "x": -15,
+      "y": 470,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.065,
+      "color": "#ff7b54",
+      "rarity": "rare",
+      "summary": "공격 계수 +6.5%"
+    },
+    {
+      "id": "H06",
+      "branch": "H",
+      "branchName": "화염·열",
+      "depth": 6,
+      "name": "화염·열 6단",
+      "requires": [
+        "H05"
+      ],
+      "x": -16,
+      "y": 544,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.065,
+      "color": "#ff7b54",
+      "rarity": "rare",
+      "summary": "공격 계수 +6.5%"
+    },
+    {
+      "id": "H07",
+      "branch": "H",
+      "branchName": "화염·열",
+      "depth": 7,
+      "name": "화염·열 7단",
+      "requires": [
+        "H06"
+      ],
+      "x": -3,
+      "y": 618,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.065,
+      "color": "#ff7b54",
+      "rarity": "epic",
+      "summary": "공격 계수 +6.5%",
+      "milestone": {
+        "effectId": "milestone_H_7",
+        "description": "처치 화염 잔상: 화상 적 피해 60%, 0.7초",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "H08",
+      "branch": "H",
+      "branchName": "화염·열",
+      "depth": 8,
+      "name": "화염·열 8단",
+      "requires": [
+        "H07"
+      ],
+      "x": 17,
+      "y": 692,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.065,
+      "color": "#ff7b54",
+      "rarity": "epic",
+      "summary": "공격 계수 +6.5%"
+    },
+    {
+      "id": "H09",
+      "branch": "H",
+      "branchName": "화염·열",
+      "depth": 9,
+      "name": "화염·열 9단",
+      "requires": [
+        "H08"
+      ],
+      "x": 27,
+      "y": 766,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.065,
+      "color": "#ff7b54",
+      "rarity": "epic",
+      "summary": "공격 계수 +6.5%"
+    },
+    {
+      "id": "H10",
+      "branch": "H",
+      "branchName": "화염·열",
+      "depth": 10,
+      "name": "화염·열 10단",
+      "requires": [
+        "H09"
+      ],
+      "x": 16,
+      "y": 840,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "fire_multiplier",
+      "value": 0.065,
+      "color": "#ff7b54",
+      "rarity": "capstone",
+      "summary": "공격 계수 +6.5%",
+      "milestone": {
+        "effectId": "milestone_H_10",
+        "description": "화상 확산 1회: 4m 내 최대 3대상",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "C01",
+      "branch": "C",
+      "branchName": "아크·전류",
+      "depth": 1,
+      "name": "아크·전류 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": -82,
+      "y": 154,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "chain_power",
+      "value": 0.028,
+      "color": "#65d6e7",
+      "rarity": "common",
+      "summary": "공격 계수 +2.8%, 범위 보정"
+    },
+    {
+      "id": "C02",
+      "branch": "C",
+      "branchName": "아크·전류",
+      "depth": 2,
+      "name": "아크·전류 2단",
+      "requires": [
+        "C01"
+      ],
+      "x": -120,
+      "y": 217,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "chain_power",
+      "value": 0.028,
+      "color": "#65d6e7",
+      "rarity": "common",
+      "summary": "공격 계수 +2.8%, 범위 보정"
+    },
+    {
+      "id": "C03",
+      "branch": "C",
+      "branchName": "아크·전류",
+      "depth": 3,
+      "name": "아크·전류 3단",
+      "requires": [
+        "C02"
+      ],
+      "x": -165,
+      "y": 277,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "chain_power",
+      "value": 0.028,
+      "color": "#65d6e7",
+      "rarity": "common",
+      "summary": "공격 계수 +2.8%, 범위 보정"
+    },
+    {
+      "id": "C04",
+      "branch": "C",
+      "branchName": "아크·전류",
+      "depth": 4,
+      "name": "아크·전류 4단",
+      "requires": [
+        "C03"
+      ],
+      "x": -210,
+      "y": 336,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "chain_power",
+      "value": 0.028,
+      "color": "#65d6e7",
+      "rarity": "rare",
+      "summary": "공격 계수 +2.8%, 범위 보정",
+      "milestone": {
+        "effectId": "milestone_C_4",
+        "description": "연쇄 첫 도약 1회 허용",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "C05",
+      "branch": "C",
+      "branchName": "아크·전류",
+      "depth": 5,
+      "name": "아크·전류 5단",
+      "requires": [
+        "C04"
+      ],
+      "x": -246,
+      "y": 400,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "chain_power",
+      "value": 0.028,
+      "color": "#65d6e7",
+      "rarity": "rare",
+      "summary": "공격 계수 +2.8%, 범위 보정"
+    },
+    {
+      "id": "C06",
+      "branch": "C",
+      "branchName": "아크·전류",
+      "depth": 6,
+      "name": "아크·전류 6단",
+      "requires": [
+        "C05"
+      ],
+      "x": -272,
+      "y": 471,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "chain_power",
+      "value": 0.028,
+      "color": "#65d6e7",
+      "rarity": "rare",
+      "summary": "공격 계수 +2.8%, 범위 보정"
+    },
+    {
+      "id": "C07",
+      "branch": "C",
+      "branchName": "아크·전류",
+      "depth": 7,
+      "name": "아크·전류 7단",
+      "requires": [
+        "C06"
+      ],
+      "x": -295,
+      "y": 543,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "chain_power",
+      "value": 0.028,
+      "color": "#65d6e7",
+      "rarity": "epic",
+      "summary": "공격 계수 +2.8%, 범위 보정",
+      "milestone": {
+        "effectId": "milestone_C_7",
+        "description": "연쇄 최대 2회, 도약마다 피해 25% 감소",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "C08",
+      "branch": "C",
+      "branchName": "아크·전류",
+      "depth": 8,
+      "name": "아크·전류 8단",
+      "requires": [
+        "C07"
+      ],
+      "x": -325,
+      "y": 611,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "chain_power",
+      "value": 0.028,
+      "color": "#65d6e7",
+      "rarity": "epic",
+      "summary": "공격 계수 +2.8%, 범위 보정"
+    },
+    {
+      "id": "C09",
+      "branch": "C",
+      "branchName": "아크·전류",
+      "depth": 9,
+      "name": "아크·전류 9단",
+      "requires": [
+        "C08"
+      ],
+      "x": -373,
+      "y": 669,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "chain_power",
+      "value": 0.028,
+      "color": "#65d6e7",
+      "rarity": "epic",
+      "summary": "공격 계수 +2.8%, 범위 보정"
+    },
+    {
+      "id": "C10",
+      "branch": "C",
+      "branchName": "아크·전류",
+      "depth": 10,
+      "name": "아크·전류 10단",
+      "requires": [
+        "C09"
+      ],
+      "x": -431,
+      "y": 721,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "chain_power",
+      "value": 0.028,
+      "color": "#65d6e7",
+      "rarity": "capstone",
+      "summary": "공격 계수 +2.8%, 범위 보정",
+      "milestone": {
+        "effectId": "milestone_C_10",
+        "description": "연쇄 최대 3회, 첫 타격만 치명 판정",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "X01",
+      "branch": "X",
+      "branchName": "폭발·파쇄",
+      "depth": 1,
+      "name": "폭발·파쇄 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": -150,
+      "y": 89,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "blast_power",
+      "value": 0.028,
+      "color": "#f8a45d",
+      "rarity": "common",
+      "summary": "공격 계수 +2.8%, 폭발 영역"
+    },
+    {
+      "id": "X02",
+      "branch": "X",
+      "branchName": "폭발·파쇄",
+      "depth": 2,
+      "name": "폭발·파쇄 2단",
+      "requires": [
+        "X01"
+      ],
+      "x": -217,
+      "y": 120,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "blast_power",
+      "value": 0.028,
+      "color": "#f8a45d",
+      "rarity": "common",
+      "summary": "공격 계수 +2.8%, 폭발 영역"
+    },
+    {
+      "id": "X03",
+      "branch": "X",
+      "branchName": "폭발·파쇄",
+      "depth": 3,
+      "name": "폭발·파쇄 3단",
+      "requires": [
+        "X02"
+      ],
+      "x": -284,
+      "y": 151,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "blast_power",
+      "value": 0.028,
+      "color": "#f8a45d",
+      "rarity": "common",
+      "summary": "공격 계수 +2.8%, 폭발 영역"
+    },
+    {
+      "id": "X04",
+      "branch": "X",
+      "branchName": "폭발·파쇄",
+      "depth": 4,
+      "name": "폭발·파쇄 4단",
+      "requires": [
+        "X03"
+      ],
+      "x": -348,
+      "y": 189,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "blast_power",
+      "value": 0.028,
+      "color": "#f8a45d",
+      "rarity": "rare",
+      "summary": "공격 계수 +2.8%, 폭발 영역",
+      "milestone": {
+        "effectId": "milestone_X_4",
+        "description": "폭발 범위 반경 10% 증가",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "X05",
+      "branch": "X",
+      "branchName": "폭발·파쇄",
+      "depth": 5,
+      "name": "폭발·파쇄 5단",
+      "requires": [
+        "X04"
+      ],
+      "x": -406,
+      "y": 236,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "blast_power",
+      "value": 0.028,
+      "color": "#f8a45d",
+      "rarity": "rare",
+      "summary": "공격 계수 +2.8%, 폭발 영역"
+    },
+    {
+      "id": "X06",
+      "branch": "X",
+      "branchName": "폭발·파쇄",
+      "depth": 6,
+      "name": "폭발·파쇄 6단",
+      "requires": [
+        "X05"
+      ],
+      "x": -463,
+      "y": 286,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "blast_power",
+      "value": 0.028,
+      "color": "#f8a45d",
+      "rarity": "rare",
+      "summary": "공격 계수 +2.8%, 폭발 영역"
+    },
+    {
+      "id": "X07",
+      "branch": "X",
+      "branchName": "폭발·파쇄",
+      "depth": 7,
+      "name": "폭발·파쇄 7단",
+      "requires": [
+        "X06"
+      ],
+      "x": -525,
+      "y": 327,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "blast_power",
+      "value": 0.028,
+      "color": "#f8a45d",
+      "rarity": "epic",
+      "summary": "공격 계수 +2.8%, 폭발 영역",
+      "milestone": {
+        "effectId": "milestone_X_7",
+        "description": "범위 외곽 피해 감소율 40%→30%",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "X08",
+      "branch": "X",
+      "branchName": "폭발·파쇄",
+      "depth": 8,
+      "name": "폭발·파쇄 8단",
+      "requires": [
+        "X07"
+      ],
+      "x": -595,
+      "y": 353,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "blast_power",
+      "value": 0.028,
+      "color": "#f8a45d",
+      "rarity": "epic",
+      "summary": "공격 계수 +2.8%, 폭발 영역"
+    },
+    {
+      "id": "X09",
+      "branch": "X",
+      "branchName": "폭발·파쇄",
+      "depth": 9,
+      "name": "폭발·파쇄 9단",
+      "requires": [
+        "X08"
+      ],
+      "x": -670,
+      "y": 371,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "blast_power",
+      "value": 0.028,
+      "color": "#f8a45d",
+      "rarity": "epic",
+      "summary": "공격 계수 +2.8%, 폭발 영역"
+    },
+    {
+      "id": "X10",
+      "branch": "X",
+      "branchName": "폭발·파쇄",
+      "depth": 10,
+      "name": "폭발·파쇄 10단",
+      "requires": [
+        "X09"
+      ],
+      "x": -742,
+      "y": 395,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "blast_power",
+      "value": 0.028,
+      "color": "#f8a45d",
+      "rarity": "capstone",
+      "summary": "공격 계수 +2.8%, 폭발 영역",
+      "milestone": {
+        "effectId": "milestone_X_10",
+        "description": "파편 폭발 최대 6개, 발사체 수/초 예산 적용",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "A01",
+      "branch": "A",
+      "branchName": "장갑·생존",
+      "depth": 1,
+      "name": "장갑·생존 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": -174,
+      "y": -4,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "leak_mitigation",
+      "value": 0.035,
+      "color": "#92a6bf",
+      "rarity": "common",
+      "summary": "탈출 피해 완화 +3.5%p(분모형)"
+    },
+    {
+      "id": "A02",
+      "branch": "A",
+      "branchName": "장갑·생존",
+      "depth": 2,
+      "name": "장갑·생존 2단",
+      "requires": [
+        "A01"
+      ],
+      "x": -248,
+      "y": -9,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "leak_mitigation",
+      "value": 0.035,
+      "color": "#92a6bf",
+      "rarity": "common",
+      "summary": "탈출 피해 완화 +3.5%p(분모형)"
+    },
+    {
+      "id": "A03",
+      "branch": "A",
+      "branchName": "장갑·생존",
+      "depth": 3,
+      "name": "장갑·생존 3단",
+      "requires": [
+        "A02"
+      ],
+      "x": -322,
+      "y": -7,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "leak_mitigation",
+      "value": 0.035,
+      "color": "#92a6bf",
+      "rarity": "common",
+      "summary": "탈출 피해 완화 +3.5%p(분모형)"
+    },
+    {
+      "id": "A04",
+      "branch": "A",
+      "branchName": "장갑·생존",
+      "depth": 4,
+      "name": "장갑·생존 4단",
+      "requires": [
+        "A03"
+      ],
+      "x": -396,
+      "y": 2,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "leak_mitigation",
+      "value": 0.035,
+      "color": "#92a6bf",
+      "rarity": "rare",
+      "summary": "탈출 피해 완화 +3.5%p(분모형)",
+      "milestone": {
+        "effectId": "milestone_A_4",
+        "description": "자폭/충돌 피해 15% 감소",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "A05",
+      "branch": "A",
+      "branchName": "장갑·생존",
+      "depth": 5,
+      "name": "장갑·생존 5단",
+      "requires": [
+        "A04"
+      ],
+      "x": -470,
+      "y": 14,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "leak_mitigation",
+      "value": 0.035,
+      "color": "#92a6bf",
+      "rarity": "rare",
+      "summary": "탈출 피해 완화 +3.5%p(분모형)"
+    },
+    {
+      "id": "A06",
+      "branch": "A",
+      "branchName": "장갑·생존",
+      "depth": 6,
+      "name": "장갑·생존 6단",
+      "requires": [
+        "A05"
+      ],
+      "x": -544,
+      "y": 18,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "leak_mitigation",
+      "value": 0.035,
+      "color": "#92a6bf",
+      "rarity": "rare",
+      "summary": "탈출 피해 완화 +3.5%p(분모형)"
+    },
+    {
+      "id": "A07",
+      "branch": "A",
+      "branchName": "장갑·생존",
+      "depth": 7,
+      "name": "장갑·생존 7단",
+      "requires": [
+        "A06"
+      ],
+      "x": -618,
+      "y": 6,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "leak_mitigation",
+      "value": 0.035,
+      "color": "#92a6bf",
+      "rarity": "epic",
+      "summary": "탈출 피해 완화 +3.5%p(분모형)",
+      "milestone": {
+        "effectId": "milestone_A_7",
+        "description": "기관차 HP <30% 시 방패 1회, 쿨 90초",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "A08",
+      "branch": "A",
+      "branchName": "장갑·생존",
+      "depth": 8,
+      "name": "장갑·생존 8단",
+      "requires": [
+        "A07"
+      ],
+      "x": -692,
+      "y": -14,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "leak_mitigation",
+      "value": 0.035,
+      "color": "#92a6bf",
+      "rarity": "epic",
+      "summary": "탈출 피해 완화 +3.5%p(분모형)"
+    },
+    {
+      "id": "A09",
+      "branch": "A",
+      "branchName": "장갑·생존",
+      "depth": 9,
+      "name": "장갑·생존 9단",
+      "requires": [
+        "A08"
+      ],
+      "x": -766,
+      "y": -27,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "leak_mitigation",
+      "value": 0.035,
+      "color": "#92a6bf",
+      "rarity": "epic",
+      "summary": "탈출 피해 완화 +3.5%p(분모형)"
+    },
+    {
+      "id": "A10",
+      "branch": "A",
+      "branchName": "장갑·생존",
+      "depth": 10,
+      "name": "장갑·생존 10단",
+      "requires": [
+        "A09"
+      ],
+      "x": -840,
+      "y": -19,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "leak_mitigation",
+      "value": 0.035,
+      "color": "#92a6bf",
+      "rarity": "capstone",
+      "summary": "탈출 피해 완화 +3.5%p(분모형)",
+      "milestone": {
+        "effectId": "milestone_A_10",
+        "description": "누수 일괄 3회 연속 발생 시 1회 무효, 쿨 120초",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "E01",
+      "branch": "E",
+      "branchName": "회수·경제",
+      "depth": 1,
+      "name": "회수·경제 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": -148,
+      "y": -92,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "economy_tier",
+      "value": 1,
+      "color": "#80ed99",
+      "rarity": "common",
+      "summary": "시간 +3%, XP +4%, 고철 +4.5%"
+    },
+    {
+      "id": "E02",
+      "branch": "E",
+      "branchName": "회수·경제",
+      "depth": 2,
+      "name": "회수·경제 2단",
+      "requires": [
+        "E01"
+      ],
+      "x": -212,
+      "y": -128,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "economy_tier",
+      "value": 1,
+      "color": "#80ed99",
+      "rarity": "common",
+      "summary": "시간 +3%, XP +4%, 고철 +4.5%"
+    },
+    {
+      "id": "E03",
+      "branch": "E",
+      "branchName": "회수·경제",
+      "depth": 3,
+      "name": "회수·경제 3단",
+      "requires": [
+        "E02"
+      ],
+      "x": -280,
+      "y": -158,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "economy_tier",
+      "value": 1,
+      "color": "#80ed99",
+      "rarity": "common",
+      "summary": "시간 +3%, XP +4%, 고철 +4.5%"
+    },
+    {
+      "id": "E04",
+      "branch": "E",
+      "branchName": "회수·경제",
+      "depth": 4,
+      "name": "회수·경제 4단",
+      "requires": [
+        "E03"
+      ],
+      "x": -349,
+      "y": -187,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "economy_tier",
+      "value": 1,
+      "color": "#80ed99",
+      "rarity": "rare",
+      "summary": "시간 +3%, XP +4%, 고철 +4.5%",
+      "milestone": {
+        "effectId": "milestone_E_4",
+        "description": "고철 추가 회수 +3%(누적 경제 상한 안에서)",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "E05",
+      "branch": "E",
+      "branchName": "회수·경제",
+      "depth": 5,
+      "name": "회수·경제 5단",
+      "requires": [
+        "E04"
+      ],
+      "x": -414,
+      "y": -222,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "economy_tier",
+      "value": 1,
+      "color": "#80ed99",
+      "rarity": "rare",
+      "summary": "시간 +3%, XP +4%, 고철 +4.5%"
+    },
+    {
+      "id": "E06",
+      "branch": "E",
+      "branchName": "회수·경제",
+      "depth": 6,
+      "name": "회수·경제 6단",
+      "requires": [
+        "E05"
+      ],
+      "x": -473,
+      "y": -269,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "economy_tier",
+      "value": 1,
+      "color": "#80ed99",
+      "rarity": "rare",
+      "summary": "시간 +3%, XP +4%, 고철 +4.5%"
+    },
+    {
+      "id": "E07",
+      "branch": "E",
+      "branchName": "회수·경제",
+      "depth": 7,
+      "name": "회수·경제 7단",
+      "requires": [
+        "E06"
+      ],
+      "x": -528,
+      "y": -321,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "economy_tier",
+      "value": 1,
+      "color": "#80ed99",
+      "rarity": "epic",
+      "summary": "시간 +3%, XP +4%, 고철 +4.5%; 특수 회수 확률 +3%p(7~10단 총12%p 제한)",
+      "milestone": {
+        "effectId": "milestone_E_7",
+        "description": "정예 적 최초 처치 추가 고철 5(동일 이벤트 1회)",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      },
+      "extraEffects": [
+        {
+          "stat": "salvage_chance_bonus",
+          "value": 0.03,
+          "valueUnit": "probability",
+          "stacking": "add",
+          "maxTotal": 0.12,
+          "trigger": "destroyed_wagon_or_enemy_salvage_once",
+          "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL"
+        }
+      ]
+    },
+    {
+      "id": "E08",
+      "branch": "E",
+      "branchName": "회수·경제",
+      "depth": 8,
+      "name": "회수·경제 8단",
+      "requires": [
+        "E07"
+      ],
+      "x": -587,
+      "y": -367,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "economy_tier",
+      "value": 1,
+      "color": "#80ed99",
+      "rarity": "epic",
+      "summary": "시간 +3%, XP +4%, 고철 +4.5%; 특수 회수 확률 +3%p(7~10단 총12%p 제한)",
+      "extraEffects": [
+        {
+          "stat": "salvage_chance_bonus",
+          "value": 0.03,
+          "valueUnit": "probability",
+          "stacking": "add",
+          "maxTotal": 0.12,
+          "trigger": "destroyed_wagon_or_enemy_salvage_once",
+          "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL"
+        }
+      ]
+    },
+    {
+      "id": "E09",
+      "branch": "E",
+      "branchName": "회수·경제",
+      "depth": 9,
+      "name": "회수·경제 9단",
+      "requires": [
+        "E08"
+      ],
+      "x": -656,
+      "y": -396,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "economy_tier",
+      "value": 1,
+      "color": "#80ed99",
+      "rarity": "epic",
+      "summary": "시간 +3%, XP +4%, 고철 +4.5%; 특수 회수 확률 +3%p(7~10단 총12%p 제한)",
+      "extraEffects": [
+        {
+          "stat": "salvage_chance_bonus",
+          "value": 0.03,
+          "valueUnit": "probability",
+          "stacking": "add",
+          "maxTotal": 0.12,
+          "trigger": "destroyed_wagon_or_enemy_salvage_once",
+          "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL"
+        }
+      ]
+    },
+    {
+      "id": "E10",
+      "branch": "E",
+      "branchName": "회수·경제",
+      "depth": 10,
+      "name": "회수·경제 10단",
+      "requires": [
+        "E09"
+      ],
+      "x": -732,
+      "y": -413,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "economy_tier",
+      "value": 1,
+      "color": "#80ed99",
+      "rarity": "capstone",
+      "summary": "시간 +3%, XP +4%, 고철 +4.5%; 특수 회수 확률 +3%p(7~10단 총12%p 제한)",
+      "milestone": {
+        "effectId": "milestone_E_10",
+        "description": "라운드당 첫 손실 고철의 10% 회수; 60초 쿨, 수입 상한 적용",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      },
+      "extraEffects": [
+        {
+          "stat": "salvage_chance_bonus",
+          "value": 0.03,
+          "valueUnit": "probability",
+          "stacking": "add",
+          "maxTotal": 0.12,
+          "trigger": "destroyed_wagon_or_enemy_salvage_once",
+          "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL"
+        }
+      ]
+    },
+    {
+      "id": "F01",
+      "branch": "F",
+      "branchName": "냉각·제어",
+      "depth": 1,
+      "name": "냉각·제어 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": -84,
+      "y": -152,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "enemy_travel_bonus_sec",
+      "value": 0.65,
+      "color": "#8ecae6",
+      "rarity": "common",
+      "summary": "적 탈출 지연 +0.65초"
+    },
+    {
+      "id": "F02",
+      "branch": "F",
+      "branchName": "냉각·제어",
+      "depth": 2,
+      "name": "냉각·제어 2단",
+      "requires": [
+        "F01"
+      ],
+      "x": -127,
+      "y": -213,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "enemy_travel_bonus_sec",
+      "value": 0.65,
+      "color": "#8ecae6",
+      "rarity": "common",
+      "summary": "적 탈출 지연 +0.65초"
+    },
+    {
+      "id": "F03",
+      "branch": "F",
+      "branchName": "냉각·제어",
+      "depth": 3,
+      "name": "냉각·제어 3단",
+      "requires": [
+        "F02"
+      ],
+      "x": -170,
+      "y": -273,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "enemy_travel_bonus_sec",
+      "value": 0.65,
+      "color": "#8ecae6",
+      "rarity": "common",
+      "summary": "적 탈출 지연 +0.65초"
+    },
+    {
+      "id": "F04",
+      "branch": "F",
+      "branchName": "냉각·제어",
+      "depth": 4,
+      "name": "냉각·제어 4단",
+      "requires": [
+        "F03"
+      ],
+      "x": -208,
+      "y": -337,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "enemy_travel_bonus_sec",
+      "value": 0.65,
+      "color": "#8ecae6",
+      "rarity": "rare",
+      "summary": "적 탈출 지연 +0.65초",
+      "milestone": {
+        "effectId": "milestone_F_4",
+        "description": "빙결 지속 0.35초(보스 0.15초)",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "F05",
+      "branch": "F",
+      "branchName": "냉각·제어",
+      "depth": 5,
+      "name": "냉각·제어 5단",
+      "requires": [
+        "F04"
+      ],
+      "x": -236,
+      "y": -406,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "enemy_travel_bonus_sec",
+      "value": 0.65,
+      "color": "#8ecae6",
+      "rarity": "rare",
+      "summary": "적 탈출 지연 +0.65초"
+    },
+    {
+      "id": "F06",
+      "branch": "F",
+      "branchName": "냉각·제어",
+      "depth": 6,
+      "name": "냉각·제어 6단",
+      "requires": [
+        "F05"
+      ],
+      "x": -260,
+      "y": -478,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "enemy_travel_bonus_sec",
+      "value": 0.65,
+      "color": "#8ecae6",
+      "rarity": "rare",
+      "summary": "적 탈출 지연 +0.65초"
+    },
+    {
+      "id": "F07",
+      "branch": "F",
+      "branchName": "냉각·제어",
+      "depth": 7,
+      "name": "냉각·제어 7단",
+      "requires": [
+        "F06"
+      ],
+      "x": -290,
+      "y": -546,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "enemy_travel_bonus_sec",
+      "value": 0.65,
+      "color": "#8ecae6",
+      "rarity": "epic",
+      "summary": "적 탈출 지연 +0.65초",
+      "milestone": {
+        "effectId": "milestone_F_7",
+        "description": "열화상 대상 감속 저항 +10% 무시",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "F08",
+      "branch": "F",
+      "branchName": "냉각·제어",
+      "depth": 8,
+      "name": "냉각·제어 8단",
+      "requires": [
+        "F07"
+      ],
+      "x": -336,
+      "y": -605,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "enemy_travel_bonus_sec",
+      "value": 0.65,
+      "color": "#8ecae6",
+      "rarity": "epic",
+      "summary": "적 탈출 지연 +0.65초"
+    },
+    {
+      "id": "F09",
+      "branch": "F",
+      "branchName": "냉각·제어",
+      "depth": 9,
+      "name": "냉각·제어 9단",
+      "requires": [
+        "F08"
+      ],
+      "x": -392,
+      "y": -658,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "enemy_travel_bonus_sec",
+      "value": 0.65,
+      "color": "#8ecae6",
+      "rarity": "epic",
+      "summary": "적 탈출 지연 +0.65초"
+    },
+    {
+      "id": "F10",
+      "branch": "F",
+      "branchName": "냉각·제어",
+      "depth": 10,
+      "name": "냉각·제어 10단",
+      "requires": [
+        "F09"
+      ],
+      "x": -444,
+      "y": -713,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "enemy_travel_bonus_sec",
+      "value": 0.65,
+      "color": "#8ecae6",
+      "rarity": "capstone",
+      "summary": "적 탈출 지연 +0.65초",
+      "milestone": {
+        "effectId": "milestone_F_10",
+        "description": "코너까지 남은 거리 15% 미만 적에 2초 감속, 쿨 25초",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "L01",
+      "branch": "L",
+      "branchName": "견인·속도",
+      "depth": 1,
+      "name": "견인·속도 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": -3,
+      "y": -174,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "coverage_bonus",
+      "value": 0.025,
+      "color": "#cdb4db",
+      "rarity": "common",
+      "summary": "사각 레일 순환·커버리지 +2.5%p"
+    },
+    {
+      "id": "L02",
+      "branch": "L",
+      "branchName": "견인·속도",
+      "depth": 2,
+      "name": "견인·속도 2단",
+      "requires": [
+        "L01"
+      ],
+      "x": -9,
+      "y": -248,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "coverage_bonus",
+      "value": 0.025,
+      "color": "#cdb4db",
+      "rarity": "common",
+      "summary": "사각 레일 순환·커버리지 +2.5%p"
+    },
+    {
+      "id": "L03",
+      "branch": "L",
+      "branchName": "견인·속도",
+      "depth": 3,
+      "name": "견인·속도 3단",
+      "requires": [
+        "L02"
+      ],
+      "x": -9,
+      "y": -322,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "coverage_bonus",
+      "value": 0.025,
+      "color": "#cdb4db",
+      "rarity": "common",
+      "summary": "사각 레일 순환·커버리지 +2.5%p"
+    },
+    {
+      "id": "L04",
+      "branch": "L",
+      "branchName": "견인·속도",
+      "depth": 4,
+      "name": "견인·속도 4단",
+      "requires": [
+        "L03"
+      ],
+      "x": 0,
+      "y": -396,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "coverage_bonus",
+      "value": 0.025,
+      "color": "#cdb4db",
+      "rarity": "rare",
+      "summary": "사각 레일 순환·커버리지 +2.5%p",
+      "milestone": {
+        "effectId": "milestone_L_4",
+        "description": "사각 레일 코너 감속 50% 완화",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "L05",
+      "branch": "L",
+      "branchName": "견인·속도",
+      "depth": 5,
+      "name": "견인·속도 5단",
+      "requires": [
+        "L04"
+      ],
+      "x": 13,
+      "y": -470,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "coverage_bonus",
+      "value": 0.025,
+      "color": "#cdb4db",
+      "rarity": "rare",
+      "summary": "사각 레일 순환·커버리지 +2.5%p"
+    },
+    {
+      "id": "L06",
+      "branch": "L",
+      "branchName": "견인·속도",
+      "depth": 6,
+      "name": "견인·속도 6단",
+      "requires": [
+        "L05"
+      ],
+      "x": 18,
+      "y": -544,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "coverage_bonus",
+      "value": 0.025,
+      "color": "#cdb4db",
+      "rarity": "rare",
+      "summary": "사각 레일 순환·커버리지 +2.5%p"
+    },
+    {
+      "id": "L07",
+      "branch": "L",
+      "branchName": "견인·속도",
+      "depth": 7,
+      "name": "견인·속도 7단",
+      "requires": [
+        "L06"
+      ],
+      "x": 9,
+      "y": -618,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "coverage_bonus",
+      "value": 0.025,
+      "color": "#cdb4db",
+      "rarity": "epic",
+      "summary": "사각 레일 순환·커버리지 +2.5%p",
+      "milestone": {
+        "effectId": "milestone_L_7",
+        "description": "다음 모서리 위협 알림 후 대포 목표 자동 우선",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "L08",
+      "branch": "L",
+      "branchName": "견인·속도",
+      "depth": 8,
+      "name": "견인·속도 8단",
+      "requires": [
+        "L07"
+      ],
+      "x": -11,
+      "y": -692,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "coverage_bonus",
+      "value": 0.025,
+      "color": "#cdb4db",
+      "rarity": "epic",
+      "summary": "사각 레일 순환·커버리지 +2.5%p"
+    },
+    {
+      "id": "L09",
+      "branch": "L",
+      "branchName": "견인·속도",
+      "depth": 9,
+      "name": "견인·속도 9단",
+      "requires": [
+        "L08"
+      ],
+      "x": -26,
+      "y": -766,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "coverage_bonus",
+      "value": 0.025,
+      "color": "#cdb4db",
+      "rarity": "epic",
+      "summary": "사각 레일 순환·커버리지 +2.5%p"
+    },
+    {
+      "id": "L10",
+      "branch": "L",
+      "branchName": "견인·속도",
+      "depth": 10,
+      "name": "견인·속도 10단",
+      "requires": [
+        "L09"
+      ],
+      "x": -22,
+      "y": -840,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "coverage_bonus",
+      "value": 0.025,
+      "color": "#cdb4db",
+      "rarity": "capstone",
+      "summary": "사각 레일 순환·커버리지 +2.5%p",
+      "milestone": {
+        "effectId": "milestone_L_10",
+        "description": "레일 속도 10% 보너스, 회전 한계 및 명중 보정 상한 유지",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "U01",
+      "branch": "U",
+      "branchName": "극대화·치명",
+      "depth": 1,
+      "name": "극대화·치명 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": 82,
+      "y": -154,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "crit_multiplier",
+      "value": 0.065,
+      "color": "#e3b23c",
+      "rarity": "common",
+      "summary": "화력 계수 +6.5%"
+    },
+    {
+      "id": "U02",
+      "branch": "U",
+      "branchName": "극대화·치명",
+      "depth": 2,
+      "name": "극대화·치명 2단",
+      "requires": [
+        "U01"
+      ],
+      "x": 119,
+      "y": -218,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "crit_multiplier",
+      "value": 0.065,
+      "color": "#e3b23c",
+      "rarity": "common",
+      "summary": "화력 계수 +6.5%"
+    },
+    {
+      "id": "U03",
+      "branch": "U",
+      "branchName": "극대화·치명",
+      "depth": 3,
+      "name": "극대화·치명 3단",
+      "requires": [
+        "U02"
+      ],
+      "x": 162,
+      "y": -278,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "crit_multiplier",
+      "value": 0.065,
+      "color": "#e3b23c",
+      "rarity": "common",
+      "summary": "화력 계수 +6.5%"
+    },
+    {
+      "id": "U04",
+      "branch": "U",
+      "branchName": "극대화·치명",
+      "depth": 4,
+      "name": "극대화·치명 4단",
+      "requires": [
+        "U03"
+      ],
+      "x": 208,
+      "y": -337,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "crit_multiplier",
+      "value": 0.065,
+      "color": "#e3b23c",
+      "rarity": "rare",
+      "summary": "화력 계수 +6.5%",
+      "milestone": {
+        "effectId": "milestone_U_4",
+        "description": "치명 확률 +4%p(0~60% 상한)",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "U05",
+      "branch": "U",
+      "branchName": "극대화·치명",
+      "depth": 5,
+      "name": "극대화·치명 5단",
+      "requires": [
+        "U04"
+      ],
+      "x": 248,
+      "y": -399,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "crit_multiplier",
+      "value": 0.065,
+      "color": "#e3b23c",
+      "rarity": "rare",
+      "summary": "화력 계수 +6.5%"
+    },
+    {
+      "id": "U06",
+      "branch": "U",
+      "branchName": "극대화·치명",
+      "depth": 6,
+      "name": "극대화·치명 6단",
+      "requires": [
+        "U05"
+      ],
+      "x": 277,
+      "y": -468,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "crit_multiplier",
+      "value": 0.065,
+      "color": "#e3b23c",
+      "rarity": "rare",
+      "summary": "화력 계수 +6.5%"
+    },
+    {
+      "id": "U07",
+      "branch": "U",
+      "branchName": "극대화·치명",
+      "depth": 7,
+      "name": "극대화·치명 7단",
+      "requires": [
+        "U06"
+      ],
+      "x": 298,
+      "y": -541,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "crit_multiplier",
+      "value": 0.065,
+      "color": "#e3b23c",
+      "rarity": "epic",
+      "summary": "화력 계수 +6.5%",
+      "milestone": {
+        "effectId": "milestone_U_7",
+        "description": "치명 피해 배율 +15%(치명식 한 번만 반영)",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "U08",
+      "branch": "U",
+      "branchName": "극대화·치명",
+      "depth": 8,
+      "name": "극대화·치명 8단",
+      "requires": [
+        "U07"
+      ],
+      "x": 325,
+      "y": -611,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "crit_multiplier",
+      "value": 0.065,
+      "color": "#e3b23c",
+      "rarity": "epic",
+      "summary": "화력 계수 +6.5%"
+    },
+    {
+      "id": "U09",
+      "branch": "U",
+      "branchName": "극대화·치명",
+      "depth": 9,
+      "name": "극대화·치명 9단",
+      "requires": [
+        "U08"
+      ],
+      "x": 367,
+      "y": -672,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "crit_multiplier",
+      "value": 0.065,
+      "color": "#e3b23c",
+      "rarity": "epic",
+      "summary": "화력 계수 +6.5%"
+    },
+    {
+      "id": "U10",
+      "branch": "U",
+      "branchName": "극대화·치명",
+      "depth": 10,
+      "name": "극대화·치명 10단",
+      "requires": [
+        "U09"
+      ],
+      "x": 424,
+      "y": -725,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "crit_multiplier",
+      "value": 0.065,
+      "color": "#e3b23c",
+      "rarity": "capstone",
+      "summary": "화력 계수 +6.5%",
+      "milestone": {
+        "effectId": "milestone_U_10",
+        "description": "같은 적 8회 명중 시 다음 공격 치명 보장, 대상당 6초 쿨",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "P01",
+      "branch": "P",
+      "branchName": "관통·투사",
+      "depth": 1,
+      "name": "관통·투사 1단",
+      "requires": [
+        "C000"
+      ],
+      "x": 149,
+      "y": -90,
+      "tpBase": 1,
+      "xpCost": 20,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "pierce_multiplier",
+      "value": 0.028,
+      "color": "#b8f2e6",
+      "rarity": "common",
+      "summary": "공격 계수 +2.8%, 관통"
+    },
+    {
+      "id": "P02",
+      "branch": "P",
+      "branchName": "관통·투사",
+      "depth": 2,
+      "name": "관통·투사 2단",
+      "requires": [
+        "P01"
+      ],
+      "x": 216,
+      "y": -122,
+      "tpBase": 1,
+      "xpCost": 36,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "pierce_multiplier",
+      "value": 0.028,
+      "color": "#b8f2e6",
+      "rarity": "common",
+      "summary": "공격 계수 +2.8%, 관통"
+    },
+    {
+      "id": "P03",
+      "branch": "P",
+      "branchName": "관통·투사",
+      "depth": 3,
+      "name": "관통·투사 3단",
+      "requires": [
+        "P02"
+      ],
+      "x": 284,
+      "y": -152,
+      "tpBase": 2,
+      "xpCost": 58,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "pierce_multiplier",
+      "value": 0.028,
+      "color": "#b8f2e6",
+      "rarity": "common",
+      "summary": "공격 계수 +2.8%, 관통"
+    },
+    {
+      "id": "P04",
+      "branch": "P",
+      "branchName": "관통·투사",
+      "depth": 4,
+      "name": "관통·투사 4단",
+      "requires": [
+        "P03"
+      ],
+      "x": 349,
+      "y": -187,
+      "tpBase": 2,
+      "xpCost": 86,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "pierce_multiplier",
+      "value": 0.028,
+      "color": "#b8f2e6",
+      "rarity": "rare",
+      "summary": "공격 계수 +2.8%, 관통",
+      "milestone": {
+        "effectId": "milestone_P_4",
+        "description": "관통 1회, 두 번째 목표에 피해 75%",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "P05",
+      "branch": "P",
+      "branchName": "관통·투사",
+      "depth": 5,
+      "name": "관통·투사 5단",
+      "requires": [
+        "P04"
+      ],
+      "x": 409,
+      "y": -232,
+      "tpBase": 3,
+      "xpCost": 120,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "pierce_multiplier",
+      "value": 0.028,
+      "color": "#b8f2e6",
+      "rarity": "rare",
+      "summary": "공격 계수 +2.8%, 관통"
+    },
+    {
+      "id": "P06",
+      "branch": "P",
+      "branchName": "관통·투사",
+      "depth": 6,
+      "name": "관통·투사 6단",
+      "requires": [
+        "P05"
+      ],
+      "x": 465,
+      "y": -282,
+      "tpBase": 3,
+      "xpCost": 160,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "pierce_multiplier",
+      "value": 0.028,
+      "color": "#b8f2e6",
+      "rarity": "rare",
+      "summary": "공격 계수 +2.8%, 관통"
+    },
+    {
+      "id": "P07",
+      "branch": "P",
+      "branchName": "관통·투사",
+      "depth": 7,
+      "name": "관통·투사 7단",
+      "requires": [
+        "P06"
+      ],
+      "x": 524,
+      "y": -328,
+      "tpBase": 4,
+      "xpCost": 206,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "pierce_multiplier",
+      "value": 0.028,
+      "color": "#b8f2e6",
+      "rarity": "epic",
+      "summary": "공격 계수 +2.8%, 관통",
+      "milestone": {
+        "effectId": "milestone_P_7",
+        "description": "관통 추가 1회, 세 번째 목표에 피해 55%",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    },
+    {
+      "id": "P08",
+      "branch": "P",
+      "branchName": "관통·투사",
+      "depth": 8,
+      "name": "관통·투사 8단",
+      "requires": [
+        "P07"
+      ],
+      "x": 592,
+      "y": -359,
+      "tpBase": 4,
+      "xpCost": 258,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "pierce_multiplier",
+      "value": 0.028,
+      "color": "#b8f2e6",
+      "rarity": "epic",
+      "summary": "공격 계수 +2.8%, 관통"
+    },
+    {
+      "id": "P09",
+      "branch": "P",
+      "branchName": "관통·투사",
+      "depth": 9,
+      "name": "관통·투사 9단",
+      "requires": [
+        "P08"
+      ],
+      "x": 667,
+      "y": -377,
+      "tpBase": 5,
+      "xpCost": 316,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "pierce_multiplier",
+      "value": 0.028,
+      "color": "#b8f2e6",
+      "rarity": "epic",
+      "summary": "공격 계수 +2.8%, 관통"
+    },
+    {
+      "id": "P10",
+      "branch": "P",
+      "branchName": "관통·투사",
+      "depth": 10,
+      "name": "관통·투사 10단",
+      "requires": [
+        "P09"
+      ],
+      "x": 741,
+      "y": -397,
+      "tpBase": 5,
+      "xpCost": 380,
+      "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
+      "stat": "pierce_multiplier",
+      "value": 0.028,
+      "color": "#b8f2e6",
+      "rarity": "capstone",
+      "summary": "공격 계수 +2.8%, 관통",
+      "milestone": {
+        "effectId": "milestone_P_10",
+        "description": "관통 최대 3회, 벽 관통 불가",
+        "simulationStatus": "NOT_IMPLEMENTED_IN_AGGREGATE_MODEL",
+        "runtimeImplementationRequired": true
+      }
+    }
+  ]
+}
