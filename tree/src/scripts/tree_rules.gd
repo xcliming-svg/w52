@@ -15,6 +15,16 @@ func configure(registry: RData, money: REconomy) -> void:
 	data = registry
 	economy = money
 
+func is_visible(node_id: String) -> bool:
+	if data == null or not data.nodes.has(node_id):
+		return false
+	if purchased.has(node_id):
+		return true
+	for parent_id in data.nodes[node_id].get("requires",[]):
+		if not purchased.has(str(parent_id)):
+			return false
+	return true
+
 func may_buy(node_id: String) -> bool:
 	if not data.nodes.has(node_id) or purchased.has(node_id) or node_id == "C000":
 		return false
@@ -31,10 +41,11 @@ func cancel_same_tick(node_id: String, tick: int) -> bool:
 func reset_once(tick: int) -> bool:
 	return RTreeReset.execute(self,tick)
 func depth(branch: String) -> int:
-	for level in range(10, 0, -1):
-		if purchased.has("%s%02d" % [branch, level]):
-			return level
-	return 0
+	var count: int = 0
+	for level in range(1,11):
+		if purchased.has("%s%02d" % [branch,level]):
+			count += 1
+	return count
 
 func has_milestone(branch: String, tier: int) -> bool:
 	return milestone_ids.has("milestone_%s_%d" % [branch, tier])

@@ -118,7 +118,7 @@
       "id": "C000",
       "branch": "CORE",
       "depth": 0,
-      "name": "영구기관 / 중앙점",
+      "name": "굴의 뿌리 / 추적 본부",
       "requires": [],
       "x": 0,
       "y": 0,
@@ -136,8 +136,8 @@
       "requires": [
         "C000"
       ],
-      "x": 174,
-      "y": 5,
+      "x": 165,
+      "y": 0,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -156,8 +156,8 @@
       "requires": [
         "W01"
       ],
-      "x": 248,
-      "y": 8,
+      "x": 260,
+      "y": 0,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -176,8 +176,8 @@
       "requires": [
         "W02"
       ],
-      "x": 322,
-      "y": 5,
+      "x": 369,
+      "y": -30,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -194,10 +194,10 @@
       "depth": 4,
       "name": "편성·객차 4단",
       "requires": [
-        "W03"
+        "W02"
       ],
-      "x": 396,
-      "y": -6,
+      "x": 369,
+      "y": 30,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -220,10 +220,10 @@
       "depth": 5,
       "name": "편성·객차 5단",
       "requires": [
-        "W04"
+        "W03"
       ],
-      "x": 470,
-      "y": -16,
+      "x": 462,
+      "y": -53,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -240,10 +240,10 @@
       "depth": 6,
       "name": "편성·객차 6단",
       "requires": [
-        "W05"
+        "W04"
       ],
-      "x": 544,
-      "y": -15,
+      "x": 462,
+      "y": 53,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -260,10 +260,10 @@
       "depth": 7,
       "name": "편성·객차 7단",
       "requires": [
-        "W06"
+        "W05"
       ],
-      "x": 618,
-      "y": 0,
+      "x": 554,
+      "y": -84,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -286,10 +286,10 @@
       "depth": 8,
       "name": "편성·객차 8단",
       "requires": [
-        "W07"
+        "W06"
       ],
-      "x": 692,
-      "y": 19,
+      "x": 554,
+      "y": 84,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -306,10 +306,10 @@
       "depth": 9,
       "name": "편성·객차 9단",
       "requires": [
-        "W08"
+        "W07"
       ],
-      "x": 766,
-      "y": 26,
+      "x": 649,
+      "y": -121,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -326,10 +326,10 @@
       "depth": 10,
       "name": "편성·객차 10단",
       "requires": [
-        "W09"
+        "W08"
       ],
-      "x": 840,
-      "y": 12,
+      "x": 649,
+      "y": 121,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -354,8 +354,8 @@
       "requires": [
         "C000"
       ],
-      "x": 148,
-      "y": 92,
+      "x": 143,
+      "y": 82,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -374,8 +374,8 @@
       "requires": [
         "R01"
       ],
-      "x": 213,
-      "y": 127,
+      "x": 225,
+      "y": 130,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -394,8 +394,8 @@
       "requires": [
         "R02"
       ],
-      "x": 282,
-      "y": 156,
+      "x": 334,
+      "y": 159,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -412,10 +412,10 @@
       "depth": 4,
       "name": "속사·연사 4단",
       "requires": [
-        "R03"
+        "R02"
       ],
-      "x": 350,
-      "y": 186,
+      "x": 305,
+      "y": 210,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -438,10 +438,10 @@
       "depth": 5,
       "name": "속사·연사 5단",
       "requires": [
-        "R04"
+        "R03"
       ],
-      "x": 413,
-      "y": 225,
+      "x": 427,
+      "y": 185,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -458,10 +458,10 @@
       "depth": 6,
       "name": "속사·연사 6단",
       "requires": [
-        "R05"
+        "R04"
       ],
-      "x": 470,
-      "y": 274,
+      "x": 373,
+      "y": 277,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -478,10 +478,10 @@
       "depth": 7,
       "name": "속사·연사 7단",
       "requires": [
-        "R06"
+        "R05"
       ],
-      "x": 526,
-      "y": 325,
+      "x": 521,
+      "y": 204,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -504,10 +504,10 @@
       "depth": 8,
       "name": "속사·연사 8단",
       "requires": [
-        "R07"
+        "R06"
       ],
-      "x": 588,
-      "y": 366,
+      "x": 438,
+      "y": 349,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -524,10 +524,10 @@
       "depth": 9,
       "name": "속사·연사 9단",
       "requires": [
-        "R08"
+        "R07"
       ],
-      "x": 659,
-      "y": 390,
+      "x": 623,
+      "y": 219,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -544,10 +544,10 @@
       "depth": 10,
       "name": "속사·연사 10단",
       "requires": [
-        "R09"
+        "R08"
       ],
-      "x": 735,
-      "y": 406,
+      "x": 501,
+      "y": 430,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -572,8 +572,8 @@
       "requires": [
         "C000"
       ],
-      "x": 86,
-      "y": 151,
+      "x": 83,
+      "y": 143,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -592,8 +592,8 @@
       "requires": [
         "S01"
       ],
-      "x": 129,
-      "y": 212,
+      "x": 130,
+      "y": 225,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -612,8 +612,8 @@
       "requires": [
         "S02"
       ],
-      "x": 171,
-      "y": 273,
+      "x": 210,
+      "y": 305,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -630,10 +630,10 @@
       "depth": 4,
       "name": "연계·시너지 4단",
       "requires": [
-        "S03"
+        "S02"
       ],
-      "x": 206,
-      "y": 338,
+      "x": 159,
+      "y": 334,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -656,10 +656,10 @@
       "depth": 5,
       "name": "연계·시너지 5단",
       "requires": [
-        "S04"
+        "S03"
       ],
-      "x": 232,
-      "y": 409,
+      "x": 277,
+      "y": 373,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -676,10 +676,10 @@
       "depth": 6,
       "name": "연계·시너지 6단",
       "requires": [
-        "S05"
+        "S04"
       ],
-      "x": 257,
-      "y": 479,
+      "x": 185,
+      "y": 427,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -696,10 +696,10 @@
       "depth": 7,
       "name": "연계·시너지 7단",
       "requires": [
-        "S06"
+        "S05"
       ],
-      "x": 292,
-      "y": 545,
+      "x": 349,
+      "y": 438,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -722,10 +722,10 @@
       "depth": 8,
       "name": "연계·시너지 8단",
       "requires": [
-        "S07"
+        "S06"
       ],
-      "x": 341,
-      "y": 602,
+      "x": 204,
+      "y": 521,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -742,10 +742,10 @@
       "depth": 9,
       "name": "연계·시너지 9단",
       "requires": [
-        "S08"
+        "S07"
       ],
-      "x": 397,
-      "y": 655,
+      "x": 430,
+      "y": 501,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -762,10 +762,10 @@
       "depth": 10,
       "name": "연계·시너지 10단",
       "requires": [
-        "S09"
+        "S08"
       ],
-      "x": 445,
-      "y": 712,
+      "x": 219,
+      "y": 623,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -790,8 +790,8 @@
       "requires": [
         "C000"
       ],
-      "x": 4,
-      "y": 174,
+      "x": 0,
+      "y": 165,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -810,8 +810,8 @@
       "requires": [
         "H01"
       ],
-      "x": 9,
-      "y": 248,
+      "x": 0,
+      "y": 260,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -830,8 +830,8 @@
       "requires": [
         "H02"
       ],
-      "x": 6,
-      "y": 322,
+      "x": 30,
+      "y": 369,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -848,10 +848,10 @@
       "depth": 4,
       "name": "화염·열 4단",
       "requires": [
-        "H03"
+        "H02"
       ],
-      "x": -4,
-      "y": 396,
+      "x": -30,
+      "y": 369,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -874,10 +874,10 @@
       "depth": 5,
       "name": "화염·열 5단",
       "requires": [
-        "H04"
+        "H03"
       ],
-      "x": -15,
-      "y": 470,
+      "x": 53,
+      "y": 462,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -894,10 +894,10 @@
       "depth": 6,
       "name": "화염·열 6단",
       "requires": [
-        "H05"
+        "H04"
       ],
-      "x": -16,
-      "y": 544,
+      "x": -53,
+      "y": 462,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -914,10 +914,10 @@
       "depth": 7,
       "name": "화염·열 7단",
       "requires": [
-        "H06"
+        "H05"
       ],
-      "x": -3,
-      "y": 618,
+      "x": 84,
+      "y": 554,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -940,10 +940,10 @@
       "depth": 8,
       "name": "화염·열 8단",
       "requires": [
-        "H07"
+        "H06"
       ],
-      "x": 17,
-      "y": 692,
+      "x": -84,
+      "y": 554,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -960,10 +960,10 @@
       "depth": 9,
       "name": "화염·열 9단",
       "requires": [
-        "H08"
+        "H07"
       ],
-      "x": 27,
-      "y": 766,
+      "x": 121,
+      "y": 649,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -980,10 +980,10 @@
       "depth": 10,
       "name": "화염·열 10단",
       "requires": [
-        "H09"
+        "H08"
       ],
-      "x": 16,
-      "y": 840,
+      "x": -121,
+      "y": 649,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1009,7 +1009,7 @@
         "C000"
       ],
       "x": -82,
-      "y": 154,
+      "y": 143,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1028,8 +1028,8 @@
       "requires": [
         "C01"
       ],
-      "x": -120,
-      "y": 217,
+      "x": -130,
+      "y": 225,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1048,8 +1048,8 @@
       "requires": [
         "C02"
       ],
-      "x": -165,
-      "y": 277,
+      "x": -159,
+      "y": 334,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1066,10 +1066,10 @@
       "depth": 4,
       "name": "아크·전류 4단",
       "requires": [
-        "C03"
+        "C02"
       ],
       "x": -210,
-      "y": 336,
+      "y": 305,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1092,10 +1092,10 @@
       "depth": 5,
       "name": "아크·전류 5단",
       "requires": [
-        "C04"
+        "C03"
       ],
-      "x": -246,
-      "y": 400,
+      "x": -185,
+      "y": 427,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1112,10 +1112,10 @@
       "depth": 6,
       "name": "아크·전류 6단",
       "requires": [
-        "C05"
+        "C04"
       ],
-      "x": -272,
-      "y": 471,
+      "x": -277,
+      "y": 373,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1132,10 +1132,10 @@
       "depth": 7,
       "name": "아크·전류 7단",
       "requires": [
-        "C06"
+        "C05"
       ],
-      "x": -295,
-      "y": 543,
+      "x": -204,
+      "y": 521,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1158,10 +1158,10 @@
       "depth": 8,
       "name": "아크·전류 8단",
       "requires": [
-        "C07"
+        "C06"
       ],
-      "x": -325,
-      "y": 611,
+      "x": -349,
+      "y": 438,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1178,10 +1178,10 @@
       "depth": 9,
       "name": "아크·전류 9단",
       "requires": [
-        "C08"
+        "C07"
       ],
-      "x": -373,
-      "y": 669,
+      "x": -219,
+      "y": 623,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1198,10 +1198,10 @@
       "depth": 10,
       "name": "아크·전류 10단",
       "requires": [
-        "C09"
+        "C08"
       ],
-      "x": -431,
-      "y": 721,
+      "x": -430,
+      "y": 501,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1226,8 +1226,8 @@
       "requires": [
         "C000"
       ],
-      "x": -150,
-      "y": 89,
+      "x": -143,
+      "y": 82,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1246,8 +1246,8 @@
       "requires": [
         "X01"
       ],
-      "x": -217,
-      "y": 120,
+      "x": -225,
+      "y": 130,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1266,8 +1266,8 @@
       "requires": [
         "X02"
       ],
-      "x": -284,
-      "y": 151,
+      "x": -305,
+      "y": 210,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1284,10 +1284,10 @@
       "depth": 4,
       "name": "폭발·파쇄 4단",
       "requires": [
-        "X03"
+        "X02"
       ],
-      "x": -348,
-      "y": 189,
+      "x": -334,
+      "y": 159,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1310,10 +1310,10 @@
       "depth": 5,
       "name": "폭발·파쇄 5단",
       "requires": [
-        "X04"
+        "X03"
       ],
-      "x": -406,
-      "y": 236,
+      "x": -373,
+      "y": 277,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1330,10 +1330,10 @@
       "depth": 6,
       "name": "폭발·파쇄 6단",
       "requires": [
-        "X05"
+        "X04"
       ],
-      "x": -463,
-      "y": 286,
+      "x": -427,
+      "y": 185,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1350,10 +1350,10 @@
       "depth": 7,
       "name": "폭발·파쇄 7단",
       "requires": [
-        "X06"
+        "X05"
       ],
-      "x": -525,
-      "y": 327,
+      "x": -438,
+      "y": 349,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1376,10 +1376,10 @@
       "depth": 8,
       "name": "폭발·파쇄 8단",
       "requires": [
-        "X07"
+        "X06"
       ],
-      "x": -595,
-      "y": 353,
+      "x": -521,
+      "y": 204,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1396,10 +1396,10 @@
       "depth": 9,
       "name": "폭발·파쇄 9단",
       "requires": [
-        "X08"
+        "X07"
       ],
-      "x": -670,
-      "y": 371,
+      "x": -501,
+      "y": 430,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1416,10 +1416,10 @@
       "depth": 10,
       "name": "폭발·파쇄 10단",
       "requires": [
-        "X09"
+        "X08"
       ],
-      "x": -742,
-      "y": 395,
+      "x": -623,
+      "y": 219,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1444,8 +1444,8 @@
       "requires": [
         "C000"
       ],
-      "x": -174,
-      "y": -4,
+      "x": -165,
+      "y": 0,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1464,8 +1464,8 @@
       "requires": [
         "A01"
       ],
-      "x": -248,
-      "y": -9,
+      "x": -260,
+      "y": 0,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1484,8 +1484,8 @@
       "requires": [
         "A02"
       ],
-      "x": -322,
-      "y": -7,
+      "x": -369,
+      "y": 30,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1502,10 +1502,10 @@
       "depth": 4,
       "name": "장갑·생존 4단",
       "requires": [
-        "A03"
+        "A02"
       ],
-      "x": -396,
-      "y": 2,
+      "x": -369,
+      "y": -30,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1528,10 +1528,10 @@
       "depth": 5,
       "name": "장갑·생존 5단",
       "requires": [
-        "A04"
+        "A03"
       ],
-      "x": -470,
-      "y": 14,
+      "x": -462,
+      "y": 53,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1548,10 +1548,10 @@
       "depth": 6,
       "name": "장갑·생존 6단",
       "requires": [
-        "A05"
+        "A04"
       ],
-      "x": -544,
-      "y": 18,
+      "x": -462,
+      "y": -53,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1568,10 +1568,10 @@
       "depth": 7,
       "name": "장갑·생존 7단",
       "requires": [
-        "A06"
+        "A05"
       ],
-      "x": -618,
-      "y": 6,
+      "x": -554,
+      "y": 84,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1594,10 +1594,10 @@
       "depth": 8,
       "name": "장갑·생존 8단",
       "requires": [
-        "A07"
+        "A06"
       ],
-      "x": -692,
-      "y": -14,
+      "x": -554,
+      "y": -84,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1614,10 +1614,10 @@
       "depth": 9,
       "name": "장갑·생존 9단",
       "requires": [
-        "A08"
+        "A07"
       ],
-      "x": -766,
-      "y": -27,
+      "x": -649,
+      "y": 121,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1634,10 +1634,10 @@
       "depth": 10,
       "name": "장갑·생존 10단",
       "requires": [
-        "A09"
+        "A08"
       ],
-      "x": -840,
-      "y": -19,
+      "x": -649,
+      "y": -121,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1662,8 +1662,8 @@
       "requires": [
         "C000"
       ],
-      "x": -148,
-      "y": -92,
+      "x": -143,
+      "y": -82,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1682,8 +1682,8 @@
       "requires": [
         "E01"
       ],
-      "x": -212,
-      "y": -128,
+      "x": -225,
+      "y": -130,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1702,8 +1702,8 @@
       "requires": [
         "E02"
       ],
-      "x": -280,
-      "y": -158,
+      "x": -334,
+      "y": -159,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1720,10 +1720,10 @@
       "depth": 4,
       "name": "회수·경제 4단",
       "requires": [
-        "E03"
+        "E02"
       ],
-      "x": -349,
-      "y": -187,
+      "x": -305,
+      "y": -210,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1746,10 +1746,10 @@
       "depth": 5,
       "name": "회수·경제 5단",
       "requires": [
-        "E04"
+        "E03"
       ],
-      "x": -414,
-      "y": -222,
+      "x": -427,
+      "y": -185,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1766,10 +1766,10 @@
       "depth": 6,
       "name": "회수·경제 6단",
       "requires": [
-        "E05"
+        "E04"
       ],
-      "x": -473,
-      "y": -269,
+      "x": -373,
+      "y": -277,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1786,10 +1786,10 @@
       "depth": 7,
       "name": "회수·경제 7단",
       "requires": [
-        "E06"
+        "E05"
       ],
-      "x": -528,
-      "y": -321,
+      "x": -521,
+      "y": -204,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1823,10 +1823,10 @@
       "depth": 8,
       "name": "회수·경제 8단",
       "requires": [
-        "E07"
+        "E06"
       ],
-      "x": -587,
-      "y": -367,
+      "x": -438,
+      "y": -349,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1854,10 +1854,10 @@
       "depth": 9,
       "name": "회수·경제 9단",
       "requires": [
-        "E08"
+        "E07"
       ],
-      "x": -656,
-      "y": -396,
+      "x": -623,
+      "y": -219,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1885,10 +1885,10 @@
       "depth": 10,
       "name": "회수·경제 10단",
       "requires": [
-        "E09"
+        "E08"
       ],
-      "x": -732,
-      "y": -413,
+      "x": -501,
+      "y": -430,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1924,8 +1924,8 @@
       "requires": [
         "C000"
       ],
-      "x": -84,
-      "y": -152,
+      "x": -83,
+      "y": -143,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1944,8 +1944,8 @@
       "requires": [
         "F01"
       ],
-      "x": -127,
-      "y": -213,
+      "x": -130,
+      "y": -225,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1964,8 +1964,8 @@
       "requires": [
         "F02"
       ],
-      "x": -170,
-      "y": -273,
+      "x": -210,
+      "y": -305,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -1982,10 +1982,10 @@
       "depth": 4,
       "name": "냉각·제어 4단",
       "requires": [
-        "F03"
+        "F02"
       ],
-      "x": -208,
-      "y": -337,
+      "x": -159,
+      "y": -334,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2008,10 +2008,10 @@
       "depth": 5,
       "name": "냉각·제어 5단",
       "requires": [
-        "F04"
+        "F03"
       ],
-      "x": -236,
-      "y": -406,
+      "x": -277,
+      "y": -373,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2028,10 +2028,10 @@
       "depth": 6,
       "name": "냉각·제어 6단",
       "requires": [
-        "F05"
+        "F04"
       ],
-      "x": -260,
-      "y": -478,
+      "x": -185,
+      "y": -427,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2048,10 +2048,10 @@
       "depth": 7,
       "name": "냉각·제어 7단",
       "requires": [
-        "F06"
+        "F05"
       ],
-      "x": -290,
-      "y": -546,
+      "x": -349,
+      "y": -438,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2074,10 +2074,10 @@
       "depth": 8,
       "name": "냉각·제어 8단",
       "requires": [
-        "F07"
+        "F06"
       ],
-      "x": -336,
-      "y": -605,
+      "x": -204,
+      "y": -521,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2094,10 +2094,10 @@
       "depth": 9,
       "name": "냉각·제어 9단",
       "requires": [
-        "F08"
+        "F07"
       ],
-      "x": -392,
-      "y": -658,
+      "x": -430,
+      "y": -501,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2114,10 +2114,10 @@
       "depth": 10,
       "name": "냉각·제어 10단",
       "requires": [
-        "F09"
+        "F08"
       ],
-      "x": -444,
-      "y": -713,
+      "x": -219,
+      "y": -623,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2142,8 +2142,8 @@
       "requires": [
         "C000"
       ],
-      "x": -3,
-      "y": -174,
+      "x": 0,
+      "y": -165,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2162,8 +2162,8 @@
       "requires": [
         "L01"
       ],
-      "x": -9,
-      "y": -248,
+      "x": 0,
+      "y": -260,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2182,8 +2182,8 @@
       "requires": [
         "L02"
       ],
-      "x": -9,
-      "y": -322,
+      "x": -30,
+      "y": -369,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2200,10 +2200,10 @@
       "depth": 4,
       "name": "견인·속도 4단",
       "requires": [
-        "L03"
+        "L02"
       ],
-      "x": 0,
-      "y": -396,
+      "x": 30,
+      "y": -369,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2226,10 +2226,10 @@
       "depth": 5,
       "name": "견인·속도 5단",
       "requires": [
-        "L04"
+        "L03"
       ],
-      "x": 13,
-      "y": -470,
+      "x": -53,
+      "y": -462,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2246,10 +2246,10 @@
       "depth": 6,
       "name": "견인·속도 6단",
       "requires": [
-        "L05"
+        "L04"
       ],
-      "x": 18,
-      "y": -544,
+      "x": 53,
+      "y": -462,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2266,10 +2266,10 @@
       "depth": 7,
       "name": "견인·속도 7단",
       "requires": [
-        "L06"
+        "L05"
       ],
-      "x": 9,
-      "y": -618,
+      "x": -84,
+      "y": -554,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2292,10 +2292,10 @@
       "depth": 8,
       "name": "견인·속도 8단",
       "requires": [
-        "L07"
+        "L06"
       ],
-      "x": -11,
-      "y": -692,
+      "x": 84,
+      "y": -554,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2312,10 +2312,10 @@
       "depth": 9,
       "name": "견인·속도 9단",
       "requires": [
-        "L08"
+        "L07"
       ],
-      "x": -26,
-      "y": -766,
+      "x": -121,
+      "y": -649,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2332,10 +2332,10 @@
       "depth": 10,
       "name": "견인·속도 10단",
       "requires": [
-        "L09"
+        "L08"
       ],
-      "x": -22,
-      "y": -840,
+      "x": 121,
+      "y": -649,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2360,8 +2360,8 @@
       "requires": [
         "C000"
       ],
-      "x": 82,
-      "y": -154,
+      "x": 83,
+      "y": -143,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2380,8 +2380,8 @@
       "requires": [
         "U01"
       ],
-      "x": 119,
-      "y": -218,
+      "x": 130,
+      "y": -225,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2400,8 +2400,8 @@
       "requires": [
         "U02"
       ],
-      "x": 162,
-      "y": -278,
+      "x": 159,
+      "y": -334,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2418,10 +2418,10 @@
       "depth": 4,
       "name": "극대화·치명 4단",
       "requires": [
-        "U03"
+        "U02"
       ],
-      "x": 208,
-      "y": -337,
+      "x": 210,
+      "y": -305,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2444,10 +2444,10 @@
       "depth": 5,
       "name": "극대화·치명 5단",
       "requires": [
-        "U04"
+        "U03"
       ],
-      "x": 248,
-      "y": -399,
+      "x": 185,
+      "y": -427,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2464,10 +2464,10 @@
       "depth": 6,
       "name": "극대화·치명 6단",
       "requires": [
-        "U05"
+        "U04"
       ],
       "x": 277,
-      "y": -468,
+      "y": -373,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2484,10 +2484,10 @@
       "depth": 7,
       "name": "극대화·치명 7단",
       "requires": [
-        "U06"
+        "U05"
       ],
-      "x": 298,
-      "y": -541,
+      "x": 204,
+      "y": -521,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2510,10 +2510,10 @@
       "depth": 8,
       "name": "극대화·치명 8단",
       "requires": [
-        "U07"
+        "U06"
       ],
-      "x": 325,
-      "y": -611,
+      "x": 349,
+      "y": -438,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2530,10 +2530,10 @@
       "depth": 9,
       "name": "극대화·치명 9단",
       "requires": [
-        "U08"
+        "U07"
       ],
-      "x": 367,
-      "y": -672,
+      "x": 219,
+      "y": -623,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2550,10 +2550,10 @@
       "depth": 10,
       "name": "극대화·치명 10단",
       "requires": [
-        "U09"
+        "U08"
       ],
-      "x": 424,
-      "y": -725,
+      "x": 430,
+      "y": -501,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2578,8 +2578,8 @@
       "requires": [
         "C000"
       ],
-      "x": 149,
-      "y": -90,
+      "x": 143,
+      "y": -83,
       "tpBase": 1,
       "xpCost": 20,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2598,8 +2598,8 @@
       "requires": [
         "P01"
       ],
-      "x": 216,
-      "y": -122,
+      "x": 225,
+      "y": -130,
       "tpBase": 1,
       "xpCost": 36,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2618,8 +2618,8 @@
       "requires": [
         "P02"
       ],
-      "x": 284,
-      "y": -152,
+      "x": 305,
+      "y": -210,
       "tpBase": 2,
       "xpCost": 58,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2636,10 +2636,10 @@
       "depth": 4,
       "name": "관통·투사 4단",
       "requires": [
-        "P03"
+        "P02"
       ],
-      "x": 349,
-      "y": -187,
+      "x": 334,
+      "y": -159,
       "tpBase": 2,
       "xpCost": 86,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2662,10 +2662,10 @@
       "depth": 5,
       "name": "관통·투사 5단",
       "requires": [
-        "P04"
+        "P03"
       ],
-      "x": 409,
-      "y": -232,
+      "x": 373,
+      "y": -277,
       "tpBase": 3,
       "xpCost": 120,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2682,10 +2682,10 @@
       "depth": 6,
       "name": "관통·투사 6단",
       "requires": [
-        "P05"
+        "P04"
       ],
-      "x": 465,
-      "y": -282,
+      "x": 427,
+      "y": -185,
       "tpBase": 3,
       "xpCost": 160,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2702,10 +2702,10 @@
       "depth": 7,
       "name": "관통·투사 7단",
       "requires": [
-        "P06"
+        "P05"
       ],
-      "x": 524,
-      "y": -328,
+      "x": 438,
+      "y": -349,
       "tpBase": 4,
       "xpCost": 206,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2728,10 +2728,10 @@
       "depth": 8,
       "name": "관통·투사 8단",
       "requires": [
-        "P07"
+        "P06"
       ],
-      "x": 592,
-      "y": -359,
+      "x": 521,
+      "y": -204,
       "tpBase": 4,
       "xpCost": 258,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2748,10 +2748,10 @@
       "depth": 9,
       "name": "관통·투사 9단",
       "requires": [
-        "P08"
+        "P07"
       ],
-      "x": 667,
-      "y": -377,
+      "x": 501,
+      "y": -430,
       "tpBase": 5,
       "xpCost": 316,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",
@@ -2768,10 +2768,10 @@
       "depth": 10,
       "name": "관통·투사 10단",
       "requires": [
-        "P09"
+        "P08"
       ],
-      "x": 741,
-      "y": -397,
+      "x": 623,
+      "y": -219,
       "tpBase": 5,
       "xpCost": 380,
       "dynamicTpSurcharge": "floor(total_purchased_nodes / 20)",

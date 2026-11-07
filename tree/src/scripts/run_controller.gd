@@ -36,7 +36,7 @@ var assisted: bool = false
 var status: String = "RUN"
 var highest_train: int = 1
 var seed_value: int = 1
-var split_ratio: float = 0.31
+var split_ratio: float = 0.50
 var resume_data: Dictionary = {}
 var options: Dictionary = {}
 var hud_label: Label
@@ -375,7 +375,7 @@ func _change_target_mode(index: int) -> void:
 	_refresh_info()
 
 func _on_split_ratio(value: float) -> void:
-	split_ratio = clampf(value,0.25,0.45)
+	split_ratio = 0.50
 	_layout()
 
 func _on_node_selected(_id: String) -> void:

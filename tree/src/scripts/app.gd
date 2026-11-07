@@ -20,6 +20,9 @@ var root_box: VBoxContainer
 
 func _ready() -> void:
 	settings_data = RSettingsStore.get_current()
+	var korean_theme := Theme.new()
+	korean_theme.default_font = RFontRegistry.bundled_font()
+	theme = korean_theme
 	RUiScaling.apply(self,float(settings_data.get("ui_scale",1.0)))
 	current_screen = "BOOT"
 	add_child(BOOT_SCENE.instantiate())
@@ -89,9 +92,9 @@ func _button(parent: Node, label: String, action: Callable) -> Button:
 
 func _show_title() -> void:
 	_transition("TITLE")
-	_screen("RAIL//SURVIVOR")
+	_screen("BURROW // HUNTER")
 	var caption := Label.new()
-	caption.text = "사각 레일 · 열차 생존 로그라이크"
+	caption.text = "굴에서 탈출하는 벌레를 추적하는 순찰자"
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root_box.add_child(caption)
 	_button(root_box,"시작",Callable(self,"_show_menu"))
@@ -102,7 +105,7 @@ func _show_title() -> void:
 
 func _show_menu() -> void:
 	_transition("MENU")
-	_screen("RAIL//SURVIVOR")
+	_screen("BURROW // HUNTER")
 	_button(root_box,"새 게임",Callable(self,"_start_new"))
 	_button(root_box,"이어하기",Callable(self,"_resume")).disabled = not RSaveStore.has_resume()
 	_button(root_box,"설정",Callable(self,"_show_settings"))

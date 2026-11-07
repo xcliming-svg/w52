@@ -1,7 +1,7 @@
 config_version=5
 
 [application]
-config/name="RAIL//SURVIVOR"
+config/name="BURROW // HUNTER"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/description="Geometry rail survival roguelike"
@@ -12,7 +12,7 @@ window/size/viewport_height=1080
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/stretch/aspect="keep"
 
 [rendering]
 renderer/rendering_method="gl_compatibility"
