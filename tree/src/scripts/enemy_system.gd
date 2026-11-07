@@ -68,7 +68,7 @@ func _spawn_schedule(delta: float, rng: RGameRng) -> void:
 	spawn_credit = RSpawnDirector.accrue(spawn_credit,elapsed,delta,rng)
 	var count := 0
 	while spawn_credit >= 1.0 and count < RSpawnDirector.spawn_limit_per_tick():
-		var index: int = RSpawnDirector.regular_template_index(rng,templates.size())
+		var index: int = RSpawnDirector.regular_template_index(rng,templates.size(),elapsed)
 		spawn(templates[index], rng)
 		spawn_credit -= 1.0
 		count += 1
@@ -78,13 +78,15 @@ func _spawn_schedule(delta: float, rng: RGameRng) -> void:
 		last_boss_minute = minute_int
 		pending_boss = 15.0
 		pending_boss_minute = minute_int
-		enemy_warning.emit("15초 후 정예·보스 등장", RBalance.CENTER)
+		enemy_warning.emit("15초 후 굴 사냥꾼 정예 출현", RBalance.CENTER)
 	if pending_boss >= 0.0:
 		pending_boss -= delta
 		if pending_boss < 0.0:
-			spawn(templates[13], rng)
-			for j in 3:
-				spawn(templates[12], rng)
+			spawn(templates[12],rng)
+			if elapsed >= 120.0*60.0:
+				spawn(templates[13],rng)
+			if elapsed >= 300.0*60.0:
+				spawn(templates[12],rng)
 
 func step(delta: float, train: RTrain, tree: RTreeRules, rng: RGameRng) -> void:
 	elapsed += delta
